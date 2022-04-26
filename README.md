@@ -1,2 +1,21 @@
-# amaranth_twstft
-Two Way Satellite Time and Frequency Transfer implemented in Amaranth
+# Using Amaranth to implement TWSTFT Signal generation
+
+Two Way Satellite Time and Frequency Transfer (TWSTFT) is a procedure that uses Satellite comunication to share two share two informations :
+    - a time data (in the form of date and hour)
+    - a frequency (in the form of a specific electromagnetic impulse repeated every second)
+
+To implement such communication, we will here make use of Python library _Amaranth_. This library gives us the possibility to manage signals and registers in a quite intuitive way. It also abstracts a lot of FPGA programming concepts that are not that interesting for us in the context of TWSTFT. 
+
+In this documentation, you will find explanations behind the amaranthimplementation of TWSTFT and the Amaranth source code associated:
+
+1. [PRN generation](PRN/1_PRN.md) :
+Pseudo Random Noise generation that allows to diferenciate signals
+
+2. [Synchronizing PRN with a 1-PPS signal](2_Sync_PRN_1PPS.md) :
+Making the noise repeat exactly every second to create our 1 Pulse Per Second signal
+
+3. [Carrier signal generation](3_Clk_Generation.md) :
+Creating the electromagnetic signal that will carry the information up to the satellite
+
+4. [Mixing Signals](4_Mixing_Signals.md) :
+Mixing the carrier with our 1-PPS to share the frequency information
