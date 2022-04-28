@@ -8,7 +8,7 @@ This kind of modulation allows us to transmit binary informations through the ph
 
 <img src="../figures/BPSK.png">
 
-We want to use this method to create a 1-PPS signal. So we need to make sure that the information carried does not repeat itself. This way, the auto-correlation of the signal gives us a one when the phase shift is 0 and a close-from-zero value otherwise. Which implies that we are able to differenciate the begining of the signal and subsequently, distinguish our 1_PPS within the received signal.
+We want to use this method to create a 1-PPS signal. So we need to make sure that the information carried does not repeat itself. This way, the auto-correlation of the signal gives us a one when the phase shift is 0 and a close-from-zero value otherwise. Which implies that we are able to differenciate the begining of the signal and subsequently, distinguish our 1-PPS within the received signal.
 
 ## Linear Feedback Shift Register
 
