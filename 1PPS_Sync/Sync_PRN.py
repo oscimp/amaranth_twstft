@@ -1,6 +1,7 @@
 from amaranth import *
 from amaranth.sim import *
 
+# values of the 32 m-sequence generator taps for 20-bits LFSR
 taps20bits = [9, 83, 101, 105, 123, 243, 359, 365, 383, 399,
 447, 547, 553, 561, 697, 819, 851, 857, 879, 963,
 1013, 1023, 1059, 1157, 1175, 1217, 1223, 1229, 1257, 1289,
@@ -72,6 +73,7 @@ class PrnGenerator(Elaboratable):
 		# using parameter defined taps
 		else:
 			assert taps < pow(2,20)
+			assert taps % 2 == 1
 			self._dynamic_tsel = False
 			self._taps = Signal(20, reset = taps, name="prn_used_taps")
 
