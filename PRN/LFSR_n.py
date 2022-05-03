@@ -4,52 +4,75 @@ from math import pow
 
 
 class LFSR_n(Elaboratable):
-    def __init__(self, size, seed,taps, sequence_len):
+    """an Amaranth generic implementation of a Linear Feedback Shift Register
+
+    Parameters
+    ----------
+    size : non-zero positive int 
+        the bit length of the LFSR
+        
+    seed : non-zero positive int smaller than 2^size
+        the value that initializes our LFSR
+
+    taps : positive int smaller than 2^size
+        The binary value that represents 
+        which bits to use for our xor operation.
+        A value of 0x0B means the input of our register will be 
+        bit_0 ^ bit_1 ^ bit_3
+
+    sequence_len : positive integer smaller than 2^size - 1
+        the number of bits to generate with our lfsr.
+
+    Attributes
+    ----------
+    register : Signal(size)
+    output : Signal()
+    _taps : Signal(size)
+    _count : Signal(size)
+
+    """
+
+    def __init__(self, size, seed, taps, sequence_len):
         assert size >= taps.bit_length()
         assert size >= seed.bit_length()
         assert pow(2,size)-1 >= sequence_len
         assert seed != 0
 
-        # Here is our register
         self.register = Signal(size,reset = seed) 
 
-        # The output of our LFSR
         self.output = Signal()
-        # The result of the linear operation 
-        # on the bits of the LFSR
-        self.input = Signal() 
 
-        # The binary value that represents 
-        # which bits to use for our xor operation.
-        # A value of 0x0B means the input will be 
-        # bit_0 ^ bit_1 ^ bit_3
-        self.taps = Signal(size, reset = taps)
+        self._taps = Signal(size, reset = taps)
         
         #the number of bits to generate for our PRN
-        self.count = Signal(size, reset = sequence_len)
+        self._count = Signal(size, reset = sequence_len)
     
     def elaborate(self, platform):  
         m = Module()
 
+        # The result of the linear operation 
+        # on the bits of the LFSR
+        insert = Signal() 
+        
         # Whenever the clock signal of the PRN generator is at high,
         # we update the register
         m.d.sync += [
-            #appending the input to our shifted register
-            self.register.eq(Cat(self.register[1:], self.input)), 
+            #appending the insert to our shifted register
+            self.register.eq(Cat(self.register[1:], self.insert)), 
             #counting down the number of bits to generate
-            self.count.eq(self.count - 1)
+            self._count.eq(self._count - 1)
         ]
 
         # When the sequence is long enough, we restart
-        with m.If(self.count==0):
+        with m.If(self._count==0):
             m.d.sync += [
-                self.count.eq(self.count.reset),
+                self._count.eq(self._count.reset),
                 self.register.eq(self.register.reset)
             ]
         
         m.d.comb += [
             # Accomplishing the linear combination of the bits defined by the taps
-            self.input.eq((self.taps & self.register).xor()),
+            self.insert.eq((self._taps & self.register).xor()),
             # updating the output of the LFSR
             self.output.eq(self.register[0])
         ]

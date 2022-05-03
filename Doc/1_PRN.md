@@ -40,9 +40,8 @@ class LFSR_8(Elaboratable):
 
         # The output of our LFSR
         self.output = Signal()
-        # The result of the linear operation 
-        # on the bits of the LFSR
-        self.input = Signal() 
+
+        
 
         # The binary value that represents 
         # which bits to use for our xor operation.
@@ -56,11 +55,15 @@ class LFSR_8(Elaboratable):
     def elaborate(self, platform):  
         m = Module()
 
+        # The result of the linear operation 
+        # on the bits of the LFSR
+        insert = Signal() 
+        
         # Whenever the clock signal of the PRN generator is at high,
         # we update the register
         m.d.sync += [
             #appending the input to our shifted register
-            self.register.eq(Cat(self.register[1:], self.input)), 
+            self.register.eq(Cat(self.register[1:], insert)), 
             #counting down the number of bits to generate
             self.count.eq(self.count - 1)
         ]
@@ -74,7 +77,7 @@ class LFSR_8(Elaboratable):
         
         m.d.comb += [
             # Accomplishing the linear combination of the bits defined by the taps
-            self.input.eq((self.taps & self.register).xor()),
+            insert.eq((self.taps & self.register).xor()),
             # updating the output of the LFSR
             self.output.eq(self.register[0])
         ]
@@ -82,7 +85,7 @@ class LFSR_8(Elaboratable):
         return m
 ```
 
-A quite different version is given as example [here](./LFSR.py). Though, it computes the exact same sequence. Its script allows us to simulate this program's execution on a FPGA board. 
+A quite different version is given as example [here](../PRN/LFSR_n.py). Though, it computes the exact same sequence. Its script allows us to simulate this program's execution on a FPGA board. 
 
 The parameters used here are :
     seed = 0xFF
@@ -184,4 +187,6 @@ def m_seq_taps(bit_len, limit = 1):
 	return taps
 ```
 
-And that's it ! Next step : [Synchronizing PRN with a 1-PPS signal](../1PPS/2_Sync_PRN_1PPS.md)
+These codes are available in this [file](../PRN/msequence.py).
+
+And that's it ! Next step : [Synchronizing PRN with a 1-PPS signal](2_Sync_PRN_1PPS.md)

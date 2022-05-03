@@ -1,6 +1,8 @@
 # Synchronizing a 1-PPS Signal with our PRN
 
-Now that we know how to generate a [pseudo-random noise](../PRN/1_PRN.md), let's talk about how to use it to transfer our time and frequency information.
+Previous step : [Generating a PRN](1_PRN.md)
+
+Now that we know how to generate a pseudo-random noise, let's talk about how to use it to transfer our time and frequency information.
 
 TWSTFT transfers frequency and time information through the use of a 1 Pulsation Per Second (1-PPS) signal. The idea behind this is that we have a very precise clock giving us a signal with a rising edge exactly every second. And we want to start modulating our carrier signal with our BPSK modulation at that precise moment. 
 
@@ -50,7 +52,7 @@ class PrnGenerator8Bits(Elaboratable):
         return m
 ```
 
-Which give us the following chronogram for the simulation produced by the [PrnGenerator(naive).py](PrnGenerator(naive).py) file :
+Which give us the following chronogram for the simulation produced by the [PrnGenerator_naive.py](../1PPS_Sync/PrnGenerator_naive.py) file :
 
 <img src="../figures/PRN8_Sync_1.png">
 
@@ -121,11 +123,11 @@ class SyncPrnGenerator(Elaboratable):
 ```
 GREAT ! But still not enough. In radiology, it is rare that the default frequency of our FPGA board is exactly the one we want to use for our modulation. So we want to simulate the use of a slower clock... In other words, we need a _Prescaler_.
 
-Maybe you know how to make one IRL, but you can also find an [amaranth software version of one](Prescaler.py) in this folder.
+Maybe you know how to make one IRL, but you can also find an amaranth software version of one [here](../1PPS_Sync/Prescaler.py) .
 
 To align the behavour of our FSM to the frequency of our prescaler, we will just put the rules added to the synchronous domain inside a ```m.If(prescaler.output):``` and care that we now count up to the frequency of the prescaler and not to the original frequency.
 
-The kind of amaranth program we expect should now look like [this](PrnGenerator(final).py). And now, we should be alright !
+The kind of amaranth program we expect should now look like [this](../1PPS_Sync/PrnGenerator_final.py). And now, we should be alright !
 
 
-Next step : [Carrier signal generation](../Carrier/3_Clk_Generation.md)
+Next step : [Carrier signal generation](3_Clk_Generation.md)

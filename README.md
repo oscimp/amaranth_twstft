@@ -8,14 +8,14 @@ To implement such communication, we will here make use of Python library _Amaran
 
 In this documentation, you will find explanations behind the amaranth implementation of TWSTFT and the Amaranth source code associated :
 
-1. [PRN generation](PRN/1_PRN.md) :
+1. [PRN generation](Doc/1_PRN.md1_PRN.md) :
 Pseudo Random Noise generation that allows to differenciate signals
 
-2. [Synchronizing PRN with a 1-PPS signal](1PPS/2_Sync_PRN_1PPS.md) :
+2. [Synchronizing PRN with a 1-PPS signal](Doc/2_Sync_PRN_1PPS.md) :
 Making the noise repeat exactly every second to create our 1 Pulse Per Second signal
 
-3. [Carrier signal generation](Carrier/3_Clk_Generation.md) :
+3. [Carrier signal generation](Doc/3_Clk_Generation.md) :
 Creating the electromagnetic signal that will carry the information up to the satellite
 
-4. [Mixing Signals](Mixer/4_Mixing_Signals.md) :
+4. [Mixing Signals](Doc/4_Mixing_Signals.md) :
 Mixing the carrier with our 1-PPS to share the frequency information
