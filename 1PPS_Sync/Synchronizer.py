@@ -41,7 +41,6 @@ class Synchronizer(Elaboratable):
 	def elaborate(self, platform):
 		m = Module()
 
-		debug = Signal()
 		cnt = Signal(32, name="sync_counter")
 		old_pps = Signal(name="sync_last_clk_pps")
 
@@ -49,7 +48,6 @@ class Synchronizer(Elaboratable):
 		m.submodules.presc = presc = Prescaler(self._freqin, self._freqout)
 
 		m.d.comb += prn.enable.eq(presc.output)
-		m.d.comb += debug.eq((old_pps ^ self.pps) & self.pps)
 
 		m.d.sync += old_pps.eq(self.pps)
 
