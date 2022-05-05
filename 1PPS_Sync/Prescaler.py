@@ -35,10 +35,13 @@ class Prescaler(Elaboratable):
 	def elaborate(self, platform):
 		m = Module()
 		
-		m.d.sync += [
-			self.cnt.eq(self.cnt +1),
-			self.output.eq(0)
-		]
+		with m.If(self.cnt == 0):
+			m.d.sync += self.output.eq(1)
+		with m.Else():
+			m.d.sync += self.output.eq(0)
+		
+		m.d.sync += self.cnt.eq(self.cnt +1)
+		
 		with m.If (~self.enable):
 			m.d.sync += [
 				self.cnt.eq(0),
@@ -47,7 +50,6 @@ class Prescaler(Elaboratable):
 		with m.If(self.cnt==self._ticks_per_period-1):
 			m.d.sync+=[
 				self.cnt.eq(0),
-				self.output.eq(1)
 			]
 		
 		return m
