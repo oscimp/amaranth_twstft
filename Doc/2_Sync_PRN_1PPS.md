@@ -135,7 +135,7 @@ with m.If( (old_pps ^ self.pps) & self.pps ):
 
 To keep our code as modular as possible, we will prefer to develop separatly the implementation of our PRN generator and the synchronization of it with the 1-PPS.
 
-As we need to get the LFSR to stop and go on demand, we can add to it a `reset` signal that will keep the LFSR in its initial state for as long as `reset` is high.
+As we need to get the LFSR to stop and go on demand, we can add to it an `enable` signal that will keep the LFSR in its initial state for as long as `enable` is low. When it goes high, the LFSR starts generating the PRN.
 
 So in the end, the elaborate method of our PrnGenerator looks like this :
 
@@ -143,11 +143,11 @@ So in the end, the elaborate method of our PrnGenerator looks like this :
 	def elaborate(self,platform):
 		m = Module()
 
-        #choosing taps dynamically if the user didn't specify it
+        	#choosing taps dynamically if the user didn't specify it
 		if(self._dynamic_tsel):
 			m.d.comb += self._taps.eq(self._mem[self.tsel])
 
-        #bit to be inserted into the LFSR when shifted
+        	#bit to be inserted into the LFSR when shifted
 		insert = Signal() 
 
 		m.d.comb += [
@@ -155,27 +155,27 @@ So in the end, the elaborate method of our PrnGenerator looks like this :
 			self.output.eq(self.reg[0]),
 		]
 
-        #when the reset signal is high, the LFSR returns to its initial state
-		with m.If(self.reset):
-            #these operations must be driven in the synchronous domain
-            #because thats where we defined the signals _cnt and reg first
+        	#when the reset signal is high, the LFSR returns to its initial state
+		with m.If(~self.enable):
+            		#these operations must be driven in the synchronous domain
+            		#because thats where we defined the signals _cnt and reg first
 
-            #but the fact it is not surrounded by 
-            #  with m.If(self.enable):
-            #makes it happen anytime inbetween two shiftings
+            		#but the fact it is not surrounded by 
+            		#  with m.If(self.next):
+            		#makes it happen anytime inbetween two shiftings
 			m.d.sync += [
 				self._cnt.eq(self._cnt.reset),
 				self.reg.eq(self.reg.reset)
 			]
         
-        #we use an Else statement because otherwise,
-        #the code below would override the one above as it is also
-        #defining the behavours of _cnt and reg
+        	#we use an Else statement because otherwise,
+        	#the code below would override the one above as it is also
+        	#defining the behavours of _cnt and reg
 		with m.Else():
 
-            #waiting for the tick of the prescaler 
-            #(or anything else that is driving the enable signal)
-			with m.If(self.enable):
+            		#waiting for the tick of the prescaler 
+            		#(or anything else that is driving the enable signal)
+			with m.If(self.next):
 				m.d.sync += [
 					self.reg.eq(Cat(self.reg[1:],insert)),
 					self._cnt.eq(self._cnt-1)
@@ -190,15 +190,19 @@ So in the end, the elaborate method of our PrnGenerator looks like this :
 		return m
 ```
 
-In this portion of code, we remark that there are 3 signals used in our LFSR that are not directly driven within the implementation of it. This means we will have to set ourself the values of `self.reset` and  `self.enable` (and perhaps `self.tsel`) from _outside_ the class. Which is fine because we need to use our own prescaler as an `enable` signal, our 1-PPS rising edge as the `reset` signal.
+In this portion of code, we remark that there are 3 signals used in our LFSR that are not directly driven within the implementation of it. This means we will have to set ourself the values of `self.enable` and  `self.next` (and perhaps `self.tsel`) from _outside_ the class. Which is fine because we need to use our own prescaler as a `next` signal, and our 1-PPS rising edge as the deassertion condition for the `enable` signal.
 
 ### Making the PPS, Prescaler and LFSR cohabit
 
-As we now have the Prescaler and the LFSR in two different classes, we may want to create a third module to merge them into a uniq module that is receiving a PPS and generating the PRN according to it. So it would only have one input signal (1-PPS) and one output signal and would be parametrized with the frequency of the clock we use and the frequency of the PRN generation we want. 
+As we now have the Prescaler and the LFSR in two different classes, we may want to create a third module to merge them into a uniq module that is receiving a PPS and generating the PRN according to it. So it would only have one input signal (1-PPS) (or two inputs if the taps are dynamically chosen) and one output signal and would be parametrized with the parameters of the LFSR + the frequency of the clock we use and the frequency of the PRN generation we want. 
 
-Last detail we should talk about is the fact the PRN generation should stop every second if it doesn't receive a PPS. To do it, the only clock we can use to wait a second is the one we already use. So we will just add a counter that counts up to the frequency of this clock. 
+Last detail we should think about is the fact the PRN generation should stop every second if it doesn't receive a PPS. To do it, the only clock we can use to wait for a second is the one we already use. So we will just add a counter that counts up to the frequency of this clock. 
 
-If this is a 10 MHz clock, one second should last 10 million ticks. Whenever we reach this value, we stop counting, we reset the PRN and the Prescaler for as long we don't receive a PPS. When it comes, we enable the prescaler, we stop reseting the LFSR and restart counting up to 10 millions.
+If this is a 10 MHz clock, one second should last 10 million ticks. Whenever we reach this value, we stop counting and we reset the LFSR and the Prescaler for as long we don't receive a PPS. When it comes, we enable the Prescaler and the LFSR and restart counting up to 10 millions.
+
+So in the end, it should just be a software version of this component :
+
+<img src="../figures/Synchronizer.png">
 
 Such module could be defined in yet another class :
 
@@ -208,48 +212,64 @@ class Synchronizer(Elaboratable):
     synchronized with a 1-PPS Signal in input
     """
 
-	def __init__(self, freqin, freqout):
-		self.pps = Signal() #input signal
-		self.output = Signal() #synchronized PRN
-		self._freqin = freqin #clock frequency
-		self._freqout = freqout #prn generation frequency
+	def __init__(self, freqin, freqout, taps=0, seed = 0xFFFFF):
+		self.pps = Signal(name="sync_pps_input")
+		self.output = Signal(name="sync_output")
+		
+		#just like for the LFSR, we check if the user 
+		#wants to dynamically choose taps
+		if taps == 0:
+			self.dynamic_taps = True
+			self.tsel = Signal(5, name="taps_selector_sync")
+		else :
+			self.dynamic_taps = False
+			self.taps = taps
+
+		self.seed = seed
+		self._freqin = freqin
+		self._freqout = freqout
 	
 	def elaborate(self, platform):
 		m = Module()
 
 		cnt = Signal(32) #signal to count up to the frequency
 		
-        #remembering the last value of the pps signal
-        old_pps = Signal()
-        m.d.sync += old_pps.eq(self.pps)
+        	#remembering the last value of the pps signal
+        	old_pps = Signal()
+        	m.d.sync += old_pps.eq(self.pps)
 
-        #calling the modules we defined separatly
-		m.submodules.prn = prn = PrnGenerator()
+        	#calling the modules we defined separatly
+		if self.dynamic_taps :
+			m.submodules.prn = prn = PrnGenerator(seed = self.seed)
+			m.d.comb += prn.tsel.eq(self.tsel)
+		else :
+			m.submodules.prn = prn = PrnGenerator(taps=self.taps, seed=self.seed)
 		m.submodules.presc = presc = Prescaler(self._freqin, self._freqout)
 
-        #linking the prescaler output to the PRN Generation 
-		m.d.comb += prn.enable.eq(presc.output)
+        	#linking the prescaler output to the PRN Generation 
+		m.d.comb += prn.next.eq(presc.output)
 
-        #detecting the pps rising edge
+        	#detecting the pps rising edge
 		with m.If( (old_pps ^ self.pps) & self.pps ):
 			m.d.sync += [
+				# we restart everything
 				cnt.eq(cnt.reset),
-				prn.reset.eq(1),
+				prn.enable.eq(0),
 				presc.enable.eq(0)
 			]
 
-        #as long as there is no rising edge
+        	#as long as there is no rising edge of the pps
 		with m.Else():
-            #we specify that the PRN generation is ongoing
+            		#we specify that the PRN generation is ongoing
 			m.d.sync += [
-				prn.reset.eq(0),
+				prn.enable.eq(1),
 				presc.enable.eq(1)
 			]
 			#as long as we haven't counted up to the clock frequency
 			with m.If(cnt<self._freqin):
 				m.d.comb += self.output.eq(prn.output)
 				m.d.sync += cnt.eq(cnt+1)
-            #otherwise, we stop the PRN generation
+            		#otherwise, we stop the PRN generation
 			with m.Else():
 				m.d.comb += self.output.eq(0)
 				m.d.sync += cnt.eq(cnt)
@@ -257,6 +277,6 @@ class Synchronizer(Elaboratable):
 		return m
 ```
 
-And here we are ! 
+And here we are ! By now, our synchronization should be operational.
 
 Next step : [Carrier signal generation](3_Clk_Generation.md)
