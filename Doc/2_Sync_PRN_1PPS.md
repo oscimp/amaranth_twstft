@@ -59,48 +59,48 @@ taps20bits = [9, 83, 101, 105, 123, 243, 359, 365, 383, 399,
 1323, 1439]
 
 class PrnGenerator20(Elaboratable):
-    def __init__(self, taps = 0):
-        # initializing taps when dynamically selected 
+	def __init__(self, taps = 0):
+		# initializing taps when dynamically selected 
 		if(taps == 0):
-            # as our taps list constains only 32 values,
-            # no need to use more than 5 bits to store the address
-            # of the selected taps
+			# as our taps list constains only 32 values,
+			# no need to use more than 5 bits to store the address
+			# of the selected taps
 			self.tsel = Signal(5) 
 			
-            # this attribute is to remember we choose 
-            # taps dynamically among taps20bits 
-            # when elaborating
-            self._dynamic_tsel = True 
+			# this attribute is to remember we choose 
+			# taps dynamically among taps20bits 
+			# when elaborating
+			self._dynamic_tsel = True 
 
-            # here is our memory
+			# here is our memory
 			self._mem = Memory(width = 20, # nb of bits used by each value
-                                depth=len(taps20bits), # nb of values
-                                init = taps20bits # initial value of our memory
-            )
-            
+							depth=len(taps20bits), # nb of values
+							init = taps20bits # initial value of our memory
+			)
+			
 			self._taps = Signal(20) # 20 bits like the LFSR length
 		
 		# using parameter defined taps
 		else:
-            # we make sure the taps are not too bad
+			# we make sure the taps are not too bad
 			assert taps < pow(2,20) 
-            assert taps % 2 == 1
+			assert taps % 2 == 1
 
-            # this attribute is to remember we don't choose taps dynamically 
-            # when elaborating
+			# this attribute is to remember we don't choose taps dynamically 
+			# when elaborating
 			self._dynamic_tsel = False
 			self._taps = Signal(20, reset = taps)
-        
-        # Finishing the implementation of the constructor ...
-    
-    def elaborate(self, platform):
-        m = Module()
 
-        # remembering to use dynamically chosen taps
+		# Finishing the implementation of the constructor ...
+
+	def elaborate(self, platform):
+		m = Module()
+
+		# remembering to use dynamically chosen taps
 		if(self._dynamic_tsel):
 			m.d.comb += self._taps.eq(self._mem[self.tsel])
-        
-        #finishinng the implementation of the elaborate method ...
+
+		#finishinng the implementation of the elaborate method ...
 ```
 
 With this implementation, as long as we built our instance of <code>PrnGenerator20</code> with no defined value for <code>taps</code>, we can change the taps we use just by changing the value of <code>self.tsel</code> signal !
@@ -237,26 +237,21 @@ class Synchronizer(Elaboratable):
 		rise = Signal()
 		m.d.comb += rise.eq((old_pps ^ self.pps) & self.pps) 
 		
-		with m.If(rise): #when pps rise : reset everything
-			m.d.sync += cnt.eq(0)
+		with m.If(cnt<self.noise_len) : #as long as we haven't emitted enough bits
+			with m.If(presc.output): #we keep counting them
+				m.d.sync += cnt.eq(cnt+1)
+			m.d.comb += [ #and we authorize their emission
+				presc.enable.eq(1),
+				prn.enable.eq(1)
+			]
+		with m.Else(): #otherwise, we reset the values of the prn and prescaler
 			m.d.comb += [
 				presc.enable.eq(0),
-				prn.enable.eq(0),
+				prn.enable.eq(0)
 			]
-		with m.Else(): #othewise, we check if we already generated enough PRN bits
-			with m.If(cnt == self.noise_len): 
-				m.d.comb += [
-					presc.enable.eq(0),
-					prn.enable.eq(0),
-				]
-			with m.Else():
-				with m.If(presc.output): 
-					m.d.sync += cnt.eq(cnt+1)
-				m.d.comb += [
-					presc.enable.eq(1),
-					prn.enable.eq(1)
-				]
-		
+
+		with m.If(rise): #when we receive a pps, we restart counting
+			m.d.sync += cnt.eq(0)
 		return m
 ```
 
