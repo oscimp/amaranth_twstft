@@ -1,5 +1,7 @@
 # Mixing our Carrier Signal with the 1-PPS Signal
 
+Previous step : [Generating the appropriate clock signal](3_Clk_Generation.md)
+
 Good news : We are almost done with our BPSK emission !
 Once we get a proper signal to carry our information, we need to mix it with the PRN we emit. 
 But here is another problem. 
@@ -47,8 +49,5 @@ with m.If(zero):
 	m.d.sync += output.eq(prn.output ^ carrier)
 ```
 
-And now we should be done for the modulation ! An example of a [Mixer program]('../Mixer/Mixer.py') is available in this directory. The last step is to choose on which pin to send the modulated signal, but we won't talk about it here as it depends a lot on the FPGA board you are using.
+And now we should be done for the modulation ! An example of a [Mixer program](../Mixer/Mixer.py) is available in this directory. The last step is to choose on which pin to send the modulated signal, but we won't talk about it here as it depends a lot on the FPGA board you are using.
 
-
-
-Previous step : [Generating the appropriate clock signal](3_Clk_Generation.md)
