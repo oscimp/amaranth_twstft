@@ -115,6 +115,10 @@ class PrnGenerator(Elaboratable):
 
 		return m
 
+#run "python3 {thisfile}" to start this simulation
+#You can use GTKWave to visualize the result of the simulation below 
+#and check if the architecture defined above is correct
+#(it doesn't mean you won't have any trouble whe flashing on your FPGA as each board may have its own limits)
 if __name__ == "__main__":
 	if False : #test with user defined taps
 		dut = PrnGenerator(taps = 83, seed = 0xFFFFF, cnt = 1024)

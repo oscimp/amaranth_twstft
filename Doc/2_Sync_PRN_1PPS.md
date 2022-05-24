@@ -2,7 +2,7 @@
 
 Previous step : [Generating a PRN](1_PRN.md)
 
-Now that we know how to generate a pseudo-random noise, let's talk about how to use it to transfer our time and frequency information.
+Now that we know how to generate a pseudo-random noise, let's talk about how to use it to transfer our time and frequency information!
 
 TWSTFT transfers frequency and time information through the use of a 1 Pulsation Per Second (1-PPS) signal accompanied by a 2.5MHz clock. The idea behind this is that we have a very precise clock giving us a signal with a rising edge exactly every second. And we want to start modulating our carrier signal with our BPSK modulation at that precise moment. The frequency that defines the modulation is the 2.5 MHz signal, also given by the so-said very precise clock.
 
@@ -10,7 +10,7 @@ Basically, the goal is to restart generating our PRN everytime we receive our 1-
 - Making it generate its PRN at a different rate from the FPGA's clock (in fact, it should be based on the 2.5 MHz signal),
 - For comfort reason, we want to make the use of our LFSR as versatile as possible so it should allow the user to change the taps we use while the device is running.
 - Making it possible to synchronize its PRN emission everytime we receive a 1-PPS signal, which implies :
-    - stop emitting PRN when the LFSR has produce an arbitrary number of bits,
+    - stop emitting PRN when the LFSR has produce an arbitrary number of bits (for example, 2.5e6 bits, because it should be the number of bits we generate during a second when our PRN rate is 2.5MHz),
     - start emitting PRN if we receive a PPS Signal,
     - immediatly interrupt the current sequence to restart it if we receive a PPS Signal.
 
@@ -19,7 +19,7 @@ We will dive into each one of these points in the following sections.
 
 ## Slowing down the LFSR with a prescaler
 
-In radiology, it is rare that the default frequency of our FPGA board is exactly the one we want to use for our modulation. In our case, we are working with a 630MHz clock. So we want to simulate the use of a slower clock... In other words, we need a _Prescaler_. A _Prescaler_ is an electronic block that generates a pulse on its output at regular interval. if we want to go from 630 to 2.5 MHz, we need to produce a tick every 252 clock rising edge.
+In radiology, it is rare that the default frequency of our FPGA board is exactly the one we want to use for our modulation. In our case, we are working with a 630MHz clock. So we want to simulate the use of a slower clock... In other words, we need a _Prescaler_. A _Prescaler_ is an electronic block that generates a pulse on its output at regular interval. if we want to go from 630MHz to 2.5 MHz, we need to produce a tick every 252 clock rising edge (252*2.5=630).
 
 Maybe you know how to make a prescaler IRL, but you can also find an amaranth software version of one [here](../1PPS_Sync/Prescaler.py). This one also allows to enable/disable the emission of the output signal through the use of an input signal that should be driven from outside the module.
 
@@ -49,7 +49,7 @@ Instead of having to always specify the taps to use, it could be useful to chang
 
 Such taps values were found by using the algorithms [here](../PRN/msequence.py).
 
-Then, we add a "taps" parameter the PrnGenerator which default value is 0 (as explained in the [previous section](./1_PRN.md), 0 can not be used as taps for our PRN Generation) to know if users want to define the taps themself or if they want to dynamically choose the taps. This will result  in the following construction of the class.
+Then, we add a "taps" parameter to the PrnGenerator which default value is 0 (as explained in the [previous section](./1_PRN.md), 0 can not be used as taps for our PRN Generation) to know if users want to define the taps themself or if they want to dynamically choose the taps. This will result  in the following construction of the class.
 
 ```python
 # values of the 32 m-sequence generator taps for a 20-bits LFSR
@@ -103,7 +103,7 @@ class PrnGenerator20(Elaboratable):
 		#finishinng the implementation of the elaborate method ...
 ```
 
-With this implementation, as long as we built our instance of <code>PrnGenerator20</code> with no defined value for <code>taps</code>, we can change the taps we use just by changing the value of <code>self.tsel</code> signal !
+With this implementation, as long as we build our instance of <code>PrnGenerator20</code> with no defined value for <code>taps</code>, we can change the taps we use just by changing the value of <code>self.tsel</code> signal !
 
 ## Synchronizing the LFSR with the 1-PPS signal
 
