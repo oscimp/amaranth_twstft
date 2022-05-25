@@ -47,7 +47,7 @@ with m.If(presc.output):
 
 Instead of having to always specify the taps to use, it could be useful to change the value of our taps signal by the time the device is running. In order to do it, we can define a memory space in our Module that will be filled by all the taps we may use. 
 
-Such taps values were found by using the algorithms [here](../PRN/msequence.py).
+Such taps values were found by using the algorithms of the [prn.py](../prn.py) file.
 
 Then, we add a "taps" parameter to the PrnGenerator which default value is 0 (as explained in the [previous section](./1_PRN.md), 0 can not be used as taps for our PRN Generation) to know if users want to define the taps themself or if they want to dynamically choose the taps. This will result  in the following construction of the class.
 
@@ -105,6 +105,8 @@ class PrnGenerator20(Elaboratable):
 
 With this implementation, as long as we build our instance of <code>PrnGenerator20</code> with no defined value for <code>taps</code>, we can change the taps we use just by changing the value of <code>self.tsel</code> signal !
 
+In the finished version of the project, the taps list is stored in the `.pickle` file so that there is no need to hard code these values that we are able to compute dynamically.
+
 ## Synchronizing the LFSR with the 1-PPS signal
 
 ### Detecting the 1-PPS signal rise
@@ -134,6 +136,25 @@ with m.If( (old_pps ^ self.pps) & self.pps ):
 	]
 ```
 
+Great ! but not sufficient. Because of the FPGA architecture, it may happen that the rising edge of the pps is not clearly detected because by the time we synchronously check for the value of `old_pps ^ self.pps`, the value of old_pps may have changed ! This can happen because of the routing delay of the 1-PPS signal and the Flip-Flops that care about our signal. To make sure everything is finely computed, instead of directly working with the 1-PPS signal and the same signal synchronously captured, we will only work with Synchronously captured PPS with different delays (the PPS signal will get through several Flip-Flops before being processed :
+
+```python
+pps_1 = Signal()
+pps_2 = Signal()
+pps_old = Signal()
+rise_pps = Signal()
+m.d.sync += [
+	pps_1.eq(PPS_SIGNAL_SOURCE),
+	pps_2.eq(pps_1),
+	pps_old.eq(pps_2)
+]
+
+m.d.comb += rise_pps.eq((pps_2 ^ pps_old) & pps_2)
+
+```
+
+This way, we really make sure there is no problem to detect the PPS rising edge. But you may think : "Hey ! but processing the signal AFTER having it getting through those FFs results in a delay between the moment we detect the PPS and the real moment the PPS rises!" And you're not wrong. But it is just fine since we know exactly how many clock rising edge to wait between the original signal and the one we process.
+
 ### Generation of the PRN triggered by the 1-PPS signal
 
 To keep our code as modular as possible, we will prefer to develop separatly the implementation of our PRN generator and the synchronization of it with the 1-PPS.
@@ -161,10 +182,10 @@ So in the end, the elaborate method of our PrnGenerator looks like this :
 				m.d.sync += [
 					self.reg.eq(Cat(self.reg[1:],insert)),
 				]
-			with m.Else():
-				m.d.sync += [
-					self.reg.eq(self.reg.reset)
-				]
+		with m.If(self.enable==0):
+			m.d.sync += [
+				self.reg.eq(self.reg.reset)
+			]
 
 		return m
 ```
@@ -234,8 +255,16 @@ class Synchronizer(Elaboratable):
 		]
 		
 		#defining the rising edge of the pps signal
-		rise = Signal()
-		m.d.comb += rise.eq((old_pps ^ self.pps) & self.pps) 
+		pps_1 = Signal()
+		pps_2 = Signal()
+		pps_old = Signal()
+		rise_pps = Signal()
+		m.d.sync += [
+			pps_1.eq(self.pps),
+			pps_2.eq(pps_1),
+			pps_old.eq(pps_2)
+		]
+		m.d.comb += rise_pps.eq((pps_2 ^ pps_old) & pps_2)
 		
 		with m.If(cnt<self.noise_len) : #as long as we haven't emitted enough bits
 			with m.If(presc.output): #we keep counting them
@@ -257,4 +286,4 @@ class Synchronizer(Elaboratable):
 
 And here we are ! By now, our synchronization should be operational.
 
-Next step : [Carrier signal generation](3_Clk_Generation.md)
+Next step : [Carrier signal generation](3_Carrier_Generation.md)

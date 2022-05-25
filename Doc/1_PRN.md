@@ -37,7 +37,7 @@ In a first time, we'll just code an 8-bits LFSR with amaranth.
 from amaranth import *
 
 class LFSR_8(Elaboratable):
-    def __init__(self, seed,taps, sequence_len):
+    def __init__(self, seed,taps):
 
         # Here is our register
         self.register = Signal(8,reset = seed) 
@@ -52,9 +52,6 @@ class LFSR_8(Elaboratable):
         # A value of 0x0B means the input will be 
         # bit_0 ^ bit_1 ^ bit_3
         self.taps = Signal(8, reset = taps)
-        
-        #the number of bits to generate for our PRN
-        self.count = Signal(8, reset = sequence_len)
     
     def elaborate(self, platform):  
         m = Module()
@@ -68,16 +65,9 @@ class LFSR_8(Elaboratable):
         m.d.sync += [
             #appending the input to our shifted register
             self.register.eq(Cat(self.register[1:], insert)), 
-            #counting down the number of bits to generate
-            self.count.eq(self.count - 1)
         ]
 
         # When the sequence is long enough, we restart
-        with m.If(self.count==0):
-            m.d.sync += [
-                self.count.eq(self.count.reset),
-                self.register.eq(self.register.reset)
-            ]
         
         m.d.comb += [
             # Accomplishing the linear combination of the bits defined by the taps
@@ -89,16 +79,16 @@ class LFSR_8(Elaboratable):
         return m
 ```
 
-A quite different version is given as example [here](../PRN/LFSR_n.py). Though, it computes the exact same sequence. Its script allows us to simulate this program's execution on a FPGA board. 
+A quite different version is given as example [here](../prn.py). This one is much more flexible as it allows to enable and disable the signal emission through the use of an input signal, it also works with LFSR of any bit length. Maybe this version is too advanced for the moment but it will be more detailed in the next chapter of this documentation. Though, it computes the exact same sequence. Its script allows us to simulate this program's execution on a FPGA board. 
 
 The parameters used here are :
     seed = 0xFF
     taps = 0x2D
-    sequence_len = 20 
+    bit_length = 8 
 
 <img src="../figures/PRN8.png">
 
-As you can see (and as expected), the sequence generated restarts after the 20th tick of the clock and the state of the register is shifted right. 
+As you can see (and as expected), the state of the register is shifted right on every clock rising edge and it seems that the value inserted depends on the current state. 
 
 Alright ! So now that we have a shift register, let's talk about the taps to use.
 
@@ -171,7 +161,7 @@ def m_seq_taps(bit_len, limit = 1):
 			test = next(test, tap, bit_len)
 			
             # Whatever the taps are, if the state of the LFSR is 0,
-            # the input bit will always be 0 so, no need to check further.
+            # the input bit will always be 0 so, no need to check further. 
             # Also, if we meet again the initial state, that means the
             # period is less than 2^bit_len -1.
 			if (test == seed or test == 0):
@@ -191,6 +181,6 @@ def m_seq_taps(bit_len, limit = 1):
 	return taps
 ```
 
-These codes are available in this [file](../PRN/msequence.py). 
+And to go a little further, this python script also contains a small amount of functions that manage `.pickle` files to save and re-use taps that have already been found.
 
 And that's it ! Next step : [Synchronizing PRN with a 1-PPS signal](2_Sync_PRN_1PPS.md)

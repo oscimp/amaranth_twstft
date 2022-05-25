@@ -28,7 +28,7 @@ with m.If(sig_140MHz):
 	]
 ```
 
-- If the FPGA isn't fast enough at first but contains an internal PLL or MMCM, we can use it to define a new clocksignal that our sync domain will use. This way, we would just need to choose a clock frequency that is fast enough to allow us to relate to the first solution AND that is slow enough to let the FPGA time to complete each calculation on every clock cycle (we won't talk about this subject anymore as it is a quite advanced FPGA programming topic but if you want to learn more anyway, __Steve Kilts__ "Advanced FPGA Design Architecture, Implementation, and Optimization" is a very good guide to solve this kind of issues). In our case, we are working with a _ZedBoard - Zynq SoC Development Board_ so the implementation described underneath can (and probably will) change if you are using a different board.
+- If the FPGA isn't fast enough at first but contains an internal PLL or MMCM, we can use it to define a new clocksignal that our sync domain will use. This way, we would just need to choose a clock frequency that is fast enough to allow us to relate to the first solution AND that is slow enough to let the FPGA time to complete each calculation on every clock cycle (we won't talk about this subject anymore as it is a quite advanced FPGA programming topic but if you want to learn more anyway, __Steve Kilts__ _Advanced FPGA Design Architecture, Implementation, and Optimization_ is a very good guide to solve this kind of issues). In our case, we are working with a _ZedBoard - Zynq SoC Development Board_ so the implementation described underneath can (and probably will) change if you are using a different board.
 
 ```python
 # Here we are working with a 20MHz default clock frequency
@@ -42,8 +42,10 @@ def elaborate(self,platform):
 		platform_clk = platform.request(platform.default_clk)
 		base_clk_freq    = platform.default_clk_frequency
 		
-		# Now, we prefer to use the MMCM instead of the PLL because it allows us to align the input clock
-		# and mmcm output phases (and this is a level of precision we expect when implementing TWSTFT)
+		# Now, we prefer to use the MMCM instead of the PLL 
+		# because it allows us to align the input clock
+		# and mmcm output phases (and this is a level of 
+		# precision we expect when implementing TWSTFT)
 		
 		mmcm_clk_out     = Signal()
 		mmcm_locked      = Signal()
@@ -73,7 +75,7 @@ def elaborate(self,platform):
 			
 			p_CLKOUT0_DIVIDE_F   = mmc_out_div,
 			p_CLKOUT0_DUTY_CYCLE = 0.5,
-			p_CLKOUT0_PHASE      = 0.0, #Aligning the mmcm output phase with the clock input
+			p_CLKOUT0_PHASE      = 0.0, #Align mmcm output phase with clock input
 			
 	
 			i_PWRDWN               = 0,
@@ -105,6 +107,69 @@ so maybe we could use an external signal from this same atomic clock. And in ord
 
 These configurations files are the one you find in the amaranth-boards repository.
 
-#Not done yet for the explanations on this part
+Once you found the one that corresponds to your board, look at the i/o available for your device. In our case, several GPIO are available and, by reading the documantation associated to our ZedBoard, we find that only the A-labelled GPIO is clock capable, so this is the one we will use to replace the FPGA internal clock.
+
+To reference this GPIO, the configuration file of the board gives us the following lines :
+
+```python
+class ZedBoardPlatform(XilinxPlatform):
+    device = "xc7z020"
+    package = "clg484"
+    speed = "1"
+    default_clk = "clk100"
+    
+    resources = [
+        Resource("clk100", 0, Pins("Y9", dir="i"),
+                 Clock(100e6), Attrs(IOSTANDARD="LVCMOS33")),
+
+        Resource("userclk", 0, Pins("AA9", dir="i"), # pmoda.4
+                 Clock(20e6), Attrs(IOSTANDARD="LVCMOS33")),
+        
+        # plus some other resources that we don't care about
+    ]
+    
+    connectors = [
+        Connector("pmoda", 0, "Y11 AA11 Y10 AA9 - - AB11 AB10 AB9 AA8 - -"),
+        Connector("pmodb", 0, "W12 W11  V10 W8  - - V12  W10  V9  V8  - -"),
+        Connector("pmodc", 0, "AB7 AB6  Y4  AA4 - - R6   T6   T4  U4  - -"),
+        Connector("pmodd", 0, "V7  W7   V5  V4  - - W6   W5   U6  U5  - -"),
+    ]
+```
+
+You may change the ```default_clk``` attribute of the class but it is not a very portable behavour and we'll much prefer to use the following solution :
+
+Inside the ```elaborate``` method that we wish to flash on the FPGA, you can instanciate an object called a Resource. It will refer to any one of the Resources described in the config file (may the resource be a button, a led, a switch or a GPIO). 
+
+In this case, to reference the pin on which we are going to plug our new clock, we will add the ressource to the platform argument this way :
+
+```python
+#following the config file extract above, 
+#this is the parameter we should use to reference "userclk"
+conna = ("pmoda",0) 
+
+platform.add_resources([
+		Resource('external_clk', 0,
+			Subsignal('A4_i', 
+				Pins('4', # the AA9 pin is the 4th one described in the connector list of pmoda 
+					conn=conna,
+					dir='i')),
+			Attrs(IOSTANDARD="LVCMOS33"))
+		])
+
+new_clk = platform.request('external_clk',0)
+
+#and from now on, we can access the input signal of the GPIO through
+#		new_clk.A4_i
+# So now we can instanciate our MMCM with :
+
+m.domains.sync = ClockDomain(reset_less=True)
+	
+platform_clk = new_clk.A4_i
+base_clk_freq = 20000000 #20 MHz signal
+
+# etc... finishing the implementation of the elaborate method...
+```
+
+
 
 Next step : [Mixing this signal with the 1-PPS Signal](4_Mixing_Signals.md) 

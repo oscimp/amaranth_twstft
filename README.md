@@ -22,3 +22,8 @@ Creating the electromagnetic signal that will carry the information up to the sa
 
 4. [Mixing Signals](Doc/4_Mixing_Signals.md) :
 Mixing the carrier with our 1-PPS to share the frequency information
+
+5. [Next level, QPSK modulation](Doc/5_another_modulation.md) :
+Stepping up the PSK modulation to transmit twice as much information
+
+6. [Conclusion of the project](Doc/6_Conclusion.md)

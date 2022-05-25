@@ -14,7 +14,6 @@ class Prescaler(Elaboratable):
     Attributes
     ----------
 	output : Signal()
-		a 1 ClockSignal period duration impulse happening with a freqout frequency
     _ticks_per_period : int
 		number of clock ticks between each output rising edge
     _cnt : Signal(32)
@@ -26,10 +25,10 @@ class Prescaler(Elaboratable):
 
 	def __init__(self,freqin,freqout):
 		self._ticks_per_period = ceil(freqin/freqout)
-		#the range notation makes sure we use exactly the good amount of bits to count up to self._ticks_per_period
-		self._cnt = Signal(range(0, self._ticks_per_period), reset=0)
-		self.output = Signal(1, reset=0)
-		self.enable = Signal(1)
+		print(f"freqin {freqin} | freqout {freqout} | ticks per period {self._ticks_per_period}")
+		self._cnt = Signal(range(0, self._ticks_per_period), reset=0,name="presc_counter")
+		self.output = Signal(1, reset=0,name="presc_output")
+		self.enable = Signal(1,name="presc_enable")
 	
 	def elaborate(self, platform):
 		m = Module()
@@ -45,10 +44,7 @@ class Prescaler(Elaboratable):
 			m.d.sync += self._cnt.eq(0)
 		return m
 
-#run "python3 {thisfile}" to start this simulation
-#You can use GTKWave to visualize the result of the simulation below 
-#and check if the architecture defined above is correct
-#(it doesn't mean you won't have any trouble whe flashing on your FPGA as each board may have its own limits)
+
 if __name__ == "__main__":
 	freqin = 10e6
 	dut = Prescaler(freqin,1e6)
