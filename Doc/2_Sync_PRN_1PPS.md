@@ -1,5 +1,5 @@
 # Synchronizing a 1-PPS Signal with our PRN
-
+Back to the [README](../README.md)
 Previous step : [Generating a PRN](1_PRN.md)
 
 Now that we know how to generate a pseudo-random noise, let's talk about how to use it to transfer our time and frequency information!
@@ -21,7 +21,7 @@ We will dive into each one of these points in the following sections.
 
 In radiology, it is rare that the default frequency of our FPGA board is exactly the one we want to use for our modulation. In our case, we are working with a 630MHz clock. So we want to simulate the use of a slower clock... In other words, we need a _Prescaler_. A _Prescaler_ is an electronic block that generates a pulse on its output at regular interval. if we want to go from 630MHz to 2.5 MHz, we need to produce a tick every 252 clock rising edge (252*2.5=630).
 
-Maybe you know how to make a prescaler IRL, but you can also find an amaranth software version of one [here](../1PPS_Sync/Prescaler.py). This one also allows to enable/disable the emission of the output signal through the use of an input signal that should be driven from outside the module.
+Maybe you know how to make a prescaler IRL, but you can also find an amaranth software version of one [here](../Prescaler.py). This one also allows to enable/disable the emission of the output signal through the use of an input signal that should be driven from outside the module.
 
 Then we will use this prescaler to cadence our PRN generation as its impulse will be the signal that drives the LFSR shift. Let's say our FPGA board's frequency is `freqin`, if we want to execute an operation with a frequency `freqout`, we would turn this kind of code :
 

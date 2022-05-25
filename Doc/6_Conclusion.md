@@ -1,5 +1,5 @@
 # In the end
-
-Previous step : [Synchronizing ](5_another_modulation.md)
+Back to the [README](../README.md)
+Previous step : [QPSK modulation ](5_another_modulation.md)
 
 
