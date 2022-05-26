@@ -34,3 +34,5 @@ stepping up the PSK modulation to transmit twice as much information
 steps needed to demodulate the phase-modulated signal using GNU Radio or GNU/Octave
 
 7. [Conclusion of the project](Doc/7_Conclusion.md)
+
+<img src="figures/220525ranging.svg">
