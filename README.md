@@ -8,22 +8,26 @@ To implement such communication, we will here make use of Python library _Amaran
 
 In this documentation, you will find explanations behind the amaranth implementation of TWSTFT and the Amaranth source code associated :
 
-0. [Installation guide for amaranth and cie](Doc/0_Installation.md) :
-If you never programmed on FPGA boards before, this may be useful
+0. [Installation guide for amaranth and cie](Doc/0_Installation.md):
+if you never programmed on FPGA boards before, this may be useful for becoming familiar with the opensource toolchain used in this
+project.
 
-1. [PRN generation](Doc/1_PRN.md) :
-Pseudo Random Noise generation that allows to differenciate signals
+1. [PRN generation](Doc/1_PRN.md):
+Pseudo Random Noise (PRN) generation for spreading the spectrum as needed for accurate timing and differenciating the emitters (CDMA)
 
-2. [Synchronizing PRN with a 1-PPS signal](Doc/2_Sync_PRN_1PPS.md) :
-Making the noise repeat exactly every second to create our 1 Pulse Per Second signal
+2. [Synchronizing PRN with a 1-PPS signal](Doc/2_Sync_PRN_1PPS.md):
+making the noise repeat exactly every second to create our 1 Pulse Per Second (1-PPS) signal
 
-3. [Carrier signal generation](Doc/3_Clk_Generation.md) :
-Creating the electromagnetic signal that will carry the information up to the satellite
+3. [Carrier signal generation](Doc/3_Clk_Generation.md):
+creating the electromagnetic signal that will carry the information (intermediate frequency to be upconverted for a satellite link)
 
-4. [Mixing Signals](Doc/4_Mixing_Signals.md) :
-Mixing the carrier with our 1-PPS to share the frequency information
+4. [Mixing Signals](Doc/4_Mixing_Signals.md):
+mixing the carrier with our 1-PPS to share the frequency information
 
-5. [Next level, QPSK modulation](Doc/5_another_modulation.md) :
-Stepping up the PSK modulation to transmit twice as much information
+5. [Next level, QPSK modulation](Doc/5_another_modulation.md):
+stepping up the PSK modulation to transmit twice as much information
 
-6. [Conclusion of the project](Doc/6_Conclusion.md)
+6. [Demodulating the N-PSK modulated signal using GNU Radio](Doc/6_Demodulation.md):
+steps needed to demodulate the phase-modulated signal using GNU Radio or GNU/Octave
+
+7. [Conclusion of the project](Doc/6_Conclusion.md)
