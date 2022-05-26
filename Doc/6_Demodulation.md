@@ -10,7 +10,8 @@ complex baseband signal s(t)=exp(j*2pi*df*t+j*phi(t)) with df the frequency
 difference between emitter and receiver frequencies (to be cancelled for phase
 demodulation) and the phase phi(t)=2*pi*k/N, k=[0:N-1], carrying the time-dependent
 information, becomes after computing the N-th power: 
-s^N(t)=exp(j*2*pi*N*df*t+j*N*phi(t)) and since N*pi is N*2*pi*k/N=k*2*pi=0 since 
+<img src="https://render.githubusercontent.com/render/math?math=s^N(t)=exp(j*2*pi*N*df*t+j*N*phi(t))">
+and since N*pi is N*2*pi*k/N=k*2*pi=0 since 
 k is an integer, we end up with a clean carrier at N*df: s^N(t)=exp(j*2*pi*N*df*t)
 
 Either cancelling df or dividing the frequency of s^N(t) reproduces a clear copy
