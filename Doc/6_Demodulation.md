@@ -10,15 +10,15 @@ complex baseband signal s(t)=exp(j*2pi*df*t+j*phi(t)) with df the frequency
 difference between emitter and receiver frequencies (to be cancelled for phase
 demodulation) and the phase phi(t)=2*pi*k/N, k=[0:N-1], carrying the time-dependent
 information, becomes after computing the N-th power: 
-<img src="https://render.githubusercontent.com/render/math?math={s^N(t)=exp(j*2*pi*N*df*t+j*N*phi(t))}">
-and since N*pi is N*2*pi*k/N=k*2*pi=0 since 
-k is an integer, we end up with a clean carrier at N*df: s^N(t)=exp(j*2*pi*N*df*t)
+``s^N(t)=exp(j*2*pi*N*df*t+j*N*phi(t))`` and since ``N*pi`` is ``N*2*pi*k/N=k*2*pi=0`` 
+since k is an integer, we end up with a clean carrier at ``N*df``: 
+``s^N(t)=exp(j*2*pi*N*df*t)``
 
-Either cancelling df or dividing the frequency of s^N(t) reproduces a clear copy
+Either cancelling df or dividing the frequency of ``s^N(t)`` reproduces a clear copy
 of the carrier and mixing with the incoming signal cancels the time varying 
-argument of the trigonometric function to only yield exp(j*phi(t)). These 
+argument of the trigonometric function to only yield ``exp(j*phi(t))``. These 
 operations are achieved with GNU Radio using the Costas loop whose bandwidth
-is advised in the documentation to be about 2*pi/100 and whose order is the N in
+is advised in the documentation to be about ``2*pi/100`` and whose order is the N in
 N-PSK, i.e. the number of possible phase values encoding the signal. The
 GNU Radio Companion flowchart is
 
@@ -46,7 +46,7 @@ QPSK modulation (N=4) with a Costas loop set to the fourth order:
 <img src="../figures/GNURadio_demodulation/qpsk_costas4.png">
 
 Using GNU/Octave, the N-th power of the signal ``s`` is computed with ``s.^N``,
-again leading to a clean carrier located at N*df when plotting ``abs(fftshift(fft(s.^N)))``.
+again leading to a clean carrier located at ``N*df`` when plotting ``abs(fftshift(fft(s.^N)))``.
 The X-axis of this plot can be graduated with a frequency generated as ``linspace(-fs/2,fs/2,length(s))``
 with fs the sampling frequency.
 
