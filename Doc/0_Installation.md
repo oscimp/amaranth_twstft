@@ -1,6 +1,8 @@
 # Installation guide for Amaranth and cie
 
-This is the first time you're using amaranth? Just install the following softwares if you haven't already.
+This project will be using the [Amaranth](https://amaranth-lang.org/docs/amaranth/latest/) framework for describing the hardware configuration of
+an FPGA. Amaranth requires multiple dependencies to be installed before running, as described below. Each software has its own dependencies: please 
+refer to their respective README.md on their github repository for the list of packages to be installed on your GNU/Linux distribution.
 
 ### git :
 Git is a version control manager that provides a lot of tools to
@@ -11,7 +13,7 @@ Git is a version control manager that provides a lot of tools to
 Most of the things you'll need are just github repositories that you can clone. 
 You may already be familiar with git and github, but if you're not, the first step is to install [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git). 
 Moreover, knowing how to use git for your projects can be a big advantage. So also feel free to [learn more](https://git-scm.com/book/en/v2/Getting-Started-About-Version-Control) about this software. 
-
+On Debian or Ubuntu GNU/Linux, ``sudo apt install git`` will install git-related commands.
 
 ### Python 3 :
 Amaranth is a python package so if the interpreter is not installed, you are about to face some difficulties programming in this language.
