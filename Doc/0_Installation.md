@@ -79,6 +79,10 @@ pip3 install --user -e .
 
 ## And now?
 
-Once all software and libraries are installed, you should be ready to code with amaranth! So let's jump onto this project of TWSTFT ! 
+Once all software and libraries are installed, you should be ready to code with amaranth! 
+
+The current version of the TWSTFT implementation described in this documentation is implemented on a [ZebBoard](https://www.avnet.com/wps/portal/us/products/avnet-boards/avnet-board-families/zedboard/). Transfering the gateware to the board through the virtual JTAG link using the microB USB connector is achieved thanks the [OpenFPGALoader](https://trabucayre.github.io/openFPGALoader/guide/install.html). Make sure to install the proper udev rules to access the low-level USB functionalities needed to communicate with the board.
+
+The ``flashZedBoard.py`` script should help you configure, synthesize and transfer the program to the board. The script will accept arguments including the PRN length, PRN register size, seed value, or dumping the PRN in a binary file as decribed with  the ``--help`` argument.
 
 Next step : [Pseudo-Random Noise generation](1_PRN.md)
