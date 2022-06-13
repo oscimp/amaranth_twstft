@@ -114,4 +114,51 @@ picks relevant bits and improve the LUT's truth table).
 \center
 \includegraphics[width=0.7\textwidth]{./NCOOO.pdf}
 \end{frame}
+
+\begin{frame}[fragile,noframenumbering]\frametitle{hardware aspects}
+
+Amaranth gatewares are (more or less) hardware independant\\
+$\Rightarrow$ a platform description is required
+
+see: \url{https://github.com/amaranth-lang/amaranth-boards}
+
+\begin{minipage}[t]{\linewidth}
+\begin{minipage}{.5\linewidth}
+Platform used for development: \\
+{\tt Zedboard} ({\tt Xilinx Zynq 7020}) with:
+{\footnotesize
+\begin{verbatim}
+ZedBoardPlatform().build(MyRadioEmitter(),
+                         do_program=True)
+\end{verbatim}
+}
+
+Moving to {\tt radiona ULX3S}:
+{\footnotesize
+\begin{verbatim}
+ULX3S_85F_Platform().build(MyRadioEmitter(),
+                           do_program=True)
+\end{verbatim}
+}
+
+Requires to adapt/change the PLL instance:
+{\footnotesize
+\begin{verbatim}
+def elaboratable(self, platform):
+    [...]
+    if type(platform) == ZedBoardPlatform:
+        # Xilinx PLL/MMCM
+    else: # ULX3S
+        # Lattice ECP5 PLL
+\end{verbatim}
+}
+\end{minipage}
+\begin{minipage}{.5\linewidth}
+\center
+\includegraphics[width=0.7\textwidth]{./ulx3s-legend.png}\\
+@source: radiona
+\end{minipage}
+\end{minipage}
+
+\end{frame}
 \end{document}
