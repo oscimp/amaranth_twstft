@@ -4,26 +4,25 @@ Previous step : [Generating a PRN](1_PRN.md)
 
 Now that we know how to generate a pseudo-random noise, let's talk about how to use it to transfer our time and frequency information!
 
-TWSTFT transfers frequency and time information through the use of a 1 Pulsation Per Second (1-PPS) signal accompanied by a 2.5MHz clock. The idea behind this is that we have a very precise clock giving us a signal with a rising edge exactly every second. And we want to start modulating our carrier signal with our BPSK modulation at that precise moment. The frequency that defines the modulation is the 2.5 MHz signal, also given by the so-said very precise clock.
+TWSTFT transfers frequency and time information through the use of a 1 Pulse Per Second (1-PPS) signal accompanied by a 10MHz reference clock. A reference clock signal is used to clock the FPGA while the rising edge of the PPS defines every second. We must start modulating the carrier signal with a phase modulation at the rising edge of the PPS and run the pseudo random sequence from there. The PRN bitrate is 2.5 MHz or one fourth of the reference clock to meet the analog bandwidth of the allocated radiofrequency link.
 
-Basically, the goal is to restart generating our PRN everytime we receive our 1-PPS signal. But sadly, the LFSR we developped earlier is not that appropriated to enable satellite communication because of a few details. To improve it, here are a some things we can do :
-- Making it generate its PRN at a different rate from the FPGA's clock (in fact, it should be based on the 2.5 MHz signal),
+The objective of the gateware is to start generating our PRN everytime we receive our 1-PPS signal. But sadly, the LFSR we developped earlier is not that appropriated to enable satellite communication because of a few details. To improve it, here are a some things we can do:
+- Making it generate its PRN at a different rate from the FPGA clock (in fact, it should be based on the 2.5 MHz signal),
 - For comfort reason, we want to make the use of our LFSR as versatile as possible so it should allow the user to change the taps we use while the device is running.
 - Making it possible to synchronize its PRN emission everytime we receive a 1-PPS signal, which implies :
     - stop emitting PRN when the LFSR has produce an arbitrary number of bits (for example, 2.5e6 bits, because it should be the number of bits we generate during a second when our PRN rate is 2.5MHz),
     - start emitting PRN if we receive a PPS Signal,
     - immediatly interrupt the current sequence to restart it if we receive a PPS Signal.
 
-
 We will dive into each one of these points in the following sections.
 
 ## Slowing down the LFSR with a prescaler
 
-In radiology, it is rare that the default frequency of our FPGA board is exactly the one we want to use for our modulation. In our case, we are working with a 630MHz clock. So we want to simulate the use of a slower clock... In other words, we need a _Prescaler_. A _Prescaler_ is an electronic block that generates a pulse on its output at regular interval. if we want to go from 630MHz to 2.5 MHz, we need to produce a tick every 252 clock rising edge (252*2.5=630).
+Selecting the radiofrequency carrier freaquency as the rate clocking the FPGA board would be inefficient and restrictive. In our case, we are working with a 630MHz clock. So we want to simulate the use of a slower clock... In other words, we need a _prescaler_. A _prescaler_ is an electronic block that generates a pulse on its output at regular interval. if we want to go from 630MHz to 2.5 MHz, we need to produce a tick every 252 clock rising edge (252x2.5=630).
 
-Maybe you know how to make a prescaler IRL, but you can also find an amaranth software version of one [here](../Prescaler.py). This one also allows to enable/disable the emission of the output signal through the use of an input signal that should be driven from outside the module.
+An implementation of a prescaler in the amaranth language is provided [here](../Prescaler.py). This program also allows to enable/disable the emission of the output signal through the use of an input signal that should be driven from outside the module.
 
-Then we will use this prescaler to cadence our PRN generation as its impulse will be the signal that drives the LFSR shift. Let's say our FPGA board's frequency is `freqin`, if we want to execute an operation with a frequency `freqout`, we would turn this kind of code :
+We will use this prescaler to clock the PRN generator as its impulse will be the signal that drives the LFSR shift register. Considering that the FPGA board input frequency is `freqin`, if we want to execute an operation with a frequency `freqout`, we would turn this kind of code:
 
 ```python
 #shifting operation
@@ -45,11 +44,11 @@ with m.If(presc.output):
 
 ## Making the taps change on the go
 
-Instead of having to always specify the taps to use, it could be useful to change the value of our taps signal by the time the device is running. In order to do it, we can define a memory space in our Module that will be filled by all the taps we may use. 
+Instead of having to always specify the taps to use, it could be useful to change the value of the taps by the time the device is running. In order to do it, we can define a memory space in the Module that will be filled by all the taps we may use. 
 
-Such taps values were found by using the algorithms of the [prn.py](../prn.py) file.
+Such tap values were found by using the algorithms of the [prn.py](../prn.py) file.
 
-Then, we add a "taps" parameter to the PrnGenerator which default value is 0 (as explained in the [previous section](./1_PRN.md), 0 can not be used as taps for our PRN Generation) to know if users want to define the taps themself or if they want to dynamically choose the taps. This will result  in the following construction of the class.
+Then, we add a "taps" parameter to the PrnGenerator whose default value is 0 (as explained in the [previous section](./1_PRN.md), 0 can not be used as taps for our PRN Generation) to know if users want to define the taps themselves or if they want to dynamically choose the taps. This will result  in the following construction of the class.
 
 ```python
 # values of the 32 m-sequence generator taps for a 20-bits LFSR
@@ -103,29 +102,29 @@ class PrnGenerator20(Elaboratable):
 		#finishinng the implementation of the elaborate method ...
 ```
 
-With this implementation, as long as we build our instance of <code>PrnGenerator20</code> with no defined value for <code>taps</code>, we can change the taps we use just by changing the value of <code>self.tsel</code> signal !
+With this implementation, as long as the instance of <code>PrnGenerator20</code> is built with no defined value for <code>taps</code>, selecting the taps is achieved by changing the value of <code>self.tsel</code> signal !
 
-In the finished version of the project, the taps list is stored in the `.pickle` file so that there is no need to hard code these values that we are able to compute dynamically.
+In the finished version of the project, the tap list is stored in the `.pickle` file so that there is no need to hard code these values that we are able to compute dynamically.
 
 ## Synchronizing the LFSR with the 1-PPS signal
 
 ### Detecting the 1-PPS signal rise
 
-The 1-PPS signal can occur in 2 different ways :
-- The 1-PPS is high shorter than a clock cycle of the FPGA
-- The 1-PPS is high longer than a clock cycle of the FPGA
+The 1-PPS signal can occur in 2 different ways:
+- the 1-PPS is high shorter than a clock cycle of the FPGA
+- the 1-PPS is high longer than a clock cycle of the FPGA
 
 
-In the first situation, it is possible that we just miss the 1-PPS because it didn't stay in the high state long enough for us to detect it with :
+In the first situation, it is possible that we just miss the 1-PPS because it did not stay in the high state long enough for us to detect it with:
 ```python
 with m.If(pps):
     m.d.sync += [
         # Do something
     ]
 ```
-To avoid this kind of problem, we will choose a clock frequency that is high enough so that it never happens (ie : 630MHz in our case).
+To avoid this kind of problem, a clock frequency that is high enough is selected so that the former case never happens (ie 630MHz in our case).
 
-However, we can still manage the second situation. The risk here, would be that the `pps` signal is lasting more than one clock cycle making the previously suggested code execute several times instead of just one. The trick to overcome this problem is to _synchronously_ write down the value of the 1-PPS signal. When doing this, on the next rising edge of the FPGA clock, we can compare the old 1-PPS value with the new one. If they are different and the new one is high, then we just detected a rising edge of the 1-PPS :
+However, we can still manage the second situation. The risk here, would be that the `pps` signal is lasting more than one clock cycle making the previously suggested code execute several times instead of just once. The trick to overcome this problem is to _synchronously_ write down the value of the 1-PPS signal. When doing this, on the next rising edge of the FPGA clock, we can compare the old 1-PPS value with the new one. If they are different and the new one is high, then we just detected a rising edge of the 1-PPS :
 ```python
 m.d.sync += old_pps.eq(self.pps)
 
@@ -157,11 +156,11 @@ This way, we really make sure there is no problem to detect the PPS rising edge.
 
 ### Generation of the PRN triggered by the 1-PPS signal
 
-To keep our code as modular as possible, we will prefer to develop separatly the implementation of our PRN generator and the synchronization of it with the 1-PPS.
+To keep our code as modular as possible, we will prefer to develop separatly the implementation of the PRN generator and its synchronization with the 1-PPS.
 
-As we need to get the LFSR to stop and go on demand, we can add to it an `enable` signal that will keep the LFSR in its initial state for as long as `enable` is low. When it goes high, the LFSR starts generating the PRN.
+In order for the LFSR to stop and run on demand, an `enable` signal is added in order to keep the LFSR in its initial state as long as `enable` remains in the low state. When it goes high, the LFSR starts generating the PRN.
 
-So in the end, the elaborate method of our PrnGenerator looks like this :
+So in the end, the elaborate method of our PrnGenerator looks like this:
 
 ```python
 	def elaborate(self,platform):
@@ -190,11 +189,11 @@ So in the end, the elaborate method of our PrnGenerator looks like this :
 		return m
 ```
 
-In this portion of code, we remark that there are 3 signals used in our LFSR that are not directly driven within the implementation of it. This means we will have to set ourself the values of `self.enable` and  `self.next` (and perhaps `self.tsel`) from _outside_ the class. Which is fine because we need to use our own prescaler as a `next` signal, and our 1-PPS rising edge as the deassertion condition for the `enable` signal.
+In this portion of code, we notice that there are 3 signals used in the LFSR that are not directly driven within its implementation. This means we will have to set ourself the values of `self.enable` and  `self.next` (and perhaps `self.tsel`) from _outside_ the class. Which is fine because we need to use our own prescaler as a `next` signal, and our 1-PPS rising edge as the deassertion condition for the `enable` signal.
 
 ### Making the PPS, Prescaler and LFSR cohabit
 
-As we now have the Prescaler and the LFSR in two different classes, we may want to create a third module to merge them into a uniq module that is receiving a PPS and generating the PRN according to it. So it would only have one input signal (1-PPS) (or two inputs if the taps are dynamically chosen) and one output signal. I should also be parametrized with :
+As we now have the Prescaler and the LFSR in two different classes, we may want to create a third module to merge them into a uniq module that is receiving a PPS and generating the PRN according to it. So it would only have one input signal (1-PPS) (or two inputs if the taps are dynamically chosen) and one output signal. I should also be parametrized with:
 + the parameters of the LFSR,
 + the number of bits we want to generate each time we receive a pps,
 + the frequency of the clock we use and the frequency of the PRN generation we want. 
@@ -286,4 +285,4 @@ class Synchronizer(Elaboratable):
 
 And here we are ! By now, our synchronization should be operational.
 
-Next step : [Carrier signal generation](3_Carrier_Generation.md)
+Next step: [Carrier signal generation](3_Carrier_Generation.md)
