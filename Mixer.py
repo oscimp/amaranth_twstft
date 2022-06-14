@@ -53,7 +53,7 @@ class Mixer(Elaboratable):
 	
     """
 
-	def __init__(self, bit_len, noise_len, mode=1, taps = 0, seed = 0x1, freqout=2500000):
+	def __init__(self, bit_len, noise_len, taps = 0, seed = 0x1, freqout=2500000):
 	
 		self.carrier0 = Signal()
 		self.carrier90 = Signal()
@@ -62,7 +62,6 @@ class Mixer(Elaboratable):
 		self._seed = seed
 		self._noise_len = noise_len
 		self._bit_len = bit_len
-		self._mode = mode
 		self._freqout = freqout
 		
 		if taps==0:
@@ -144,7 +143,7 @@ class Mixer(Elaboratable):
 					Subsignal('B3_o', Pins('3', conn = connb, dir='o')),
 					Subsignal('B4_o', Pins('4', conn = connb, dir='o')),
 					
-					Subsignal('C1_o', Pins('1', conn = connc, dir='o')),
+					Subsignal('C1_i', Pins('1', conn = connc, dir='i')),
 					Subsignal('C4_i', Pins('4', conn = connc, dir='i')),
 					
 					Subsignal('D4_o', Pins('4', conn = connd, dir='o')),
@@ -155,6 +154,8 @@ class Mixer(Elaboratable):
 		
 		pins = platform.request('pins',0)
 		
+		
+		
 		#setting noise duration
 		assert self._noise_len > 1
 		
@@ -164,8 +165,7 @@ class Mixer(Elaboratable):
 															self._freqout,
 															self._bit_len, 
 															noise_len=self._noise_len, 
-															seed = self._seed,
-															mode = self._mode )
+															seed = self._seed)
 			m.d.comb += prn_gen.tsel.eq(self.tsel)
 		else :
 			m.submodules.prn_gen = prn_gen = Synchronizer(clock_freq, 
@@ -173,60 +173,70 @@ class Mixer(Elaboratable):
 															self._bit_len, 
 															noise_len=self._noise_len, 
 															taps =self.taps, 
-															seed = self._seed,
-															mode = self._mode )
-		
-		
+															seed = self._seed)
+				
+				
 		carrier_selector = Signal()
-		m.d.sync += carrier_selector.eq(~carrier_selector)
+		m.d.sync += carrier_selector.eq(~carrier_selector) #alternating the carrier to modulate
 		
 		with m.If(carrier_selector):
 			m.d.sync += [
 				self.carrier0.eq(~self.carrier0),
-				self.modulatedI.eq(prn_gen.output ^ self.carrier0)
+				self.modulatedI.eq(prn_gen.output ^ self.carrier0) #alternating the carrier to modulate
 			]
 
 			
 		with m.Else():
 			m.d.sync += [
 				self.carrier90.eq(~self.carrier90),
-				self.modulatedQ.eq(prn_gen.output2 ^ self.carrier90)
+				self.modulatedQ.eq(prn_gen.output2 ^ self.carrier90) #alternating the carrier to modulate
 			]
 
-		
-		pps_1 = Signal()
-		pps_2 = Signal()
-		pps_old = Signal()
-		rise_pps = Signal()
-		m.d.sync += [
-			pps_1.eq(pins.C4_i),
-			pps_2.eq(pps_1),
-			pps_old.eq(pps_2)
-		]
-		m.d.comb += rise_pps.eq((pps_2 ^ pps_old) & pps_2)
-		m.d.comb += prn_gen.pps.eq(pins.C4_i)
-		
-			
-		debug = Signal()
-		with m.If(pps_1):
-			m.d.sync+=debug.eq(~debug)
+		#allowing to switch between BPSK and QPSK
+		switch_mode = platform.request("switch", 0) #F22
 		
 		m.d.comb += [
-			pins.D1_o.eq(debug),
+			prn_gen.pps.eq(pins.C4_i),
 		]
 		
-				
-		if self._mode == 2:
-			m.d.sync += [
-				#pins.D4_o.eq(Mux(prn_gen.output ^ prn_gen.output2, self.modulatedI,self.modulatedQ)),
-				pins.D4_o.eq(self.modulatedI & self.modulatedQ),
-				pins.B1_o.eq(prn_gen.output), #debug reasons
-				pins.B2_o.eq(prn_gen.output2), #debug reasons
+		with m.If(pins.C1_i):# put to 1 if you want to start generating on the pps rising edge
+			#Defining if we are using BPSK (1) or QPSK (2)
+			with m.If(switch_mode.i):
+				m.d.comb+= prn_gen.mode.eq(1)
+				m.d.sync += [
+#					pins.D4_o.eq(Mux(prn_gen.output ^ prn_gen.output2, self.modulatedI,self.modulatedQ)),
+					pins.D4_o.eq(self.modulatedI & self.modulatedQ),
+#					pins.B1_o.eq(prn_gen.output), #debug reasons
+#					pins.B2_o.eq(prn_gen.output2), #debug reasons
+				]
+			with m.Else():
+				m.d.comb+= prn_gen.mode.eq(0)
+				m.d.sync += [
+#					pins.B1_o.eq(prn_gen.output), #debug reasons
+					pins.D4_o.eq(self.modulatedI),
+				]
+		if 0==0 : #debug ?
+		
+			m.submodules.vingtmega = presc20MHz = Prescaler(clock_freq,20000000)
+			m.submodules.highstate200ns = hs200ns = GlobalCounter(56000000)
+			the_pps_we_love = Signal()
+			dixmega = Signal()
+			
+			m.d.comb += [
+				presc20MHz.enable.eq(1),
+				hs200ns.tick.eq(1),
+				the_pps_we_love.eq(hs200ns.output),
 			]
-		elif self._mode == 1 :
-			m.d.sync += [
-				pins.B1_o.eq(prn_gen.output), #debug reasons
-				pins.D4_o.eq(self.modulatedI),
-			]	
+			with m.If(presc20MHz.output):
+				m.d.sync += dixmega.eq(~dixmega)
+			
+			m.d.sync+=[
+				hs200ns.reset.eq(prn_gen.rise_pps),
+				pins.B1_o.eq(the_pps_we_love),
+				pins.B2_o.eq(dixmega),
+				pins.B3_o.eq(pins.C4_i),
+				pins.B4_o.eq(new_clk.A4_i),
+#				pins.C1_o.eq(mmcm_locked),
+			]
 		return m
 
