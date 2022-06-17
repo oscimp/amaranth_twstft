@@ -68,22 +68,22 @@ class Synchronizer(Elaboratable):
 		outputs 0 when it reaches it, 1 otherwise. 
 		Can be resetted through its reset input signal.
 		
-	_mode :
-		1 for BPSK modulation (default)
-		2 for QPSK modulation
+	mode : Signal()
+		0 for BPSK modulation
+		1 for QPSK modulation
 		number of bits to shift the LFSR every 1/freqout seconds
 		it also multiplies the frequency of the PRN generation to keep the same prn_rate
 	
 	shifting : Signal()
 		output signal indicating that the LFSR is shifting
-	
     """
 
-	def __init__(self, freqin, freqout, bit_len, noise_len, mode=1, taps=0, seed = 0x1):
+	def __init__(self, freqin, freqout, bit_len, noise_len, taps=0, seed = 0x1):
 		self.pps = Signal(name="sync_pps_input")
 		self.output = Signal(name="sync_output")
 		self.output2 = Signal(name="sync_output2")
 		self.shifting = Signal(name="shifting_prn_signal")
+		self.mode = Signal()
 		
 		if taps == 0:
 			self.dynamic_taps = True
@@ -93,55 +93,88 @@ class Synchronizer(Elaboratable):
 			self.taps = taps
 		
 		self.seed = seed
-		self.noise_len = noise_len * mode
+		self.noise_len = noise_len
 		self._freqin = freqin
 		self._freqout = freqout
 		self._bit_len = bit_len
-		self._cnt = GlobalCounter(int(ceil(log(self.noise_len+1,2))), self.noise_len)
-		self._mode = mode
+		self._cnt = GlobalCounter(self.noise_len)
+		self.rise_pps = Signal()
 	
 	def elaborate(self, platform):
 		m = Module()
 		
+		#detecting the pps rising edge by buffering it
 		pps_1 = Signal()
 		pps_2 = Signal()
 		pps_old = Signal()
-		rise_pps = Signal()
 		m.d.sync += [
 			pps_1.eq(self.pps),
 			pps_2.eq(pps_1),
 			pps_old.eq(pps_2)
 		]
-		m.d.comb += rise_pps.eq((pps_2 ^ pps_old) & pps_2)
+		m.d.comb += self.rise_pps.eq((pps_2 ^ pps_old) & pps_2)
 		
+		#defining the taps to use
 		if self.dynamic_taps :
 			m.submodules.prn = prn = PrnGenerator(self._bit_len, seed = self.seed)
 			m.d.comb += prn.tsel.eq(self.tsel)
 		else :
 			m.submodules.prn = prn = PrnGenerator(self._bit_len, taps=self.taps, seed=self.seed)
 		
+		
+		#defining the frequency of the prn generation
 		m.submodules.presc = presc = Prescaler(self._freqin, self._freqout )
 		
+		#Making the prn generate 2 bits instead of one when the prescaler ticks 
+		#(for QPSK modulation only)
+		#and signaling the LFSR is currently shifting
 		next_qpsk = Signal()
-		if self._mode == 2 :
+		m.d.sync+= next_qpsk.eq(0)
+		with m.If(self.mode):
 			m.d.sync += next_qpsk.eq(presc.output)
+		m.d.comb += [
+			self.shifting.eq(presc.output | next_qpsk),
+			prn.next.eq(self.shifting),
+		]
 		
-		m.submodules.globCnt = self._cnt
+		#counting the number of prn bits generated
+		m.submodules.globCnt = self._cnt 
+		#(counting 2 times slowlier when QPSK modulation
+		#because 1 sample = 2 bits for QPSK)
+		cnt_tick = Signal()
+		toggled = Signal()
+		m.d.comb+= [
+			cnt_tick.eq(toggled & presc.output),
+			self._cnt.tick.eq(cnt_tick),
+		]
+		with m.If(self.mode):
+			m.d.sync += toggled.eq(toggled)	
+			with m.If(presc.output):
+				m.d.sync += toggled.eq(~toggled)
+		with m.Else():
+			m.d.sync+=toggled.eq(1)
 		
+		
+		#enabling prn generation when the counter is still active 
+		#and when pps isn't rising
+		m.d.comb += [
+			presc.enable.eq(self._cnt.output & ~self.rise_pps),
+			prn.enable.eq(self._cnt.output & ~self.rise_pps),
+		]
+		
+		#resetting the counter when the pps is received
+		m.d.comb += self._cnt.reset.eq(self.rise_pps)
+		
+		
+		#outputing the signals I and Q 
+		# and updating them only when the LFSR isn't shifting
 		old_output = Signal()
 		old_output2 = Signal()
 		
 		m.d.comb += [
-			self.shifting.eq(presc.output | next_qpsk),
-			prn.next.eq(self.shifting),
-			self._cnt.tick.eq(presc.output),
-			presc.enable.eq(self._cnt.output & ~rise_pps),
-			prn.enable.eq(self._cnt.output & ~rise_pps),
 			self.output.eq(old_output),
 			self.output2.eq(old_output2)
 		]
-		
-		
 		m.d.sync += [
 			old_output.eq(old_output),
 			old_output2.eq(old_output2)
@@ -151,8 +184,6 @@ class Synchronizer(Elaboratable):
 				old_output.eq(prn.output),
 				old_output2.eq(prn.output2)
 			]
-			
-		m.d.comb += self._cnt.reset.eq(rise_pps)
 		
 		return m
 
@@ -165,7 +196,6 @@ if __name__ == "__main__" :
 	parser.add_argument("--noiselen", help="length of the PRN sequence", type=int)
 	parser.add_argument("--seed", help="initial value of the LFSR", type=int)
 	parser.add_argument("--taps", help="taps positions for the LFSR", type=int)
-	parser.add_argument("--mode", help="mode BPSK (1) or QPSK(2)",type=int)
 	args = parser.parse_args()
 	if args.bitlen :
 		b = args.bitlen
@@ -183,12 +213,7 @@ if __name__ == "__main__" :
 		t = args.taps
 	else:
 		t = 0
-	if args.mode :
-		m = args.mode
-	else :
-		m = 1
-
-	dut = Synchronizer(100000,25000, bit_len = b, seed = s, taps = t, noise_len=n, mode=m)
+	dut = Synchronizer(100000,25000, bit_len = b, seed = s, taps = t, noise_len=n)
 	sim = Simulator(dut)
 	
 	def proc():
@@ -206,20 +231,21 @@ if __name__ == "__main__" :
 		#waiting 1 second (
 		for i in range(100000):
 			yield Tick()
-		print("3 sec")
+		print("1 sec")
+		
 		#simulating an interrupted pps 
 		yield dut.pps.eq(1)
 		yield Tick()
 		yield dut.pps.eq(0)
 		for i in range(50000):
 			yield Tick()
-		print("3.5 sec")
+		print(".5 sec")
 		yield dut.pps.eq(1)
 		yield Tick()
 		yield dut.pps.eq(0)
 		for i in range(100000):
 			yield Tick()
-		print("4.5 sec")
+		print("1 sec")
 		#simulating a regular pps
 		for j in range(3):
 			yield dut.pps.eq(1)

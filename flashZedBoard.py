@@ -66,7 +66,7 @@ class ZedBoardPlatform(XilinxPlatform):
 #	bootgen -w -image toto.bif -arch zynq -process_bitstream bin
 #	mount /mnt/removable
 #	cp build/top.bit.bin / mnt/removable/system.bit.bin
-#	unmount /mnt/removable
+#	umount /mnt/removable
 
 if __name__ == "__main__":
     from Mixer import *
@@ -74,7 +74,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("bitlen", help="number of bits of the LFSR", type=int)
     parser.add_argument("noiselen", help="length of the PRN sequence", type=int)
-    parser.add_argument("mode", help="BPSK (1) or QPSK (2)", type=int)
     parser.add_argument("-s","--seed", help="initial value of the LFSR (default : 1)", type=int)
     parser.add_argument("-t","--taps", help="taps positions for the LFSR (if not defined, allows to dynamically define taps (currently not supported so default taps will be the smallest msequence generator taps))", type=int)
     parser.add_argument("-m","--modfreq", help="frequency of the PSK modulation (Herz) (default :2.5e6)", type=int)
@@ -98,8 +97,8 @@ if __name__ == "__main__":
     else:
         f = 2500000
     if args.print :
-        print("see ./automatically_generated_prn.bin")
-        write_prn_seq("automatically_generated_prn.bin", args.bitlen, t, seed=s, mode=args.mode, seqlen = args.noiselen)
+        write_prn_seq(args.bitlen, t, seed, seqlen = args.noiselen)
+        exit()
     if args.verbose:
         print("bit length of the LFSR : "+str(args.bitlen))
         print("number of bits generated per pps signal received : "+ str(args.noiselen))
@@ -114,7 +113,6 @@ if __name__ == "__main__":
                             Mixer(
                                 args.bitlen,
                                 args.noiselen, 
-                                mode = args.mode,
                                 taps = t, 
                                 seed = s, 
                                 freqout=f

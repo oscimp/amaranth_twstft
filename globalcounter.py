@@ -19,9 +19,6 @@ class GlobalCounter(Elaboratable):
     Attributes
     ----------
     
-    counter_width :positive integer
-    	number of bits to use for the counter
-    
     max_val : positive integer
     	the counter counts up to this value
     	
@@ -34,21 +31,17 @@ class GlobalCounter(Elaboratable):
 	tick : Signal()
 		input signal driving the counter speed
 	
-	counter : Signal(counter_width)
+	counter : Signal(range(max_val))
 		the value of the counter
 	
 	
     """
-	def __init__(self, counter_width, max_val):
-		assert max_val < pow(2,counter_width)
-		self._counter_width = counter_width
+	def __init__(self, max_val):
 		self._max_val = max_val
 		self.reset = Signal()
 		self.tick = Signal()
 		self.output = Signal()
-		if self._max_val < 0 :
-			self._max_val = pow(2,counter_width)
-		self.counter = Signal(self._counter_width, reset=0, name="globalCounter")
+		self.counter = Signal(range(max_val), reset=0, name="globalCounter")
 		
 	def elaborate(self, platform):
 		m = Module()
