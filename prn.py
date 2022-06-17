@@ -59,18 +59,26 @@ def m_seq_codes(bit_len, limit = 10):
 				break
 	return codes
 
-def write_prn_seq(file, bitlen, code, seed=1, seqlen = 2500000):
-	"""creates a file with the PRN sequence associated to the parameters"""
-	with open(file,"wb") as f:
+def write_prn_seq( bitlen, code, seed=1, seqlen = 2500000):
+	"""creates files with the PRN sequences associated to the parameters"""
+	with open(f"prn{code}bpsk{bitlen}bits.bin","wb") as f:
 		v = seed
+		print("writing BPSK sequence")
 		for i in range(seqlen):
 			f.write((v%2).to_bytes(1,byteorder='big'))
 			v = nextstate(v,code,bitlen)
 		f.close()
-
-
+		
+	with open(f"prn{code}qpsk{bitlen}bits.bin","wb") as f:
+		v = seed
+		print("writing QPSK sequence")
+		for i in range(seqlen*2):
+			f.write((v%2).to_bytes(1,byteorder='big'))
+			v = nextstate(v,code,bitlen)
+		f.close()
+	print(f"see ./prn{code}(bpsk|qpsk){bitlen}bits.bin")
+	
 def taps_autofill(bit_len, nbtaps,save_file=pickle_file):
-	"""saves {nbtaps} {bit_len} bits taps inside the parameter defined pickle_file"""
 	global taps_dict
 	if (bit_len in taps_dict and nbtaps <= len(taps_dict[bit_len])) :
 		print(f"{bit_len} bits taps already saved)")
@@ -89,9 +97,6 @@ def taps_autofill(bit_len, nbtaps,save_file=pickle_file):
 
 
 def set_taps(bit_len,taps, save_file=pickle_file):
-	"""saves the parameter bit_len taps list inside the parameter defined pickle_file
-	If the pickle file already contains taps for this bit length, it saves the new taps 
-	only if there are more taps inside"""
 	global taps_dict
 	print("Checking for saved taps...")
 	if exists(save_file) :
@@ -117,7 +122,6 @@ def set_taps(bit_len,taps, save_file=pickle_file):
 		f.close()
 
 def get_taps(bit_len,save_file=pickle_file):
-	"""returns the taps saved in the pickle file for the parameter defined nuber of bits"""
 	global taps_dict
 	if bit_len in taps_dict :
 		return taps_dict[bit_len]
@@ -196,7 +200,7 @@ class PrnGenerator(Elaboratable):
 		
 		# initializing taps when dynamically selected 
 		if(taps == 0):
-			#dynamically getting the taps to use thank to functions defined above
+			#dynamically getting the taps to use thank to prn_manager.py module
 			taps_list = get_taps(bit_len)
 			if (len(taps_list)==0) :
 				taps_autofill(bit_len, nb_taps_auto)
@@ -247,7 +251,7 @@ class PrnGenerator(Elaboratable):
 		return m
 
 if __name__ == "__main__":
-	dut = PrnGenerator(8,seed = 0xFF)
+	dut = PrnGenerator(15,seed = 0x1)
 	sim = Simulator(dut)
 	def proc():
 		yield Tick()
