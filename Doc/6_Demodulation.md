@@ -62,4 +62,4 @@ again leading to a clean carrier located at ``N*df`` when plotting ``abs(fftshif
 The X-axis of this plot can be graduated with a frequency generated as ``linspace(-fs/2,fs/2,length(s))``
 with fs the sampling frequency.
 
-Next step: [Conclusion](7_Conclusion.md)
+
