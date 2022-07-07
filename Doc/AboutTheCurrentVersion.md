@@ -23,6 +23,6 @@ optional arguments:
                         (currently not supported so the program will ask you which taps to use))
   -m MODFREQ, --modfreq MODFREQ
                         frequency of the PSK modulation (Herz) (default :2.5e6)
-  -p, --print           creates a binary file containing the PRN sequence that should be generated
+  -p, --print           creates a binary file containing the PRN sequence that should be generated (also prevents flashing the bitstream)
   -v, --verbose         prints all the parameters used for this instance of the program
 ```
