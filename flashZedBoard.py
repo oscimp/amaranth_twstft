@@ -75,7 +75,7 @@ if __name__ == "__main__":
     parser.add_argument("bitlen", help="number of bits of the LFSR", type=int)
     parser.add_argument("noiselen", help="length of the PRN sequence", type=int)
     parser.add_argument("-s","--seed", help="initial value of the LFSR (default : 1)",default=1, type=int)
-    parser.add_argument("-t","--taps", help="taps positions for the LFSR (if not defined, allows to dynamically define taps (currently not supported so default taps will be the smallest msequence generator taps))", type=int)
+    parser.add_argument("-t","--taps", help="taps positions for the LFSR (if not defined, allows to dynamically define taps (currently not supported so the program will ask you which taps to use))", type=int)
     parser.add_argument("-m","--modfreq", help="frequency of the PSK modulation (Herz) (default :2.5e6)", default=2500000,type=int)
     parser.add_argument("-p","--print", help="creates a binary file containing the PRN sequence that should be generated", action="store_true")
     parser.add_argument("-v","--verbose", help="prints all the parameters used for this instance of the program", action="store_true")
