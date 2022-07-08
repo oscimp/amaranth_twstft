@@ -33,6 +33,6 @@ stepping up the PSK modulation to transmit twice as much information
 6. [Demodulating the N-PSK modulated signal using GNU Radio](Doc/6_Demodulation.md):
 steps needed to demodulate the phase-modulated signal using GNU Radio or GNU/Octave
 
-7. [Conclusion of the project](Doc/7_Conclusion.md)
+7. [Quick description of the current version](Doc/AboutTheCurrentVersion.md)
 
 <img src="figures/220525ranging.svg">
