@@ -5,6 +5,7 @@ Experimental setup:
 * LTFB_prn57bpsk22bits.bin: 2.5 Mchip long PRN code emitted from Besancon, 8 bit
 integer (0 or 1)
 * OP_prn22bpskcode0.bin: 2.5 Mchip long PRN code emitted from Paris, 8 bit
+integer (0 or 1)
 * godual_ranging_LTFB.m: script for ranging the Besancon signal
 * godual_ranging_OP.m: script for ranging the Paris signal
 * godual_txLTFB_rxOP.m: script for time of flight from Besancon to Paris
