@@ -8,21 +8,30 @@ The version of the python implementation available in this repository is a littl
 + The file that flashes the ZedBoard permits to set all the parameters we wish to change with our B/QPSK transmitter.
 
 ```
-./flashZedBoard.py -h
+./amaranth_twstft.flashZedBoard.py -h
 
-usage: flashZedBoard.py [-h] [-s SEED] [-t TAPS] [-m MODFREQ] [-p] [-v] bitlen noiselen
+usage: flashZedBoard.py [-h] [--bitlen BITLEN] [--noiselen NOISELEN] [-s SEED]
+                        [-t TAPS] [-m MODFREQ] [-p] [-v] [--no-build]
+                        [--no-load] [--build-dir BUILD_DIR]
 
-positional arguments:
-  bitlen                number of bits of the LFSR
-  noiselen              length of the PRN sequence
-
-optional arguments:
+options:
   -h, --help            show this help message and exit
-  -s SEED, --seed SEED  initial value of the LFSR (default : 1)
-  -t TAPS, --taps TAPS  taps positions for the LFSR (if not defined, allows to dynamically define taps 
-                        (currently not supported so the program will ask you which taps to use))
+  --bitlen BITLEN       number of bits of the LFSR
+  --noiselen NOISELEN   length of the PRN sequence
+  -s SEED, --seed SEED  initial value of the LFSR (default 1)
+  -t TAPS, --taps TAPS  taps positions for the LFSR (if not defined, allows to
+                        dynamically define taps (currently not supported so
+                        default taps will be the smallest msequence generator
+                        taps))
   -m MODFREQ, --modfreq MODFREQ
-                        frequency of the PSK modulation (Herz) (default :2.5e6)
-  -p, --print           creates a binary file containing the PRN sequence that should be generated (also prevents flashing the bitstream)
-  -v, --verbose         prints all the parameters used for this instance of the program
+                        frequency of the PSK modulation (Herz) (default
+                        :2.5e6)
+  -p, --print           creates a binary file containing the PRN sequence that
+                        should be generated
+  -v, --verbose         prints all the parameters used for this instance of
+                        the program
+  --no-build            sources generate only
+  --no-load             don't load bitstream
+  --build-dir BUILD_DIR
+                        build directory
 ```
