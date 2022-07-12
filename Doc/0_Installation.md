@@ -61,7 +61,6 @@ make -j$(nproc)
 sudo make install
 ```
 
-And finally... 
 ### Amaranth :
 
 The python package that we are going to use and abuse to work on our FPGA boards and implement.
@@ -77,6 +76,14 @@ cd amaranth-boards
 pip3 install --user -e .
 ```
 
+And finally... 
+
+### amaranth twstft
+
+```bash
+pip3 install --user -e .
+```
+
 ## And now?
 
 Once all software and libraries are installed, you should be ready to code with amaranth! 
@@ -88,5 +95,26 @@ The ``amaranth_twstft/flashZedBoard.py`` script should help you configure, synth
 ./amaranth_twstft/flashZedBoard --bitlen 22 --noiselen 2500000
 ```
 for a 22-bit long shift register, 2.5 MS long code
+
+### B210 integration
+
+A patch is provided to modify B210 firmware:
+
+```
+git clone git@github.com:EttusResearch/uhd.git
+cd uhd
+git checkout v4.1.0.5 -b v4.1.0.5
+patch p1 < /somewhere/amaranth_twstft/0001-b200-add-pps_gen-stream-tag-and-twstft-amaranth_uhd-v4.1.0.5.patch
+cd fpga/usrp3/top/b200
+make B210
+```
+
+with:
+
+- PPS in to be connected to the corresponding SMA
+- fp_gpio 1: enable
+- fp_gpio 3: output signal
+- fp_gpio 5: pps out
+- fp_gpio 7: switch BPSK/QPSK
 
 Next step : [Pseudo-Random Noise generation](1_PRN.md)
