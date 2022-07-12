@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 from amaranth import *
-from Prescaler import *
-from globalcounter import *
-from prn import *
+from amaranth_twstft.Prescaler import *
+from amaranth_twstft.globalcounter import *
+from amaranth_twstft.prn import *
 from amaranth.sim import *
 import argparse
 from math import log

@@ -83,10 +83,10 @@ Once all software and libraries are installed, you should be ready to code with 
 
 The current version of the TWSTFT implementation described in this documentation is implemented on a [ZebBoard](https://www.avnet.com/wps/portal/us/products/avnet-boards/avnet-board-families/zedboard/). Transfering the gateware to the board through the virtual JTAG link using the microB USB connector is achieved thanks the [OpenFPGALoader](https://trabucayre.github.io/openFPGALoader/guide/install.html). Make sure to install the proper udev rules to access the low-level USB functionalities needed to communicate with the board.
 
-The ``flashZedBoard.py`` script should help you configure, synthesize and transfer the program to the board. The script will accept arguments including the PRN length, PRN register size, seed value, modulation scheme or dumping the PRN in a binary file as decribed with  the ``--help`` argument. The basic usage is
+The ``amaranth_twstft/flashZedBoard.py`` script should help you configure, synthesize and transfer the program to the board. The script will accept arguments including the PRN length, PRN register size, seed value, modulation scheme or dumping the PRN in a binary file as decribed with  the ``--help`` argument. The basic usage is
 ```bash
-./flashZedBoard 22 2500000 1
+./amaranth_twstft/flashZedBoard --bitlen 22 --noiselen 2500000
 ```
-for a 22-bit long shift register, 2.5 MS long code, BPSK modulation.
+for a 22-bit long shift register, 2.5 MS long code
 
 Next step : [Pseudo-Random Noise generation](1_PRN.md)
