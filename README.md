@@ -10,7 +10,9 @@ To implement such communication, we will here make use a Python library [_Amaran
 
 While the practical implementation focuses on the Zeboard fitted with a Zynq7020 System on Chip, using Amaranth should make the system portable and aims at avoiding proprietary synthesis tools (Vivado for the Xilinx parts).
 
-In this documentation, explanations behind the amaranth implementation of TWSTFT and the Amaranth source code associated are given:
+You may find additonal tutorials about the use of Amaranth in [this playlist](https://www.youtube.com/watch?v=b_n8l795CQI&list=PLCfH8xIFcsLlklxjWLaXC_TZ9BlF0FuI9&ab_channel=EuropeanGNURadioDays)
+ and their associated slides [here](./EuGRD_tutorial/slides_nath) 
+In this documentation, explanations behind the amaranth implementation of TWSTFT and the Amaranth source code associated are given :
 
 0. [Installation guide for amaranth and cie](Doc/0_Installation.md):
 if you never programmed on FPGA boards before, this may be useful for becoming familiar with the opensource toolchain used in this project.
