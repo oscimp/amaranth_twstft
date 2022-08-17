@@ -23,7 +23,7 @@ Pseudo Random Noise (PRN) generation for spreading the spectrum as needed for ac
 2. [Synchronizing PRN with a 1-PPS signal](Doc/2_Sync_PRN_1PPS.md):
 making the noise repeat exactly every second to create our 1 Pulse Per Second (1-PPS) signal
 
-3. [Carrier signal generation](Doc/3_Clk_Generation.md):
+3. [Carrier signal generation](Doc/3_Carrier_Generation.md):
 creating the electromagnetic signal that will carry the information (intermediate frequency to be upconverted for a satellite link)
 
 4. [Mixing Signals](Doc/4_Mixing_Signals.md):
