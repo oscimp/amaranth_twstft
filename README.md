@@ -27,7 +27,10 @@ making the noise repeat exactly every second to create our 1 Pulse Per Second (1
 creating the electromagnetic signal that will carry the information (intermediate frequency to be upconverted for a satellite link)
 
 4. [Mixing Signals](Doc/4_Mixing_Signals.md):
-mixing the carrier with our 1-PPS to share the frequency information
+mixing the carrier with our 1-PPS to share the frequency information. This is
+the point where an actual physical signal is generated: this documentation
+includes the pinout for connecting the input 20 MHz reference clock, input
+1-PPS and getting the modulated output 70 MHz.
 
 5. [Next level, QPSK modulation](Doc/5_another_modulation.md):
 stepping up the PSK modulation to transmit twice as much information
