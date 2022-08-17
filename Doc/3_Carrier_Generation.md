@@ -3,7 +3,8 @@ Back to the [README](../README.md)
 Previous step : [Synchronizing ](2_Sync_PRN_1PPS.md)
 
 The idea now is to create our Radio Frequency signal. It should then have a good enough frequency to fit our emmission conditions.
-In the rest of this chapter, we'll focus on how to recreate a 70 MHz signal (Why 70 ? Well... Why not ?) with our FPGA board.
+In the rest of this chapter, we will focus on how to recreate a 70 MHz signal ([70 MHz seems to be a standard intermediate frequency](https://roks-tv.com/l-70mhz-downconverter-unit) for
+space and satellite communication) with our FPGA board.
 
 ## Creating a nice sinusoid
 
