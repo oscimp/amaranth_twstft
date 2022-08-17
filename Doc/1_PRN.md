@@ -90,7 +90,7 @@ The parameters used here are :
 
 As you can see (and as expected), the state of the register is shifted right on every clock rising edge and it seems that the value inserted depends on the current state. 
 
-Alright ! So now that we have a shift register, let's talk about the taps to use.
+Now that we have a shift register, let us discuss about selecting the taps.
 
 After doing some research on the subject, it appears that our taps on a n-bits LFSR are some sort of physical representation of polynomials of degree n with coefficients in GF(2) (ie: 0 and 1).
 
@@ -102,9 +102,9 @@ or, more explicitly :
 
 1*x^8 + 0*x^7 + 0*x^6 + 1*x^5 + 0*x^4 + 1*x^3 + 1*x^2 + 0*x^1 + 1*x^0
 
-And the interesting thing about this is that each LFSR which representative polynomial is a __primitive polynomial__ are generating m-sequences. (More about primitive polynomials and LFSR [here](http://www-math.ucdenver.edu/~wcherowi/courses/m5410/m5410fsr.html), [here](https://www.gaussianwaves.com/2018/09/maximum-length-sequences-m-sequences/) and [here](https://www.cs.miami.edu/home/burt/learning/Csc609.022/random_numbers.html).
+And the interesting thing about this is that each LFSR which representative polynomial is a __primitive polynomial__ are generating m-sequences. More about primitive polynomials and LFSR [from ucdenver.edu](http://www-math.ucdenver.edu/~wcherowi/courses/m5410/m5410fsr.html), [gaussianwaves.com](https://www.gaussianwaves.com/2018/09/maximum-length-sequences-m-sequences/) and [or miami.edu](https://www.cs.miami.edu/home/burt/learning/Csc609.022/random_numbers.html).
 
-Well, good ! Then we just need to find such polynomials to choose our taps ! But that's easier said than done because we need to prove for every polynomial we find that it is irreducible. And that's a task mathematicians deal with since long ago... So instead of trying to be smart (at least for the moment), we will just use brute force to determine our taps.
+We hence need to find such polynomials to choose our taps ! But that's easier said than done because we need to prove for every polynomial we find that it is irreducible. And that's a task mathematicians deal with since long ago... So instead of trying to be smart (at least for the moment), we will just use brute force to determine our taps.
 
 Actually, you can also look for LFSR tables on the web. They already give you this kind of information. BUT, we will find taps by ourself anyway because why not.
 
