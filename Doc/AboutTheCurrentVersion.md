@@ -8,7 +8,7 @@ The version of the python implementation available in this repository is a littl
 + The file that flashes the ZedBoard permits to set all the parameters we wish to change with our B/QPSK transmitter.
 
 ```
-./amaranth_twstft.flashZedBoard.py -h
+./amaranth_twstft/flashZedBoard.py -h
 
 usage: flashZedBoard.py [-h] [--bitlen BITLEN] [--noiselen NOISELEN] [-s SEED]
                         [-t TAPS] [-m MODFREQ] [-p] [-v] [--no-build]
