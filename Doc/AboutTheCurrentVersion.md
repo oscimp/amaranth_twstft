@@ -39,7 +39,7 @@ options:
 While the ``-p`` option is hidden between all the other non-mandatory arguments, it should really be
 used if the correlation between a local copy of the pseudo-random sequence (as generated with this -p
 option) and the received signal is to be computed. The output format of the file generated with the -p
-option is interleaved 8-bit IQ coefficients each equal to ! or 0. With GNU Octave (or Matlab), the 
+option is interleaved 8-bit IQ coefficients each equal to 1 or 0. With GNU Octave (or Matlab), the 
 PRN sequence output with -p is read using
 ```Matlab
 f=fopen('prn.bin');
