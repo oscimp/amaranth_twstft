@@ -92,7 +92,7 @@ The current version of the TWSTFT implementation described in this documentation
 
 The ``amaranth_twstft/flashZedBoard.py`` script should help you configure, synthesize and transfer the program to the board. The script will accept arguments including the PRN length, PRN register size, seed value, modulation scheme or dumping the PRN in a binary file as decribed with  the ``--help`` argument. The basic usage is
 ```bash
-./amaranth_twstft/flashZedBoard --bitlen 22 --noiselen 2500000
+./amaranth_twstft/flashZedBoard.py --bitlen 22 --noiselen 2500000
 ```
 for a 22-bit long shift register, 2.5 MS long code
 
