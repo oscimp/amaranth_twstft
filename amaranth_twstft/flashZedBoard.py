@@ -170,8 +170,8 @@ class TWSTFT_top(Elaboratable):
                 pins.B1_o.eq(mixer.the_pps_we_love),
                 pins.B2_o.eq(mixer.dixmega),
                 pins.B3_o.eq(mixer.pps_out),
-                pins.B5_o.eq(mixer.modulatedI),
-                pins.B6_o.eq(mixer.modulatedQ),
+                pins.B5_o.eq(mixer.output),
+                pins.B6_o.eq(mixer.output2),
                 #pins.B4_o.eq(mixer.ref_clk),
                 #pins.C1_o.eq(mmcm_locked),
             ]

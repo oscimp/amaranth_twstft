@@ -77,6 +77,9 @@ class Mixer(Elaboratable):
         self._bit_len = bit_len
         self._freqout = freqout
         self.clock_freq = freqin
+
+        self.output = Signal()
+        self.output2 = Signal()
         
         if taps==0:
             self.dynamic_taps = True
@@ -110,6 +113,10 @@ class Mixer(Elaboratable):
                 
         carrier_selector = Signal()
         m.d.sync += carrier_selector.eq(~carrier_selector) #alternating the carrier to modulate
+        m.d.comb += [
+            self.output.eq(prn_gen.output),
+            self.output2.eq(prn_gen.output2),
+        ]
         
         with m.If(carrier_selector):
             m.d.sync += [
