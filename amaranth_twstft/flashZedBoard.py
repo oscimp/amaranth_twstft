@@ -204,7 +204,7 @@ if __name__ == "__main__":
             t = get_taps(args.bitlen)[0]
 
     if args.print :
-        write_prn_seq(args.bitlen, args.modfreq, args.seed, seqlen=int(args.noiselen))
+        write_prn_seq(args.bitlen, t, args.seed, seqlen=int(args.noiselen))
         exit()
     if args.verbose:
         print("bit length of the LFSR : "+str(args.bitlen))
