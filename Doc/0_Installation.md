@@ -93,7 +93,7 @@ The current version of the TWSTFT implementation described in this documentation
 For accessing the PL part of the Zynq withough relying on an SD card including the bootloader, select
 the appropriate switch configuration as descrinbed in section 2.10.1 of [the Zedboard manual](https://digilent.com/reference/_media/zedboard:zedboard_ug.pdf) reproduced here:
 
-<img src="jumpers.png">
+<img src="../figures/jumpers.png">
 
 The ``amaranth_twstft/flashZedBoard.py`` script should help you configure, synthesize and transfer the program to the board. The script will accept arguments including the PRN length, PRN register size, seed value, modulation scheme or dumping the PRN in a binary file as decribed with  the ``--help`` argument. The basic usage is
 ```bash
