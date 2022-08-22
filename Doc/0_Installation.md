@@ -90,6 +90,11 @@ Once all software and libraries are installed, you should be ready to code with 
 
 The current version of the TWSTFT implementation described in this documentation is implemented on a [ZebBoard](https://www.avnet.com/wps/portal/us/products/avnet-boards/avnet-board-families/zedboard/). Transfering the gateware to the board through the virtual JTAG link using the microB USB connector is achieved thanks the [OpenFPGALoader](https://trabucayre.github.io/openFPGALoader/guide/install.html). Make sure to install the proper udev rules to access the low-level USB functionalities needed to communicate with the board.
 
+For accessing the PL part of the Zynq withough relying on an SD card including the bootloader, select
+the appropriate switch configuration as descrinbed in section 2.10.1 of [the Zedboard manual](https://digilent.com/reference/_media/zedboard:zedboard_ug.pdf) reproduced here:
+
+<img src="jumpers.png">
+
 The ``amaranth_twstft/flashZedBoard.py`` script should help you configure, synthesize and transfer the program to the board. The script will accept arguments including the PRN length, PRN register size, seed value, modulation scheme or dumping the PRN in a binary file as decribed with  the ``--help`` argument. The basic usage is
 ```bash
 ./amaranth_twstft/flashZedBoard.py --bitlen 22 --noiselen 2500000
