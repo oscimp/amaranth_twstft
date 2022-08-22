@@ -134,10 +134,14 @@ class TWSTFT_top(Elaboratable):
             
             platform.add_resources([
                 Resource('pins', 0,
-                    Subsignal('B1_o', Pins('1', conn = connb, dir='o')),
-                    Subsignal('B2_o', Pins('2', conn = connb, dir='o')),
-                    Subsignal('B3_o', Pins('3', conn = connb, dir='o')),
-                    Subsignal('B4_o', Pins('4', conn = connb, dir='o')),
+                    Subsignal('B1_o', Pins('1',  conn = connb, dir='o')),
+                    Subsignal('B2_o', Pins('2',  conn = connb, dir='o')),
+                    Subsignal('B3_o', Pins('3',  conn = connb, dir='o')),
+                    Subsignal('B4_o', Pins('4',  conn = connb, dir='o')),
+                    Subsignal('B5_o', Pins('7',  conn = connb, dir='o')),
+                    Subsignal('B6_o', Pins('8',  conn = connb, dir='o')),
+                    Subsignal('B7_o', Pins('9',  conn = connb, dir='o')),
+                    Subsignal('B8_o', Pins('10', conn = connb, dir='o')),
                     
                     Subsignal('C1_i', Pins('1', conn = connc, dir='i')),
                     Subsignal('C4_i', Pins('4', conn = connc, dir='i')),
@@ -166,6 +170,8 @@ class TWSTFT_top(Elaboratable):
                 pins.B1_o.eq(mixer.the_pps_we_love),
                 pins.B2_o.eq(mixer.dixmega),
                 pins.B3_o.eq(mixer.pps_out),
+                pins.B5_o.eq(mixer.modulatedI),
+                pins.B6_o.eq(mixer.modulatedQ),
                 #pins.B4_o.eq(mixer.ref_clk),
                 #pins.C1_o.eq(mmcm_locked),
             ]
