@@ -10,7 +10,9 @@ To implement such communication, we will here make use a Python library [_Amaran
 
 While the practical implementation focuses on the Zeboard fitted with a Zynq7020 System on Chip, using Amaranth should make the system portable and aims at avoiding proprietary synthesis tools (Vivado for the Xilinx parts).
 
-In this documentation, explanations behind the amaranth implementation of TWSTFT and the Amaranth source code associated are given:
+You may find additonal tutorials about the use of Amaranth in [this playlist](https://www.youtube.com/watch?v=b_n8l795CQI&list=PLCfH8xIFcsLlklxjWLaXC_TZ9BlF0FuI9&ab_channel=EuropeanGNURadioDays)
+ and their associated slides [here](./EuGRD_tutorial/slides_nath) 
+In this documentation, explanations behind the amaranth implementation of TWSTFT and the Amaranth source code associated are given :
 
 0. [Installation guide for amaranth and cie](Doc/0_Installation.md):
 if you never programmed on FPGA boards before, this may be useful for becoming familiar with the opensource toolchain used in this project.
@@ -21,11 +23,14 @@ Pseudo Random Noise (PRN) generation for spreading the spectrum as needed for ac
 2. [Synchronizing PRN with a 1-PPS signal](Doc/2_Sync_PRN_1PPS.md):
 making the noise repeat exactly every second to create our 1 Pulse Per Second (1-PPS) signal
 
-3. [Carrier signal generation](Doc/3_Clk_Generation.md):
+3. [Carrier signal generation](Doc/3_Carrier_Generation.md):
 creating the electromagnetic signal that will carry the information (intermediate frequency to be upconverted for a satellite link)
 
 4. [Mixing Signals](Doc/4_Mixing_Signals.md):
-mixing the carrier with our 1-PPS to share the frequency information
+mixing the carrier with our 1-PPS to share the frequency information. This is
+the point where an actual physical signal is generated: this documentation
+includes the pinout for connecting the input 20 MHz reference clock, input
+1-PPS and getting the modulated output 70 MHz.
 
 5. [Next level, QPSK modulation](Doc/5_another_modulation.md):
 stepping up the PSK modulation to transmit twice as much information
@@ -33,6 +38,9 @@ stepping up the PSK modulation to transmit twice as much information
 6. [Demodulating the N-PSK modulated signal using GNU Radio](Doc/6_Demodulation.md):
 steps needed to demodulate the phase-modulated signal using GNU Radio or GNU/Octave
 
-7. [Quick description of the current version](Doc/AboutTheCurrentVersion.md)
+7. [Merging the Amaranth generated Verilog code with the Ettus Research
+B210 software](Doc/7_B210.md)
+
+8. [Quick description of the current version](Doc/AboutTheCurrentVersion.md)
 
 <img src="figures/220525ranging.svg">
