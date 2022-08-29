@@ -17,8 +17,9 @@ integer (0 or 1)
 
 All these results are obtained *after* oversampling by 3, making the parabolic
 fit of the correlation peak believe the sampling rate was 15 MHz (rather than the
-actual 5 MHz) and getting rid of the fitting artifacts exhibited by 11h45_OPranging.pdf 
-and 1657098900_LTFBranging.pdf:
+actual 5 MHz) and getting rid of the fitting artifacts exhibited by (11h45_OPranging.pdf) 
+and (1657098900_LTFBranging.pdf). From top to bottom: LTFB ranging, LTFB emission received
+by OP, OP emission received by LTFB, OP ranging:
 
 <img src="tw_txLTFB_rxLTFB.png">
 <img src="tw_txLTFB_rxOP.png">
