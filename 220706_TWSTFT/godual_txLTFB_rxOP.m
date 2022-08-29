@@ -1,6 +1,8 @@
 pkg load signal
 
 fs=5e6;
+Nint=2;
+
 f=fopen('LTFB_prn57bpsk22bits.bin');
 code=fread(f,inf,'int8');
 code=repelems(code,[[1:length(code)] ; ones(1,length(code))*2]); % interpolate
@@ -8,7 +10,7 @@ code=code-mean(code);
 fcode=conj(fft(code'));
 fclose(f);
 
-filelist=dir('./OP11h15.bin');
+filelist=dir('./OP11h45.bin');
 for filenum=1:length(filelist)
   filelist(filenum).name
   f=fopen(filelist(filenum).name);
@@ -25,14 +27,15 @@ if (longueur==4*fs)
     freq=linspace(-fs/2,fs/2,length(d1));
     k=find((freq<6200)&(freq>-6200));
     d22=fftshift(abs(fft(d1.^2))); % 0.1 Hz accuracy
-    [~,df(p)]=max(d22(k));df(p)=df(p)+k(1)-1;df(p)=freq(df(p))/2
+    [~,df(p)]=max(d22(k));df(p)=df(p)+k(1)-1;df(p)=freq(df(p))/2;df(p)
     temps=[0:length(d1)-1]'/fs;
     lo=exp(-j*2*pi*df(p)*temps); % frequency offset
   
     y=d1.*lo;                      % frequency transposition
-    prnmap01=ifft(fft(y).*fcode);  % correlation with returned signal
-    [~,indice1(p)]=max(abs(prnmap01)); % only one correlation peak
-printf("%f %f\n",indice1(p))
+    prnmap01=fftshift(fft(y).*fcode);      % xcorr
+    prnmap01=[zeros(length(y)*(Nint),1) ; prnmap01 ; zeros(length(y)*(Nint),1)]; % interpolation to 3x samp_rate
+    prnmap01=ifft(fftshift(prnmap01));       % back to time
+    [~,indice1(p)]=max(abs(prnmap01));
     xval1(p)=prnmap01(indice1(p));
     xval1m1(p)=prnmap01(indice1(p)-1);
     xval1p1(p)=prnmap01(indice1(p)+1);
@@ -42,21 +45,21 @@ printf("%f %f\n",indice1(p))
 end
   until (longueur<4*fs);
   solution1=indice1+correction1;
+  solution1=solution1(3:end);
   subplot(211)
-  plot((solution1(1:end))/fs); % ranging solution
+  plot((solution1(1:end))/(2*Nint+1)/fs); % ranging solution
   xlabel('time (s)')
   ylabel('ranging delay (s)')
-  [a,b]=polyfit([1:length(solution1)],(solution1(1:end))/fs,2);
+  [a,b]=polyfit([1:length(solution1)],(solution1(1:end))/(2*Nint+1)/fs,2);
   subplot(212)
-  plot((solution1)/fs-b.yf); % ranging solution
-  std((solution1)/fs-b.yf)
-  mean((solution1)/fs-b.yf)
-  legend(num2str(std((solution1)/fs-b.yf)))
+  plot((solution1)/(2*Nint+1)/fs-b.yf); % ranging solution
+  std((solution1)/(2*Nint+1)/fs-b.yf)
+  mean((solution1)/(2*Nint+1)/fs-b.yf)
+  legend(num2str(std((solution1)/(2*Nint+1)/fs-b.yf)))
   xlabel('time (s)')
   ylabel('delay - parabolic fit (s)')
-%  nom=strrep(filelist(filenum).name,'.bin','.mat');
-%  eval(['save -mat ',nom,' xv* corr* df indic*']);
-%  clear xv* corr* df indic*
+  nom=strrep(filelist(filenum).name,'.bin','.mat');
+  eval(['save -mat ',nom,' xv* corr* df indic*']);
+  clear xv* corr* df indic*
   fclose(f)
 end
-
