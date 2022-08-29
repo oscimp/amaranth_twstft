@@ -12,5 +12,8 @@ integer (0 or 1)
 * godual_txOP_rxLTFB.m: script for time of flight from Paris to Besancon
 * 11h45_OPranging.pdf: initial results of OP ranging
 * 1657098900_LTFBranging.pdf: initial results of Besancon ranging
-* tw_txLTFB_rxOP.pdf: initial results from Besancon to Paris
-* tw_txOP_rxLTFB.pdf: initial results from Paris to Besancon
+
+<img src="tw_txLTFB_rxLTFB.png">
+<img src="tw_txLTFB_rxOP.png">
+<img src="tw_txOP_rxLTFB.png">
+<img src="tw_txOP_rxOP.png">
