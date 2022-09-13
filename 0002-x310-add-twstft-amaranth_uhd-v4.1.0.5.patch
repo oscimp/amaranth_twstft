@@ -1,0 +1,155 @@
+From da38ee26cf0e7feb8483cb827255cff888618130 Mon Sep 17 00:00:00 2001
+From: Gwenhael Goavec-Merou <gwenhael.goavec-merou@trabucayre.com>
+Date: Tue, 12 Sep 2022 18:50:29 +0200
+Subject: [PATCH]  adding a patch for UHD to integrate twstft into X310
+ firmware
+
+Signed-off-by: Gwenhael Goavec-Merou <gwenhael.goavec-merou@trabucayre.com>
+---
+ fpga/usrp3/top/x300/Makefile          |  5 ++
+ fpga/usrp3/top/x300/Makefile.x300.inc |  1 +
+ fpga/usrp3/top/x300/x300.v            | 72 +++++++++++++++++++++++++--
+ 3 files changed, 75 insertions(+), 3 deletions(-)
+
+diff --git a/fpga/usrp3/top/x300/Makefile b/fpga/usrp3/top/x300/Makefile
+index 2f5e1b924..4c14d2116 100644
+--- a/fpga/usrp3/top/x300/Makefile
++++ b/fpga/usrp3/top/x300/Makefile
+@@ -64,6 +64,10 @@ else
+ 	post_build = @echo "Skipping bitfile export."
+ endif
+ 
++# 0: syrte
++# 3: besac
++TAPS?=0
++
+ ##
+ ##Supported Targets
+ ##-----------------
+@@ -82,6 +86,7 @@ X300_1G:
+ 
+ ##X310_HG:  1GigE on SFP+ Port0, 10Gig on SFP+ Port1.
+ X310_HG:
++	python -m amaranth_twstft.flashZedBoard --no-load --no-build --build-dir amaranth --taps $(TAPS)
+ 	$(call vivado_build,X310,$(HG_DEFS) X310=1)
+ 	$(call post_build,X310,HG)
+ 
+diff --git a/fpga/usrp3/top/x300/Makefile.x300.inc b/fpga/usrp3/top/x300/Makefile.x300.inc
+index 1f18cbf02..2ff6c86d9 100644
+--- a/fpga/usrp3/top/x300/Makefile.x300.inc
++++ b/fpga/usrp3/top/x300/Makefile.x300.inc
+@@ -63,6 +63,7 @@ x300_core.v \
+ x300_sfpp_io_core.v \
+ x300_zpu_config.vhd \
+ x300_eth_interface.v \
++amaranth/top.v \
+ nirio_chdr64_adapter.v \
+ soft_ctrl.v \
+ capture_ddrlvds.v \
+diff --git a/fpga/usrp3/top/x300/x300.v b/fpga/usrp3/top/x300/x300.v
+index 8fbfa39b9..63e9a56c5 100644
+--- a/fpga/usrp3/top/x300/x300.v
++++ b/fpga/usrp3/top/x300/x300.v
+@@ -168,7 +168,13 @@ module x300
+    //
+    ///////////////////////////////////
+ 
+-   inout [11:0] FrontPanelGpio,
++   //GGM
++   //inout [11:0] FrontPanelGpio,
++   inout [7:0] FrontPanelGpio,
++   output      FrontPanelGpio8, // PPS
++   input       FrontPanelGpio9, // ENABLE
++   output      FrontPanelGpio10, // OUTPUT
++   input       FrontPanelGpio11, // SWITCH
+ 
+    output LED_ACT1, output LED_ACT2,
+    output LED_LINK1, output LED_LINK2,
+@@ -383,6 +389,60 @@ module x300
+       .CLK_OUT1(radio_clk), .CLK_OUT2(radio_clk_2x), .CLK_OUT3(dac_dci_clk),
+       .RESET(sw_rst[2]), .LOCKED(radio_clk_locked));
+ 
++
++   /* amaranth begin */
++    wire amaranth_clk280, amaranth_clk280_int;
++    wire amaranth_rst;
++    wire amaranth_clkfb;
++
++    MMCME2_BASE #(
++        .BANDWIDTH("OPTIMIZED"),
++        .CLKFBOUT_MULT_F(7.0),
++        .CLKFBOUT_PHASE(0.0),
++        .CLKIN1_PERIOD(32'd5),
++        .CLKOUT0_DIVIDE_F(5.0),
++        .CLKOUT0_DUTY_CYCLE(0.5),
++        .CLKOUT0_PHASE(0.0)
++    ) mmcm (
++        .CLKFBIN(amaranth_clkfb),
++        .CLKFBOUT(amaranth_clkfb),
++        .CLKIN1(radio_clk),
++        .CLKOUT0(amaranth_clk280_int),
++        .LOCKED(amaranth_rst),
++        .PWRDWN(1'h0),
++        .RST(1'h0)
++    );
++
++  // Output buffering
++  //-----------------------------------
++    BUFG amaranth_clk280_bufg
++    (.O  (amaranth_clk280),
++    .I   (amaranth_clk280_int));
++
++    /* FrontPanelGpio
++     * ++
++     * ||--- +
++     * |-----|  1'b0 0 x x 1 GLOB EN
++     * | SP6 |  1'b0 2 x x 3 OUTPUT
++     * |     |  1'b0 4 x x 5 PPS_IN
++     * |     |  1'b0 6 x x 7 SWITCH MODE
++     * |     |  GND  8 x x 9 GND
++     * +-----+
++	|--- *
++     *
++     */
++    mixer mixer (
++        .clk(amaranth_clk280),
++        .global_enable(FrontPanelGpio9),
++        .mod_out(FrontPanelGpio10),
++        .pps_in(EXT_PPS_IN),
++        .pps_out(FrontPanelGpio8),
++	.the_pps_we_love(FrontPanelGpio11),
++        .rst(!amaranth_rst),
++        .switch_mode(1'b0/*FrontPanelGpio11*/)
++    );
++    
++   /* amaranth end */
+    ////////////////////////////////////////////////////////////////////
+    //
+    // IJB. Radio PLL doesn't seem to lock at power up.
+@@ -1304,7 +1364,13 @@ module x300
+       .gpio_ddr(db1_gpio_ddr), .gpio_out(db1_gpio_out), .gpio_in(db1_gpio_in)
+    );
+ 
+-`ifdef DEBUG_UART
++
++   gpio_atr_io #(.WIDTH(8)) fp_gpio_atr_inst (
++      .clk(radio_clk), .gpio_pins(FrontPanelGpio[7:0]),
++      .gpio_ddr(fp_gpio_ddr[7:0]), .gpio_out(fp_gpio_out[7:0]), .gpio_in(fp_gpio_in[7:0])
++   );
++   assign fp_gpio_in[11:8] = 0;
++/*`ifdef DEBUG_UART
+    gpio_atr_io #(.WIDTH(10)) fp_gpio_atr_inst (
+       .clk(radio_clk), .gpio_pins(FrontPanelGpio[9:0]),
+       .gpio_ddr(fp_gpio_ddr[9:0]), .gpio_out(fp_gpio_out[9:0]), .gpio_in(fp_gpio_in[9:0])
+@@ -1317,7 +1383,7 @@ module x300
+       .gpio_ddr(fp_gpio_ddr[11:0]), .gpio_out(fp_gpio_out[11:0]), .gpio_in(fp_gpio_in[11:0])
+    );
+    assign debug_rxd = 1'b0;
+-`endif
++`endif */
+    assign fp_gpio_in[31:12] = 20'h0;
+ 
+    ///////////////////////////////////////////////////////////////////////////////////
+-- 
+2.35.1
+
