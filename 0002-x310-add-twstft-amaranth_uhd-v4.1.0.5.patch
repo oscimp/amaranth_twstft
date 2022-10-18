@@ -9,7 +9,8 @@ Signed-off-by: Gwenhael Goavec-Merou <gwenhael.goavec-merou@trabucayre.com>
  fpga/usrp3/top/x300/Makefile          |  5 ++
  fpga/usrp3/top/x300/Makefile.x300.inc |  1 +
  fpga/usrp3/top/x300/x300.v            | 72 +++++++++++++++++++++++++--
- 3 files changed, 75 insertions(+), 3 deletions(-)
+ fpga/usrp3/top/x300/x300.xdc          |  8 +--
+ 4 files changed, 79 insertions(+), 7 deletions(-)
 
 diff --git a/fpga/usrp3/top/x300/Makefile b/fpga/usrp3/top/x300/Makefile
 index 2f5e1b924..4c14d2116 100644
@@ -47,7 +48,7 @@ index 1f18cbf02..2ff6c86d9 100644
  soft_ctrl.v \
  capture_ddrlvds.v \
 diff --git a/fpga/usrp3/top/x300/x300.v b/fpga/usrp3/top/x300/x300.v
-index 8fbfa39b9..63e9a56c5 100644
+index 8fbfa39b9..87ec9381d 100644
 --- a/fpga/usrp3/top/x300/x300.v
 +++ b/fpga/usrp3/top/x300/x300.v
 @@ -168,7 +168,13 @@ module x300
@@ -121,7 +122,7 @@ index 8fbfa39b9..63e9a56c5 100644
 +        .rst(!amaranth_rst),
 +        .switch_mode(1'b0/*FrontPanelGpio11*/)
 +    );
-+    
++
 +   /* amaranth end */
     ////////////////////////////////////////////////////////////////////
     //
@@ -150,6 +151,25 @@ index 8fbfa39b9..63e9a56c5 100644
     assign fp_gpio_in[31:12] = 20'h0;
  
     ///////////////////////////////////////////////////////////////////////////////////
+diff --git a/fpga/usrp3/top/x300/x300.xdc b/fpga/usrp3/top/x300/x300.xdc
+index 11290b79f..1a9ede450 100644
+--- a/fpga/usrp3/top/x300/x300.xdc
++++ b/fpga/usrp3/top/x300/x300.xdc
+@@ -512,10 +512,10 @@ set_property PACKAGE_PIN   AH30     [get_ports {FrontPanelGpio[4]}]
+ set_property PACKAGE_PIN   AC26     [get_ports {FrontPanelGpio[5]}]
+ set_property PACKAGE_PIN   AD26     [get_ports {FrontPanelGpio[6]}]
+ set_property PACKAGE_PIN   AJ27     [get_ports {FrontPanelGpio[7]}]
+-set_property PACKAGE_PIN   AK28     [get_ports {FrontPanelGpio[8]}]
+-set_property PACKAGE_PIN   AG27     [get_ports {FrontPanelGpio[9]}]
+-set_property PACKAGE_PIN   AG28     [get_ports {FrontPanelGpio[10]}]
+-set_property PACKAGE_PIN   AH26     [get_ports {FrontPanelGpio[11]}]
++set_property PACKAGE_PIN   AK28     [get_ports {FrontPanelGpio8}]
++set_property PACKAGE_PIN   AG27     [get_ports {FrontPanelGpio9}]
++set_property PACKAGE_PIN   AG28     [get_ports {FrontPanelGpio10}]
++set_property PACKAGE_PIN   AH26     [get_ports {FrontPanelGpio11}]
+ set_property IOSTANDARD    LVCMOS33 [get_ports {FrontPanelGpio*}]
+ set_property PULLDOWN      TRUE     [get_ports {FrontPanelGpio*}]
+
 -- 
 2.35.1
 
