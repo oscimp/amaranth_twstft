@@ -48,7 +48,7 @@ index 1f18cbf02..2ff6c86d9 100644
  soft_ctrl.v \
  capture_ddrlvds.v \
 diff --git a/fpga/usrp3/top/x300/x300.v b/fpga/usrp3/top/x300/x300.v
-index 8fbfa39b9..87ec9381d 100644
+index 8fbfa39b9..98472e0d4 100644
 --- a/fpga/usrp3/top/x300/x300.v
 +++ b/fpga/usrp3/top/x300/x300.v
 @@ -168,7 +168,13 @@ module x300
@@ -62,7 +62,7 @@ index 8fbfa39b9..87ec9381d 100644
 +   output      FrontPanelGpio8, // PPS
 +   input       FrontPanelGpio9, // ENABLE
 +   output      FrontPanelGpio10, // OUTPUT
-+   input       FrontPanelGpio11, // SWITCH
++   output      FrontPanelGpio11, // PPS out2
  
     output LED_ACT1, output LED_ACT2,
     output LED_LINK1, output LED_LINK2,
