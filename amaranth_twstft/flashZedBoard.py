@@ -54,7 +54,7 @@ class TWSTFT_top(Elaboratable):
     
     """
 
-    def __init__(self, bit_len, noise_len, taps = 0, seed = 0x1, freqout=2500000):
+    def __init__(self, bit_len, noise_len, reload=True, taps = 0, seed = 0x1, freqout=2500000):
     
         self.pps_out = Signal()
         self.the_pps_we_love = Signal()
@@ -62,7 +62,7 @@ class TWSTFT_top(Elaboratable):
         self.ref_clk = Signal()
 
         self._freqout = freqout
-        self.mixer = Mixer(bit_len, noise_len, taps, seed, int(280e6), freqout)
+        self.mixer = Mixer(bit_len, noise_len, reload, taps, seed, int(280e6), freqout)
         
     def elaborate(self,platform):
         m = Module()
@@ -190,6 +190,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--bitlen",       default=22,help="number of bits of the LFSR", type=int)
     parser.add_argument("--noiselen",     default=2.5e6,  help="length of the PRN sequence", type=float)
+    parser.add_argument("--no-reload",    help="stop generation after noiselen bits", action="store_true")
     parser.add_argument("-s","--seed",    default=1, help="initial value of the LFSR (default 1)", type=int)
     parser.add_argument("-t","--taps",    help="taps positions for the LFSR (if not defined, allows to dynamically define taps (currently not supported so default taps will be the smallest msequence generator taps))", type=int)
     parser.add_argument("-m","--modfreq", default=int(2.5e6), help="frequency of the PSK modulation (Herz) (default :2.5e6)", type=int)
@@ -220,7 +221,8 @@ if __name__ == "__main__":
         print("taps : "+ str(t))
 
     gateware = ZedBoardPlatform().build(
-        TWSTFT_top(args.bitlen, int(args.noiselen), taps=t, seed=args.seed,
+        TWSTFT_top(args.bitlen, int(args.noiselen), reload=not args.no_reload,
+                   taps=t, seed=args.seed,
                    freqout=args.modfreq),
         do_program=not args.no_load, do_build=not args.no_build, build_dir=args.build_dir)
     # if no build nothing produces -> force

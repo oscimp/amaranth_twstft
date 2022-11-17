@@ -78,7 +78,7 @@ class Synchronizer(Elaboratable):
 		output signal indicating that the LFSR is shifting
     """
 
-	def __init__(self, freqin, freqout, bit_len, noise_len, taps=0, seed = 0x1):
+	def __init__(self, freqin, freqout, bit_len, noise_len, reload=True, taps=0, seed = 0x1):
 		self.pps = Signal(name="sync_pps_input")
 		self.output = Signal(name="sync_output")
 		self.output2 = Signal(name="sync_output2")
@@ -94,10 +94,11 @@ class Synchronizer(Elaboratable):
 		
 		self.seed = seed
 		self.noise_len = noise_len
+		self._reload = reload
 		self._freqin = freqin
 		self._freqout = freqout
 		self._bit_len = bit_len
-		self._cnt = GlobalCounter(self.noise_len)
+		self._cnt = GlobalCounter(self.noise_len, reload)
 		self.rise_pps = Signal()
 	
 	def elaborate(self, platform):
@@ -148,7 +149,7 @@ class Synchronizer(Elaboratable):
 		#and when pps isn't rising
 		m.d.comb += [
 			presc.enable.eq(self._cnt.output & ~self.rise_pps),
-			prn.enable.eq(self._cnt.output & ~self.rise_pps),
+			prn.enable.eq(self._cnt.output & ~self.rise_pps & ~self._cnt.overflow),
 		]
 		
 		#resetting the counter when the pps is received
