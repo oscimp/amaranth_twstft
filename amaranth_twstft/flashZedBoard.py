@@ -212,7 +212,7 @@ if __name__ == "__main__":
 
     if args.print :
         write_prn_seq(args.bitlen, t, args.seed, seqlen=int(args.noiselen))
-        exit()
+
     if args.verbose:
         print("bit length of the LFSR : "+str(args.bitlen))
         print("number of bits generated per pps signal received : "+ str(args.noiselen))
