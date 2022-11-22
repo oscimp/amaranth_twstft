@@ -20,6 +20,10 @@ class GlobalCounter(Elaboratable):
         when True counter is set to 0, otherwise counter stay at max_val until
         reset
 
+    wait_first_reset: boolean
+        when True counter is stopped until reset is asserted, otherwise counter
+        start immediately
+
     Attributes
     ----------
     
@@ -39,14 +43,16 @@ class GlobalCounter(Elaboratable):
         the value of the counter
 
     """
-    def __init__(self, max_val, reload=True):
+    def __init__(self, max_val, reload=True, wait_first_reset=True):
         self._max_val = max_val
-        self.reset = Signal()
-        self.tick = Signal()
-        self.output = Signal()
-        self.counter = Signal(range(max_val), reset=0, name="globalCounter")
-        self.overflow= Signal()
-        self._reload = reload
+        self.reset    = Signal()
+        self.tick     = Signal()
+        self.output   = Signal()
+        self.counter  = Signal(range(max_val),
+                               reset=max_val if wait_first_reset else 0,
+                               name="globalCounter")
+        self.overflow = Signal()
+        self._reload  = reload
 
     def elaborate(self, platform):
         m = Module()
