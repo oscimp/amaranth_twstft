@@ -53,3 +53,5 @@ the signal and the SDR (in our case the B210) recording the signal has been comp
 of this correction with the Costas Loop block with Order 2 for BPSK and 4 for QPSK, while GNU/Octave requires identifying
 the frequency offset (argmax(FFT)), compensating by multiplying with a numerically controlled oscillator, and only then 
 correlating.
+
+The bitstreams produced are stored in the ``build/top.bit`` file and can be archived for future use.
