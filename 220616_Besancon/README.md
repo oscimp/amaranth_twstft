@@ -30,6 +30,15 @@ this effect is under investigation, and might be related to the length (1 s) of
 the selected code ... to be continued. This asymetric correlation impact on the
 parabolic correlation fit accuracy was possibly described in [1]
 
+*Update*: the issue lies with the limited sampling rate. Processing the 2.5 Mchips/s data 
+collected at 5 MS/s leads to the observed periodic fluctuation with a period equal to the
+inverse of the sampling rate. As the satellite is drifting at ~5 ns/s, the 200 ns sampling 
+period is reached every 40 seconds (will vary depending on satellite motion along its orbit).
+By oversampling (FFT -> zero-padding -> iFFT) this issue is removed: hence, the problem is
+not associated with missing information (zero-padding does not add information) but with
+numerical instability of the fitting procedure. See subsequent processing for results without
+these fluctuation issues.
+
 <img src="parabolic_fit.png">
 
 [1] J.-M Friedt, C. Droit, G. Martin, and S. Ballandras,
