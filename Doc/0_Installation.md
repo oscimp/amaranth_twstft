@@ -101,4 +101,12 @@ The ``amaranth_twstft/flashZedBoard.py`` script should help you configure, synth
 ```
 for a 22-bit long shift register, 2.5 MS long code
 
+The pinout for testing the seupt is shown below, with the 2 dB attenuator on the 1-PPS
+inserted to reduce the TTL-level (0-5 V) signal to something like 0-3.3 V compatible
+with the FPGA. The ENAble signal is raised to Vcc to run the pseudo-random sequence generated
+on the radiofrequency output with BPSK or QPSK (depending on the switch status) modulation
+of the 70 MHz carrier.
+
+<img src="../figures/pinout_zedboard.png">
+
 Next step : [Pseudo-Random Noise generation](1_PRN.md)
