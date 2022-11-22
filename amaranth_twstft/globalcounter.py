@@ -44,14 +44,14 @@ class GlobalCounter(Elaboratable):
 
     """
     def __init__(self, max_val, reload=True, wait_first_reset=True):
-        self._max_val = max_val
         self.reset    = Signal()
         self.tick     = Signal()
-        self.output   = Signal()
+        self.output   = Signal(reset_less=True)
         self.counter  = Signal(range(max_val),
                                reset=max_val if wait_first_reset else 0,
                                name="globalCounter")
-        self.overflow = Signal()
+        self.overflow = Signal(reset_less=True)
+        self._max_val = max_val
         self._reload  = reload
 
     def elaborate(self, platform):
@@ -59,21 +59,16 @@ class GlobalCounter(Elaboratable):
 
         reload = (self._reload and self.counter == self._max_val -1)
 
-        m.d.comb += self.overflow.eq(reload)
+        cnt_next = Signal(range(self._max_val), reset_less=True)
+        m.d.comb += [
+            cnt_next.eq(Mux(reload, 0, self.counter + 1)),
+            self.overflow.eq(reload & self.tick),
+            self.output.eq(self.counter < self._max_val)
+        ]
 
-        with m.If(self.counter == self._max_val):
-            m.d.sync += self.output.eq(0)
-        with m.Else():
-            m.d.sync += [self.output.eq(1)]
-            with m.If(self.tick):
-                with m.If(reload):
-                    m.d.sync += [
-                        self.counter.eq(0),
-                        #self.overflow.eq(1)
-                    ]
-                with m.Else():
-                    m.d.sync += self.counter.eq(self.counter + 1)
         with m.If(self.reset):
             m.d.sync += self.counter.eq(0)
+        with m.Elif((self.counter < self._max_val) & self.tick):
+            m.d.sync += self.counter.eq(cnt_next)
 
         return m
