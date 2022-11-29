@@ -1,4 +1,4 @@
-From da38ee26cf0e7feb8483cb827255cff888618130 Mon Sep 17 00:00:00 2001
+From 5f95b1a8d089cb3cacb062ee6207e3439030076a Mon Sep 17 00:00:00 2001
 From: Gwenhael Goavec-Merou <gwenhael.goavec-merou@trabucayre.com>
 Date: Tue, 12 Sep 2022 18:50:29 +0200
 Subject: [PATCH]  adding a patch for UHD to integrate twstft into X310
@@ -6,32 +6,33 @@ Subject: [PATCH]  adding a patch for UHD to integrate twstft into X310
 
 Signed-off-by: Gwenhael Goavec-Merou <gwenhael.goavec-merou@trabucayre.com>
 ---
- fpga/usrp3/top/x300/Makefile          |  5 ++
+ fpga/usrp3/top/x300/Makefile          |  6 +++
  fpga/usrp3/top/x300/Makefile.x300.inc |  1 +
  fpga/usrp3/top/x300/x300.v            | 72 +++++++++++++++++++++++++--
  fpga/usrp3/top/x300/x300.xdc          |  8 +--
- 4 files changed, 79 insertions(+), 7 deletions(-)
+ 4 files changed, 80 insertions(+), 7 deletions(-)
 
 diff --git a/fpga/usrp3/top/x300/Makefile b/fpga/usrp3/top/x300/Makefile
-index 2f5e1b924..4c14d2116 100644
+index 2f5e1b924..c5c2df84f 100644
 --- a/fpga/usrp3/top/x300/Makefile
 +++ b/fpga/usrp3/top/x300/Makefile
-@@ -64,6 +64,10 @@ else
+@@ -64,6 +64,11 @@ else
  	post_build = @echo "Skipping bitfile export."
  endif
  
 +# 0: syrte
 +# 3: besac
 +TAPS?=0
++NOISELEN?=2500000
 +
  ##
  ##Supported Targets
  ##-----------------
-@@ -82,6 +86,7 @@ X300_1G:
+@@ -82,6 +87,7 @@ X300_1G:
  
  ##X310_HG:  1GigE on SFP+ Port0, 10Gig on SFP+ Port1.
  X310_HG:
-+	python -m amaranth_twstft.flashZedBoard --no-load --no-build --build-dir amaranth --taps $(TAPS)
++	python -m amaranth_twstft.flashZedBoard --no-load --no-build --build-dir amaranth --taps $(TAPS) --noiselen $(NOISELEN)
  	$(call vivado_build,X310,$(HG_DEFS) X310=1)
  	$(call post_build,X310,HG)
  
@@ -169,7 +170,7 @@ index 11290b79f..1a9ede450 100644
 +set_property PACKAGE_PIN   AH26     [get_ports {FrontPanelGpio11}]
  set_property IOSTANDARD    LVCMOS33 [get_ports {FrontPanelGpio*}]
  set_property PULLDOWN      TRUE     [get_ports {FrontPanelGpio*}]
-
+ 
 -- 
-2.35.1
+2.37.4
 
