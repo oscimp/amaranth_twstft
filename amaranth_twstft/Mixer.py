@@ -123,6 +123,7 @@ class Mixer(Elaboratable):
         m.d.comb += [
             self.output.eq(prn_gen.output),
             self.output2.eq(prn_gen.output2),
+            prn_gen.global_enable.eq(self.global_enable),
         ]
         
         with m.If(carrier_selector):
