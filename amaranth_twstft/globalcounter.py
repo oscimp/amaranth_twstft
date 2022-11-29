@@ -36,6 +36,9 @@ class GlobalCounter(Elaboratable):
     reset : Signal()
         input signal to restart the counter
 
+    enable : Signal()
+        input signal to enable/disable the counter
+
     tick : Signal()
         input signal driving the counter speed
 
@@ -45,6 +48,7 @@ class GlobalCounter(Elaboratable):
     """
     def __init__(self, max_val, reload=True, wait_first_reset=True):
         self.reset    = Signal()
+        self.enable   = Signal()
         self.tick     = Signal()
         self.output   = Signal(reset_less=True)
         self.counter  = Signal(range(max_val),
@@ -63,9 +67,11 @@ class GlobalCounter(Elaboratable):
         m.d.comb += [
             cnt_next.eq(Mux(reload, 0, self.counter + 1)),
             self.overflow.eq(reload & self.tick),
-            self.output.eq(self.counter < self._max_val)
+            self.output.eq((self.counter < self._max_val))
         ]
 
+        with m.If(~self.enable):
+            m.d.sync += self.counter.eq(self.counter.reset)
         with m.If(self.reset):
             m.d.sync += self.counter.eq(0)
         with m.Elif((self.counter < self._max_val) & self.tick):
