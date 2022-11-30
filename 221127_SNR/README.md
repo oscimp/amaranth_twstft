@@ -1,6 +1,6 @@
 # Computing the Signal to Noise ratio
 
-The signal to noise ration is defined as the power in the signal to the power
+The signal to noise ratio is defined as the power in the signal to the power
 in the noise, classically computed as var(signal)/var(noise).
 
 In the TWSTFT link we only receive a signal x=signal+noise with signal a noise
