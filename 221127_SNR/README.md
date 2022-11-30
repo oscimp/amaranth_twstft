@@ -3,9 +3,9 @@
 The signal to noise ratio is defined as the power in the signal to the power
 in the noise, classically computed as var(signal)/var(noise).
 
-In the TWSTFT link we only receive a signal x=signal+noise with signal a noise
+In the TWSTFT link we only receive a signal x=code+noise with code a
 pseudo-random sequence. Hence the objective in estimating SNR is to extract
-the signal from x and compute var(signal)/var(noise).
+the signal (code) from x and compute var(signal)/var(noise).
 
 Our initial investigations at finding the solution to extracting the signal 
 from x involved either squaring the signal to get the unspread carrier by
