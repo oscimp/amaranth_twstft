@@ -25,8 +25,8 @@ the additive noise which can no longer be seen.
 
 [This simulation code](simu_snr.m) demonstrates these concepts.
 
-<img src="simu_snr_no_freq_offset.png" width=200>
-<img src="simu_snr_freq_offset.png" width=200>
+<img src="simu_snr_no_freq_offset.png" width=400>
+<img src="simu_snr_freq_offset.png" width=400>
 
 Claudio Calosso (INRIM) provides the solution by stating that the signal
 is extracted from x at the known time delay identified by the cross-correlation
@@ -38,6 +38,20 @@ a variance representative of the noise power. Indeed
 and iFFT interpolation do not affect the SNR using this processing technique,
 matching the theoretical SNR known from the synthetic signals since the
 code and noise are separately known before being added.
+
+As can be seen below
+```
+factor          SNRxcorr        SNRth           SNRclaudio      Fourier domain
+0.000001        0.167983        0.000012        0.000064        0.000063
+0.000100        0.167455        0.001194        0.001530        0.001502
+0.010000        11.127889       0.119428        0.122586        0.112485
+1.000000        142.366249      11.942773       11.973212       1.488844
+100.000000      162.867895      1194.277271     1194.485940     1.702495
+10000.000000    163.199023      119427.727103   119420.260350   1.704985
+```
+
+the fourth column (proposed method) closely matches the expected value (third column) while
+the correlation method (second column) reaches a threshold at high SNR.
 
 Finally once the SNR has been identitified, the C/N0 result is computed by
 multiplying with the receiver bandwidth. With our SDR, the 5 MHz sampling rate
