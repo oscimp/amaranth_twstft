@@ -57,4 +57,9 @@ Finally once the SNR has been identitified, the C/N0 result is computed by
 multiplying with the receiver bandwidth. With our SDR, the 5 MHz sampling rate
 adds 67 dB to the estimated SNR. From the channel received from the satellite
 link downconverter, we extract about -10 dB SNR so that the C/N0 is estimated
-as 57 dB.Hz.
+as 57 dB.Hz. This result is consistent with the literature indicating that typical
+SNRs of a TWSTFT link is -20 to -5 dB, leading to a C/N0 from 43 to 58 dB.Hz which
+means that the authors considered a 2 MHz bandwidth in their 1 Mchip/s encoding [1].
+
+[1] Huang, Yi-Jiun, et al. "Multiple access interference suppression for TWSTFT applications." 
+IEEE Transactions on Instrumentation and Measurement 66.6 (2017): 1337-1342.
