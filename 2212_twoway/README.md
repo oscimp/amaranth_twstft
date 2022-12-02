@@ -10,7 +10,7 @@ The Zedboard bitstreams were generated using
 ./flashZedBoard.py -t 39 --noiselen 500000 --bitlen 19
 ./flashZedBoard.py -t 3 --noiselen 2500000 --bitlen 22
 ```
-and the bitstream is transfered to the Zedbboard using the command
+and the bitstream is transfered to the Zedboard using the command
 ```
 sudo openFPGALoader -b zedboard --freq 30e6 -m bitstream.bit 
 ```
@@ -50,7 +50,8 @@ Flash SRAM: [==================================================]
 Done
 ```
 
-All bitstreams for the Zedboard are located in ``bitstreams/zedboard``
+All bitstreams for the Zedboard are located in ``bitstreams/zedboard``, with the pinout documented
+at <a href="../Doc/0_Installation.md">
 
 # X310
 
@@ -70,4 +71,5 @@ user    0m0,228s
 sys     0m0,332s
 ```
 
-All bitstreams for the Zedboard are located in ``bitstreams/X310``
+All bitstreams for the X310 are located in ``bitstreams/X310``, with the pinout documented
+at <a href="../Doc/8_X310.md">

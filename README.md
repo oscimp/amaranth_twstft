@@ -41,6 +41,9 @@ steps needed to demodulate the phase-modulated signal using GNU Radio or GNU/Oct
 7. [Merging the Amaranth generated Verilog code with the Ettus Research
 B210 software](Doc/7_B210.md)
 
-8. [Quick description of the current version](Doc/AboutTheCurrentVersion.md)
+8. [Merging the Amaranth generated Verilog code with the Ettus Research
+X310 software](Doc/8_X310.md)
+
+9. [Quick description of the current version](Doc/AboutTheCurrentVersion.md)
 
 <img src="figures/220525ranging.svg">
