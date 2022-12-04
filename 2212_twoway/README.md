@@ -51,7 +51,7 @@ Done
 ```
 
 All bitstreams for the Zedboard are located in ``bitstreams/zedboard``, with the pinout documented
-at <a href="../Doc/0_Installation.md">
+in the [installation documentation](../Doc/0_Installation.md)
 
 *Apparently the B210 hates being fed the signal from the FPGA* and the AD9361 frontend
 automatic IQ control diverges: make sure to disable the IQ Imbalance Correction in the
@@ -76,4 +76,4 @@ sys     0m0,332s
 ```
 
 All bitstreams for the X310 are located in ``bitstreams/X310``, with the pinout documented
-at <a href="../Doc/8_X310.md">
+in [the X310 documentation](../Doc/8_X310.md).
