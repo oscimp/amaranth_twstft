@@ -53,6 +53,10 @@ Done
 All bitstreams for the Zedboard are located in ``bitstreams/zedboard``, with the pinout documented
 at <a href="../Doc/0_Installation.md">
 
+*Apparently the B210 hates being fed the signal from the FPGA* and the AD9361 frontend
+automatic IQ control diverges: make sure to disable the IQ Imbalance Correction in the
+flograph (USRP Source -> FE Corrections -> Enable IQ Imbalance Correction: Disabled).
+
 # X310
 
 Flashing the X310 with a new bitstream is achieved from a PC using
