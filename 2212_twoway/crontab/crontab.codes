@@ -1,0 +1,7 @@
+10 * * * *  /root/gocode.sh 1
+15 * * * *  /root/gocode.sh 2
+20 * * * *  /root/gocode.sh 3
+25 * * * *  /root/gocode.sh 4
+30 * * * *  /root/gocode.sh 5
+35 * * * *  /root/gocode.sh 6
+40 * * * *  /root/gocode.sh 7
