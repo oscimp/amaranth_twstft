@@ -3,13 +3,17 @@
 import numpy as np
 import struct
 import array
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
+from datetime import datetime
 
 fs = (5e6)
 foffset=0
 frange=8000
 
 def ranging(filename, prn_code):
+    print(filename[-14:-4])
+    ts = int(filename[-14:-4])
+
     with open(prn_code, "rb") as fd:
         codeb = fd.read()
         print(codeb[0:20])
@@ -26,8 +30,10 @@ def ranging(filename, prn_code):
     df = []
     indice1_lst = []
     indice2_lst = []
-    correction1 = []
-    correction2 = []
+    SNR1r_lst = []
+    SNR1i_lst = []
+    SNR2r_lst = []
+    SNR2i_lst = []
     with open(filename, "rb") as fd:
         must_stop = False
         while(not must_stop):
@@ -74,25 +80,30 @@ def ranging(filename, prn_code):
             yint = np.concatenate( (np.zeros(len(y))+1j*np.zeros(len(yf)) , yf , np.zeros(len(y))+1j*np.zeros(len(y))))  # Nint=1
             yint=np.fft.ifft(np.fft.fftshift(yint))                     # back to time /!\ outer fftshift for 0-delay at center
             codetmp=np.repeat(code,3)   # interpolate 2*Nint+1
-            yincode=np.concatenate((yint[indice1-1:-1] , yint[0:indice1]))*codetmp;
+            yincode=np.concatenate((yint[indice1-2:-1] , yint[0:indice1-1]))*codetmp; # -2 et -1
             SNR1r=np.mean(np.real(yincode))**2/np.var(yincode);
             SNR1i=np.mean(np.imag(yincode))**2/np.var(yincode);
+            puissance1=np.mean(np.real(yincode))**2+np.mean(np.imag(yincode))**2
 
+  # SNR2 computation
             yf = np.fft.fftshift(np.fft.fft(d2))
             yint = np.concatenate( (np.zeros(len(y))+1j*np.zeros(len(yf)) , yf , np.zeros(len(y))+1j*np.zeros(len(y))))  # Nint=1
             yint=np.fft.ifft(np.fft.fftshift(yint))                     # back to time /!\ outer fftshift for 0-delay at center
             #plt.plot(np.real(np.concatenate( (yint[indice2-1:-1] , yint[0:indice2-2]) ))/max(np.real(yint[indice2-1:-1])))
             #plt.plot(codetmp)
             #plt.show()
-            yincode=np.concatenate((yint[indice2-1:-1] , yint[0:indice2]))*codetmp;
+            yincode=np.concatenate((yint[indice2-2:-1] , yint[0:indice2-1]))*codetmp;
             SNR2r=np.mean(np.real(yincode))**2/np.var(yincode);
             SNR2i=np.mean(np.imag(yincode))**2/np.var(yincode);
+            puissance2=np.mean(np.real(yincode))**2+np.mean(np.imag(yincode))**2
             indice1_lst.append(indice1+correction1)
             indice2_lst.append(indice2+correction2)
-            print(str(p)+": "+str(dftmp)+" "+str(10*np.log10(SNR1i+SNR1r))+" "+str(10*np.log10(SNR2i+SNR2r))+" "+str((indice1-indice2+correction1-correction2)/fs/3))
+            SNR1r_lst.append(SNR1r)
+            SNR1i_lst.append(SNR1i)
+            SNR2r_lst.append(SNR2r)
+            SNR2i_lst.append(SNR2i)
+# year month day hour minute second delay frequency power SNR
+            print(str(p)+": "+datetime.utcfromtimestamp(ts+p).strftime('%Y %m %d %H %M %S')+"\t"+str(round((indice1-indice2+correction1-correction2)/fs/3,12))+"\t"+str(round(dftmp,1))+"\t"+str(round(10*np.log10(puissance1),1))+"\t"+str(round(10*np.log10(SNR1i+SNR1r),1))+"\t"+str(round(10*np.log10(SNR2i+SNR2r),1)))
             p += 1
 
-ranging("1670074501.bin","../codes/noiselen500000_bitlen19_taps39.bin");
-
-
-  
+ranging("../tmp/1670074501.bin","../codes/noiselen500000_bitlen19_taps39.bin");
