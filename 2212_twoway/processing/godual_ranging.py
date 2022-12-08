@@ -83,7 +83,7 @@ def ranging(filename, prn_code):
             yincode=np.concatenate((yint[indice1-2:-1] , yint[0:indice1-1]))*codetmp; # -2 et -1
             SNR1r=np.mean(np.real(yincode))**2/np.var(yincode);
             SNR1i=np.mean(np.imag(yincode))**2/np.var(yincode);
-            puissance1=np.mean(np.real(yincode))**2+np.mean(np.imag(yincode))**2
+            puissance1=np.var(y)
 
   # SNR2 computation
             yf = np.fft.fftshift(np.fft.fft(d2))

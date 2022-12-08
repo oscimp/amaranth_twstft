@@ -22,8 +22,11 @@ sys     3m48.403s
 ```
 
 Computation time on a Raspberry Pi4, data loaded through the USB3 bus from an
-external mechanical hard disk:
+external mechanical hard disk requiring less than 2 minutes to cp from ramdisk
+to non-volatile storage:
 ```
 # time python3 ./godual_ranging.py  > result_RPi.txt
-
+real   2h 23m 50s                                                              
+user    1h 58m 30s                                                              
+sys     24m 42.39s                                                              
 ```
