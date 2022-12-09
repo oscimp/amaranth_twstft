@@ -1,4 +1,5 @@
 pkg load signal
+https://filesender.renater.fr/?s=download&token=bba4eb7d-3683-4a14-85ad-7e8060d9ebc8
 % graphics_toolkit('gnuplot')
 
 fs=5e6;
@@ -49,7 +50,8 @@ for dirnum=1:length(dirlist)
     
       y=d1.*lo;                      % frequency transposition
   % the phase of the correlation can be found to identify the oscillator drift but not before correlation at low SNR!
-      prnmap01=fftshift(fft(y).*fcode);      % xcorr
+      ffty=fft(y);
+      prnmap01=fftshift(ffty.*fcode);      % xcorr
       if (p==fs/length(code)*10) % after 10 s
          figure
          plot(abs(ifft(fftshift(prnmap01))))
@@ -69,13 +71,20 @@ for dirnum=1:length(dirlist)
       correction1_3(p)=-u(2)/2/u(1);
       correction1_a(p)=(abs(prnmap01(indice1(p)-1))-abs(prnmap01(indice1(p)+1)))/(abs(prnmap01(indice1(p)-1))+abs(prnmap01(indice1(p)+1))-2*abs(prnmap01(indice1(p))))/2;
   % SNR computation
-      yf=fftshift(fft(y));
-      yint=[zeros(length(y)*(Nint),1) ; yf ; zeros(length(y)*(Nint),1)]; % interpolation to 3x samp_rate
-      yint=(ifft(fftshift(yint)));       % back to time /!\ outer fftshift for 0-delay at center
+%      yf=fftshift(fft(y));
+%      yint=[zeros(length(y)*(Nint),1) ; yf ; zeros(length(y)*(Nint),1)]; % interpolation to 3x samp_rate
+%      yint=(ifft(fftshift(yint)));       % back to time /!\ outer fftshift for 0-delay at center
+      yint=zeros(length(y)*(2*Nint+1),1);
+      yint(1:length(y)/2)=ffty(1:length(y)/2);
+      yint(end-length(y)/2+1:end)=ffty(length(y)/2+1:end);
+      yint=ifft(yint);
       codetmp=repelems(code,[[1:length(code)] ; ones(1,length(code))*(2*Nint+1)])'; % interpolate
       yincode=[yint(indice1(p)-1:end) ; yint(1:indice1(p)-2)].*codetmp;
       SNR1r(p)=mean(real(yincode))^2/var(yincode);
       SNR1i(p)=mean(imag(yincode))^2/var(yincode);
+      puissance1total(p)=var(y);
+      puissance1code(p)=mean(real(yincode))^2+mean(imag(yincode))^2;
+
   %    cf=fftshift(fft(code));
   %    cint=[zeros(length(code)*(Nint),1) ; cf.' ; zeros(length(code)*(Nint),1)]; % interpolation to 3x samp_rate
   %    cint=real((ifft(fftshift(cint))));       % back to time /!\ outer fftshift for 0-delay at center
@@ -88,7 +97,8 @@ for dirnum=1:length(dirlist)
         lo=exp(-j*2*pi*df2(p)*temps); % frequency offset
       
         y=d2.*lo;                      % frequency transposition
-        prnmap02=fftshift(fft(y).*fcode);      % xcorr
+        ffty=fft(y);
+        prnmap02=fftshift(ffty.*fcode);      % xcorr
         prnmap02=[zeros(length(y)*(Nint),1) ; prnmap02 ; zeros(length(y)*(Nint),1)]; % interpolation to 3x samp_rate
         prnmap02=(ifft(fftshift(prnmap02)));       % back to time
         [~,indice2(p)]=max(abs(prnmap02));
@@ -103,12 +113,18 @@ for dirnum=1:length(dirlist)
         correction2_3(p)=-u(2)/2/u(1);
         correction2_a(p)=(abs(prnmap02(indice2(p)-1))-abs(prnmap02(indice2(p)+1)))/(abs(prnmap02(indice2(p)-1))+abs(prnmap02(indice2(p)+1))-2*abs(prnmap02(indice2(p))))/2;
     % SNR computation
-        yf=fftshift(fft(y));
-        yint=[zeros(length(y)*(Nint),1) ; yf ; zeros(length(y)*(Nint),1)]; % interpolation to 3x samp_rate
-        yint=(ifft(fftshift(yint)));       % back to time /!\ outer fftshift for 0-delay at center
+%       yf=fftshift(fft(y));
+%       yint=[zeros(length(y)*(Nint),1) ; yf ; zeros(length(y)*(Nint),1)]; % interpolation to 3x samp_rate
+%       yint=(ifft(fftshift(yint)));       % back to time /!\ outer fftshift for 0-delay at center
+        yincode=zeros(length(y)*(2*Nint+1),1);
+        yincode(1:length(y)/2)=ffty(1:length(y)/2);
+        yincode(end-length(y)/2+1:end)=ffty(length(y)/2+1:end);
+        yincode=ifft(yincode);
         yincode=[yint(indice2(p)-1:end) ; yint(1:indice2(p)-2)].*codetmp;
         SNR2r(p)=mean(real(yincode))^2/var(yincode);
         SNR2i(p)=mean(imag(yincode))^2/var(yincode);
+        puissance2total(p)=var(y);
+        puissance1code(p)=mean(real(yincode))^2+mean(imag(yincode))^2;
         if (p==fs/length(code)*10) % after 10 s
            figure
            plot(angle([yint(indice2(p)-1:end) ; yint(1:indice2(p)-2)]))
@@ -117,9 +133,9 @@ for dirnum=1:length(dirlist)
            plot(codetmp)
            pause(0.1)
         end
-        printf("%d\t%f\t%f\t%f\t%f\t%f\r\n",p,offset1,10*log10(SNR1i(p)+SNR1r(p)),offset2,10*log10(SNR2i(p)+SNR2r(p)),(indice1(p)+correction1_a(p)-indice2(p)-correction2_a(p))/fs/(2*Nint+1))
+        printf("%d\t%f\t%f\t%f\t%f\t%f\t%f\t%f\r\n",p,(indice1(p)+correction1_a(p)-indice2(p)-correction2_a(p))/fs/(2*Nint+1),offset1,10*log10(puissance1total(p)),10*log10(SNR1i(p)+SNR1r(p)),offset2,10*log10(puissance2total(p)),10*log10(SNR2i(p)+SNR2r(p)))
       else
-        printf("%d\t%f\t%f\t%f\r\n",p,offset1,10*log10(SNR1i(p)+SNR1r(p)),(indice1(p)+correction1_a(p))/fs/(2*Nint+1))
+        printf("%d\t%f\t%f\t%f\t%f\r\n",p,(indice1(p)+correction1_a(p))/fs/(2*Nint+1),offset1,10*log10(puissance1total(p)),10*log10(SNR1i(p)+SNR1r(p)))
       end
       p=p+1;
     end
@@ -143,9 +159,9 @@ for dirnum=1:length(dirlist)
   ylabel('delay - parabolic fit (s)')
   nom=strrep(dirlist(dirnum).name,'.bin','.mat');
   if (OP!=1)
-    eval(['save -mat /tmp/',nom,' xv* corr* df1 df2 indic* SNR* code']);
+    eval(['save -mat /tmp/',nom,' xv* corr* df1 df2 indic* SNR* code puissan*']);
   else
-    eval(['save -mat /tmp/OP',nom,' xv* corr* df1 indic* SNR* code']);
+    eval(['save -mat /tmp/OP',nom,' xv* corr* df1 indic* SNR* code puissa*']);
   end
-  clear xv* corr* df* indic* p SNR*
+  clear xv* corr* df* indic* p SNR* puissa*
 end
