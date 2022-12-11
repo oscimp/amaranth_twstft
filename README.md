@@ -47,3 +47,7 @@ X310 software](Doc/8_X310.md)
 9. [Quick description of the current version](Doc/AboutTheCurrentVersion.md)
 
 <img src="figures/220525ranging.svg">
+
+A similar proprietary development unrelated to this work is under way as described at 
+http://www.eltvor.cz/elttt21.html as part of the ESA contract 
+https://navisp.esa.int/project/details/108/show
