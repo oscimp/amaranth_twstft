@@ -4,6 +4,7 @@ import numpy as np
 import struct
 import array
 import pyfftw  # from https://blog.hpc.qmul.ac.uk/pyfftw.html
+import pickle
 from datetime import datetime
 
 fs = (5e6)
@@ -26,8 +27,8 @@ def ranging(filename, prn_code):
         code=np.repeat(code,2)  # interpolate
         print(code[0:40])
         code=code*2-1
-        in_array_code = pyfftw.empty_aligned(len(code), dtype=np.complex128)
-        out_array_code= pyfftw.empty_aligned(len(code), dtype=np.complex128)
+        in_array_code = pyfftw.empty_aligned(len(code), dtype=np.complex64)
+        out_array_code= pyfftw.empty_aligned(len(code), dtype=np.complex64)
         fftw_fobject_code = pyfftw.FFTW(in_array_code, out_array_code, direction="FFTW_FORWARD", flags=("FFTW_ESTIMATE", ), threads=1)
         in_array_code[:].real=code
         fcode = np.conj(fftw_fobject_code(in_array_code))
@@ -43,27 +44,52 @@ def ranging(filename, prn_code):
     SNR1i_lst = []
     SNR2r_lst = []
     SNR2i_lst = []
-    in_array11 = pyfftw.empty_aligned(len(code), dtype=np.complex128)
-    in_array12 = pyfftw.empty_aligned(len(code), dtype=np.complex128)
-    in_array13 = pyfftw.empty_aligned(len(code), dtype=np.complex128)
-    out_array11= pyfftw.empty_aligned(len(code), dtype=np.complex128)
-    out_array12= pyfftw.empty_aligned(len(code), dtype=np.complex128)
-    out_array13= pyfftw.empty_aligned(len(code), dtype=np.complex128)
-    in_array31 = pyfftw.empty_aligned((Nint*2+1)*len(code), dtype=np.complex128)
-    in_array32 = pyfftw.empty_aligned((Nint*2+1)*len(code), dtype=np.complex128)
-    in_array33 = pyfftw.empty_aligned((Nint*2+1)*len(code), dtype=np.complex128)
-    in_array34 = pyfftw.empty_aligned((Nint*2+1)*len(code), dtype=np.complex128)
-    out_array31= pyfftw.empty_aligned((Nint*2+1)*len(code), dtype=np.complex128)
-    out_array32= pyfftw.empty_aligned((Nint*2+1)*len(code), dtype=np.complex128)
-    out_array33= pyfftw.empty_aligned((Nint*2+1)*len(code), dtype=np.complex128)
-    out_array34= pyfftw.empty_aligned((Nint*2+1)*len(code), dtype=np.complex128)
-    fftw_fobject11 = pyfftw.FFTW(in_array11, out_array11, direction="FFTW_FORWARD", flags=("FFTW_ESTIMATE", ), threads=1)
-    fftw_fobject12 = pyfftw.FFTW(in_array12, out_array12, direction="FFTW_FORWARD", flags=("FFTW_ESTIMATE", ), threads=1)
-    fftw_fobject13 = pyfftw.FFTW(in_array13, out_array13, direction="FFTW_FORWARD", flags=("FFTW_ESTIMATE", ), threads=1)
-    fftw_robject31 = pyfftw.FFTW(in_array31, out_array31, direction="FFTW_BACKWARD", flags=("FFTW_ESTIMATE", ), threads=1)
-    fftw_robject32 = pyfftw.FFTW(in_array32, out_array32, direction="FFTW_BACKWARD", flags=("FFTW_ESTIMATE", ), threads=1)
-    fftw_robject33 = pyfftw.FFTW(in_array33, out_array33, direction="FFTW_BACKWARD", flags=("FFTW_ESTIMATE", ), threads=1)
-    fftw_robject34 = pyfftw.FFTW(in_array34, out_array34, direction="FFTW_BACKWARD", flags=("FFTW_ESTIMATE", ), threads=1)
+    in_array11 = pyfftw.empty_aligned(len(code), dtype=np.complex64)
+    in_array12 = pyfftw.empty_aligned(len(code), dtype=np.complex64)
+    in_array13 = pyfftw.empty_aligned(len(code), dtype=np.complex64)
+    out_array11= pyfftw.empty_aligned(len(code), dtype=np.complex64)
+    out_array12= pyfftw.empty_aligned(len(code), dtype=np.complex64)
+    out_array13= pyfftw.empty_aligned(len(code), dtype=np.complex64)
+    in_array31 = pyfftw.empty_aligned((Nint*2+1)*len(code), dtype=np.complex64)
+    in_array32 = pyfftw.empty_aligned((Nint*2+1)*len(code), dtype=np.complex64)
+    in_array33 = pyfftw.empty_aligned((Nint*2+1)*len(code), dtype=np.complex64)
+    in_array34 = pyfftw.empty_aligned((Nint*2+1)*len(code), dtype=np.complex64)
+    out_array31= pyfftw.empty_aligned((Nint*2+1)*len(code), dtype=np.complex64)
+    out_array32= pyfftw.empty_aligned((Nint*2+1)*len(code), dtype=np.complex64)
+    out_array33= pyfftw.empty_aligned((Nint*2+1)*len(code), dtype=np.complex64)
+    out_array34= pyfftw.empty_aligned((Nint*2+1)*len(code), dtype=np.complex64)
+    try: # Try to load FFTW wisdom but don't panic if we can't
+        with open("fft.wisdom", "rb") as the_file:
+            wisdom = pickle.load(the_file)
+            pyfftw.import_wisdom(wisdom)
+            print("Wisdom imported")
+    except FileNotFoundError:
+        print("Warning: wisdom could not be imported")
+
+    try:  # Try to plan our transforms with the wisdom we have already
+        fftw_fobject11 = pyfftw.FFTW(in_array11, out_array11, direction="FFTW_FORWARD", flags=("FFTW_WISDOM_ONLY", ), threads=1)
+        fftw_fobject12 = pyfftw.FFTW(in_array12, out_array12, direction="FFTW_FORWARD", flags=("FFTW_WISDOM_ONLY", ), threads=1)
+        fftw_fobject13 = pyfftw.FFTW(in_array13, out_array13, direction="FFTW_FORWARD", flags=("FFTW_WISDOM_ONLY", ), threads=1)
+        fftw_robject31 = pyfftw.FFTW(in_array31, out_array31, direction="FFTW_BACKWARD", flags=("FFTW_WISDOM_ONLY", ), threads=1)
+        fftw_robject32 = pyfftw.FFTW(in_array32, out_array32, direction="FFTW_BACKWARD", flags=("FFTW_WISDOM_ONLY", ), threads=1)
+        fftw_robject33 = pyfftw.FFTW(in_array33, out_array33, direction="FFTW_BACKWARD", flags=("FFTW_WISDOM_ONLY", ), threads=1)
+        fftw_robject34 = pyfftw.FFTW(in_array34, out_array34, direction="FFTW_BACKWARD", flags=("FFTW_WISDOM_ONLY", ), threads=1)
+
+    except RuntimeError as e: # If we don't have enough wisdom, print a warning and proceed. => 16'30" computation time
+        print(e)  # will take some time on the first run but save time during subsequent executions
+        fftw_fobject11 = pyfftw.FFTW(in_array11, out_array11, direction="FFTW_FORWARD", flags=("FFTW_MEASURE",), threads=1)
+        fftw_fobject12 = pyfftw.FFTW(in_array12, out_array12, direction="FFTW_FORWARD", flags=("FFTW_WISDOM_ONLY", ), threads=1)
+        fftw_fobject13 = pyfftw.FFTW(in_array13, out_array13, direction="FFTW_FORWARD", flags=("FFTW_WISDOM_ONLY", ), threads=1)
+        fftw_robject31 = pyfftw.FFTW(in_array31, out_array31, direction="FFTW_BACKWARD", flags=("FFTW_MEASURE", ), threads=1)
+        fftw_robject32 = pyfftw.FFTW(in_array32, out_array32, direction="FFTW_BACKWARD", flags=("FFTW_WISDOM_ONLY", ), threads=1)
+        fftw_robject33 = pyfftw.FFTW(in_array33, out_array33, direction="FFTW_BACKWARD", flags=("FFTW_WISDOM_ONLY", ), threads=1)
+        fftw_robject34 = pyfftw.FFTW(in_array34, out_array34, direction="FFTW_BACKWARD", flags=("FFTW_WISDOM_ONLY", ), threads=1)
+
+    # Save the wisdom for next time
+    with open("fft.wisdom", "wb") as the_file:
+        wisdom = pyfftw.export_wisdom()
+        pickle.dump(wisdom, the_file)
+
     interpolation1=np.zeros((Nint*2+1)*len(code))+1j*np.zeros((Nint*2+1)*len(code))  # prepare empty array for interpolation
     interpolation2=np.zeros((Nint*2+1)*len(code))+1j*np.zeros((Nint*2+1)*len(code))
     yint=np.zeros((2*Nint+1)*len(code))+1j*np.zeros((2*Nint+1)*len(code))
@@ -156,3 +182,9 @@ def ranging(filename, prn_code):
             p += 1
 
 ranging("../tmp/1670074501.bin","../codes/noiselen500000_bitlen19_taps39.bin");
+
+
+
+
+
+

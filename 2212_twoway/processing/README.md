@@ -27,13 +27,21 @@ sys	2m11.091s
 ```
 
 An attempty of using pyfftw, not supported by Buildroot but to assess the speed improvement
-with ``godual_ranging_fftw.py``
+with ``godual_ranging_fftw.py`` handling 64-bit float (128 bit complex)
 :
 ```
 real	25m6.907s
 user	23m46.791s
 sys	1m9.231s
 ```
+
+and using 32-bit float (64 bit complex):
+```
+real	20m15.701s
+user	19m14.958s
+sys	0m55.614s
+```
+which is hardly changed by running a ``wisdom`` profile prior to execution (real 21m18.273s).
 
 Computation time on a Raspberry Pi4, data loaded through the USB3 bus from an
 external mechanical hard disk requiring less than 2 minutes to cp from ramdisk
