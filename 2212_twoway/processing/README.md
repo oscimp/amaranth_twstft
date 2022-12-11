@@ -18,12 +18,21 @@ real    49m9.854s
 user    44m56.770s
 sys     3m48.403s
 ```
-After removal of the excessive FFTs (commit ):
+After removal of the excessive FFTs (commit 2f7527352ace6ae284142712e17fbb95745fe1fb):
 ```
 $ time python3 ./godual_ranging.py
 real	29m39.138s
 user	27m17.220s
 sys	2m11.091s
+```
+
+An attempty of using pyfftw, not supported by Buildroot but to assess the speed improvement
+with ``godual_ranging_fftw.py``
+:
+```
+real	25m6.907s
+user	23m46.791s
+sys	1m9.231s
 ```
 
 Computation time on a Raspberry Pi4, data loaded through the USB3 bus from an
