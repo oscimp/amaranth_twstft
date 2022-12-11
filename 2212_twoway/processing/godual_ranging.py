@@ -3,12 +3,16 @@
 import numpy as np
 import struct
 import array
-# import matplotlib.pyplot as plt
 from datetime import datetime
 
 fs = (5e6)
 foffset=0
 frange=8000
+Nint=1
+affiche=0
+
+if (affiche==1):
+    import matplotlib.pyplot as plt
 
 def ranging(filename, prn_code):
     print(filename[-14:-4])
@@ -34,6 +38,9 @@ def ranging(filename, prn_code):
     SNR1i_lst = []
     SNR2r_lst = []
     SNR2i_lst = []
+    interpolation1=np.zeros((Nint*2+1)*len(code))+1j*np.zeros((Nint*2+1)*len(code))  # prepare empty array for interpolation
+    interpolation2=np.zeros((Nint*2+1)*len(code))+1j*np.zeros((Nint*2+1)*len(code))
+    yint=np.zeros((2*Nint+1)*len(code))+1j*np.zeros((2*Nint+1)*len(code))
     with open(filename, "rb") as fd:
         must_stop = False
         while(not must_stop):
@@ -50,18 +57,24 @@ def ranging(filename, prn_code):
 
             d1_fft = np.fft.fftshift(np.abs(np.fft.fft(d1 * d1)))
             tmp = d1_fft[k].argmax()+k[0]
-            dftmp = freq[tmp]/2  # JMF POURQUOI ?
+            dftmp = freq[tmp]/2
             df.append(tmp)
             lo = np.exp(-1j * 2 * np.pi * dftmp * temps)
             y = d1 * lo              # frequency transposition
-            multmp1 = np.fft.fftshift(np.fft.fft(y) * fcode)
-            multmp2 = np.fft.fftshift(np.fft.fft(d2) * fcode)
-            interpolation1=np.concatenate( (np.zeros(len(y))+1j*np.zeros(len(y)) , multmp1, np.zeros(len(y))+1j*np.zeros(len(y))))     # Nint=1
-            interpolation2=np.concatenate( (np.zeros(len(d2))+1j*np.zeros(len(d2)) , multmp2, np.zeros(len(d2))+1j*np.zeros(len(d2)))) # Nint=1
-            multmp1 = np.fft.fftshift(interpolation1)
-            multmp2 = np.fft.fftshift(interpolation2)
-            prnmap01 = np.fft.ifft(multmp1)       # correlation with returned signal
-            prnmap02 = np.fft.ifft(multmp2)
+            fft1tmp=np.fft.fft(y)
+            fft2tmp=np.fft.fft(d2)
+            multmp1 = np.fft.fftshift(fft1tmp * fcode)
+            multmp2 = np.fft.fftshift(fft2tmp * fcode)
+#            interpolation1=np.concatenate( (np.zeros(len(y))+1j*np.zeros(len(y)) , multmp1, np.zeros(len(y))+1j*np.zeros(len(y))))     # Nint=1
+            interpolation1[:len(y)//2]=multmp1[:len(y)//2]
+            interpolation1[-len(y)//2:]=multmp1[-len(y)//2:]
+#            interpolation2=np.concatenate( (np.zeros(len(d2))+1j*np.zeros(len(d2)) , multmp2, np.zeros(len(d2))+1j*np.zeros(len(d2)))) # Nint=1
+            interpolation2[:len(y)//2]=multmp2[:len(y)//2]
+            interpolation2[-len(y)//2:]=multmp2[-len(y)//2:]
+#            multmp1 = np.fft.fftshift(interpolation1)
+#            multmp2 = np.fft.fftshift(interpolation2)
+            prnmap01 = np.fft.ifft(interpolation1)       # correlation with returned signal
+            prnmap02 = np.fft.ifft(interpolation2)
 
             indice1 = abs(prnmap01).argmax()      # only one correlation peak
             indice2 = abs(prnmap02).argmax()
@@ -76,23 +89,30 @@ def ranging(filename, prn_code):
             correction2=((abs(xval2m1)-abs(xval2p1))/(abs(xval2m1)+abs(xval2p1)-2*abs(xval2))/2);
             
   # SNR1 computation
-            yf = np.fft.fftshift(np.fft.fft(y))
-            yint = np.concatenate( (np.zeros(len(y))+1j*np.zeros(len(yf)) , yf , np.zeros(len(y))+1j*np.zeros(len(y))))  # Nint=1
-            yint=np.fft.ifft(np.fft.fftshift(yint))                     # back to time /!\ outer fftshift for 0-delay at center
-            codetmp=np.repeat(code,3)   # interpolate 2*Nint+1
-            yincode=np.concatenate((yint[indice1-2:-1] , yint[0:indice1-1]))*codetmp; # -2 et -1
+#            yf = np.fft.fftshift(np.fft.fft(y))
+#            yint = np.concatenate( (np.zeros(len(y))+1j*np.zeros(len(yf)) , yf , np.zeros(len(y))+1j*np.zeros(len(y))))  # Nint=1
+#            yint=np.fft.ifft(np.fft.fftshift(yint))                     # back to time /!\ outer fftshift for 0-delay at center
+            yint[:len(y)//2]=fft1tmp[:len(y)//2]
+            yint[-len(y)//2:]=fft1tmp[-len(y)//2:]
+            yinti=np.fft.ifft(yint) 
+            codetmp=np.repeat(code,2*Nint+1)   # interpolate 2*Nint+1
+            yincode=np.concatenate((yinti[indice1-2:] , yinti[:indice1-2]))*codetmp; # -2 JMF CHECK WHY -2
             SNR1r=np.mean(np.real(yincode))**2/np.var(yincode);
             SNR1i=np.mean(np.imag(yincode))**2/np.var(yincode);
             puissance1=np.var(y)
 
   # SNR2 computation
-            yf = np.fft.fftshift(np.fft.fft(d2))
-            yint = np.concatenate( (np.zeros(len(y))+1j*np.zeros(len(yf)) , yf , np.zeros(len(y))+1j*np.zeros(len(y))))  # Nint=1
-            yint=np.fft.ifft(np.fft.fftshift(yint))                     # back to time /!\ outer fftshift for 0-delay at center
-            #plt.plot(np.real(np.concatenate( (yint[indice2-1:-1] , yint[0:indice2-2]) ))/max(np.real(yint[indice2-1:-1])))
-            #plt.plot(codetmp)
-            #plt.show()
-            yincode=np.concatenate((yint[indice2-2:-1] , yint[0:indice2-1]))*codetmp;
+            #yf = np.fft.fftshift(np.fft.fft(d2))
+            #yint = np.concatenate( (np.zeros(len(y))+1j*np.zeros(len(yf)) , yf , np.zeros(len(y))+1j*np.zeros(len(y))))  # Nint=1
+            #yint=np.fft.ifft(np.fft.fftshift(yint))                     # back to time /!\ outer fftshift for 0-delay at center
+            yint[:len(y)//2]=fft2tmp[:len(y)//2]
+            yint[-len(y)//2:]=fft2tmp[-len(y)//2:]
+            yinti=np.fft.ifft(yint) 
+            if ( (p==fs/len(code)*10) and (affiche==1)):
+                plt.plot(np.real(np.concatenate( (yinti[indice2-2:] , yinti[:indice2-2]) ))[0:1001]/max(np.real(yinti[indice2-2:])))
+                plt.plot(codetmp[0:1001])
+                plt.show()
+            yincode=np.concatenate((yinti[indice2-2:] , yinti[:indice2-2]))*codetmp; # -2 JMF CHECK WHY -2
             SNR2r=np.mean(np.real(yincode))**2/np.var(yincode);
             SNR2i=np.mean(np.imag(yincode))**2/np.var(yincode);
             puissance2=np.mean(np.real(yincode))**2+np.mean(np.imag(yincode))**2

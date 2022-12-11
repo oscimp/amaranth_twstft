@@ -8,17 +8,22 @@ displaying the cross-correlation of the first few seconds
 Computation time on an Intel i5-3610ME CPU @ 2.70GHz (5388 bogomips), data
 loaded from onboard SSD mass storage:
 ```
-$ time octave -q godual_ranging.m > octaveoutput.txt 
-
+$ time octave -q godual_ranging.m
 real    45m30.112s
 user    42m9.818s
 sys     2m30.883s
 
-$ time python3 ./godual_ranging.py > pythonoutput.txt 
-
+$ time python3 ./godual_ranging.py
 real    49m9.854s
 user    44m56.770s
 sys     3m48.403s
+```
+After removal of the excessive FFTs (commit ):
+```
+$ time python3 ./godual_ranging.py
+real	29m39.138s
+user	27m17.220s
+sys	2m11.091s
 ```
 
 Computation time on a Raspberry Pi4, data loaded through the USB3 bus from an
@@ -30,3 +35,6 @@ real   2h 23m 50s
 user    1h 58m 30s                                                              
 sys     24m 42.39s                                                              
 ```
+
+It was verified that increasing interpolation (Nint>1) is inefficient (larger iFFT) 
+and only leads to excessive noise on the result, so Nint=1 seems to be optimal.
