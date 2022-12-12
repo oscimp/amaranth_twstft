@@ -10,6 +10,7 @@ foffset=0
 frange=8000
 Nint=1
 affiche=0
+debug=0
 
 if (affiche==1):
     import matplotlib.pyplot as plt
@@ -63,8 +64,8 @@ def ranging(filename, prn_code):
             y = d1 * lo              # frequency transposition
             fft1tmp=np.fft.fft(y)
             fft2tmp=np.fft.fft(d2)
-            multmp1 = np.fft.fftshift(fft1tmp * fcode)
-            multmp2 = np.fft.fftshift(fft2tmp * fcode)
+            multmp1 = fft1tmp * fcode
+            multmp2 = fft2tmp * fcode
 #            interpolation1=np.concatenate( (np.zeros(len(y))+1j*np.zeros(len(y)) , multmp1, np.zeros(len(y))+1j*np.zeros(len(y))))     # Nint=1
             interpolation1[:len(y)//2]=multmp1[:len(y)//2]
             interpolation1[-len(y)//2:]=multmp1[-len(y)//2:]
@@ -84,7 +85,11 @@ def ranging(filename, prn_code):
             xval1p1 = prnmap01[indice1+1]
             xval2m1 = prnmap02[indice2-1]
             xval2p1 = prnmap02[indice2+1]
-
+            if ( (p==1) and (affiche==1)):
+                plt.figure()
+                plt.plot(abs(prnmap01[indice1-2:indice1+3]))
+                plt.plot(abs(prnmap02[indice2-2:indice2+3]))
+                plt.show()
             correction1=((abs(xval1m1)-abs(xval1p1))/(abs(xval1m1)+abs(xval1p1)-2*abs(xval1))/2);
             correction2=((abs(xval2m1)-abs(xval2p1))/(abs(xval2m1)+abs(xval2p1)-2*abs(xval2))/2);
             
@@ -108,11 +113,13 @@ def ranging(filename, prn_code):
             yint[:len(y)//2]=fft2tmp[:len(y)//2]
             yint[-len(y)//2:]=fft2tmp[-len(y)//2:]
             yinti=np.fft.ifft(yint) 
-            if ( (p==fs/len(code)*10) and (affiche==1)):
+            # if ( (p==fs/len(code)*10) and (affiche==1)):
+            if ( (p==1) and (affiche==1)):
+                plt.figure()
                 plt.plot(np.real(np.concatenate( (yinti[indice2-2:] , yinti[:indice2-2]) ))[0:1001]/max(np.real(yinti[indice2-2:])))
                 plt.plot(codetmp[0:1001])
                 plt.show()
-            yincode=np.concatenate((yinti[indice2-2:] , yinti[:indice2-2]))*codetmp; # -2 JMF CHECK WHY -2
+            yincode=np.concatenate((yinti[indice2:] , yinti[:indice2]))*codetmp; # -2 JMF CHECK WHY -2
             SNR2r=np.mean(np.real(yincode))**2/np.var(yincode);
             SNR2i=np.mean(np.imag(yincode))**2/np.var(yincode);
             puissance2=np.mean(np.real(yincode))**2+np.mean(np.imag(yincode))**2
@@ -123,6 +130,8 @@ def ranging(filename, prn_code):
             SNR2r_lst.append(SNR2r)
             SNR2i_lst.append(SNR2i)
 # year month day hour minute second delay frequency power SNR
+            if (debug == 1):
+                print(str(p)+": "+str(indice1)+" "+str(correction1)+" "+str(indice2)+" "+str(correction2)+" "+str(round(abs(xval1m1),0))+" "+str(round(abs(xval1),0))+" "+str(round(abs(xval1p1),0))+" "+str(round(abs(xval2m1),0))+" "+str(round(abs(xval2),0))+" "+str(round(abs(xval2p1),0)))
             print(str(p)+": "+datetime.utcfromtimestamp(ts+p).strftime('%Y %m %d %H %M %S')+"\t"+str(round((indice1-indice2+correction1-correction2)/fs/3,12))+"\t"+str(round(dftmp,1))+"\t"+str(round(10*np.log10(puissance1),1))+"\t"+str(round(10*np.log10(SNR1i+SNR1r),1))+"\t"+str(round(10*np.log10(SNR2i+SNR2r),1)))
             p += 1
 
