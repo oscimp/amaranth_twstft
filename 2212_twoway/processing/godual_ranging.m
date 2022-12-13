@@ -13,7 +13,7 @@ for dirnum=1:length(dirlist)
   else
     nom=dirbit(mod(dirnum-1,length(dirbit))*2+1).name
   end
-  f=fopen(['/home/jmfriedt/sdr/SATRE/amaranth_twstft/2212_twoway/codes/',nom]);
+  f=fopen(['../codes/',nom]);
   code=fread(f,inf,'int8');
   code=repelems(code,[[1:length(code)] ; ones(1,length(code))*2]); % interpolate
   code=2*code-1;  % +1/-1
