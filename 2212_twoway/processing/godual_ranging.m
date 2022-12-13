@@ -1,13 +1,12 @@
 pkg load signal
-https://filesender.renater.fr/?s=download&token=bba4eb7d-3683-4a14-85ad-7e8060d9ebc8
 % graphics_toolkit('gnuplot')
 
 fs=5e6;
 Nint=1;
-OP=1;
+OP=0;
 
-dirlist=dir('./*bin')
-dirbit=dir('/home/jmfriedt/sdr/SATRE/amaranth_twstft/2212_twoway/codes/*bin')
+dirlist=dir('../tmp/*bin')
+dirbit=dir('../codes/*bin')
 for dirnum=1:length(dirlist)
   if (OP==1)
     nom=dirbit(mod(dirnum-1,length(dirbit))*2+2).name
@@ -21,8 +20,8 @@ for dirnum=1:length(dirlist)
   fcode=conj(fft(code'));
   fclose(f);
 
-  dirlist.name
-  f=fopen(dirlist(dirnum).name);
+  dirlist(dirnum).name           % (dirnum)
+  eval(["f=fopen('../tmp/",dirlist(dirnum).name,"')"]); % (dirnum)
   
   p=1;
   do
@@ -112,6 +111,13 @@ for dirnum=1:length(dirlist)
         [u,v]=polyfit([-3:+3]',abs(prnmap02([indice2(p)-3:indice2(p)+3])),2);
         correction2_3(p)=-u(2)/2/u(1);
         correction2_a(p)=(abs(prnmap02(indice2(p)-1))-abs(prnmap02(indice2(p)+1)))/(abs(prnmap02(indice2(p)-1))+abs(prnmap02(indice2(p)+1))-2*abs(prnmap02(indice2(p))))/2;
+        if (p==fs/length(code)*10) % after 10 s
+           plot(abs(prnmap01(indice1-2:indice1+2)))
+           hold on
+           plot(abs(prnmap02(indice2-2:indice2+2)))
+           indice1(p)
+           indice2(p)
+        end
     % SNR computation
 %       yf=fftshift(fft(y));
 %       yint=[zeros(length(y)*(Nint),1) ; yf ; zeros(length(y)*(Nint),1)]; % interpolation to 3x samp_rate
@@ -124,7 +130,7 @@ for dirnum=1:length(dirlist)
         SNR2r(p)=mean(real(yincode))^2/var(yincode);
         SNR2i(p)=mean(imag(yincode))^2/var(yincode);
         puissance2total(p)=var(y);
-        puissance1code(p)=mean(real(yincode))^2+mean(imag(yincode))^2;
+        puissance2code(p)=mean(real(yincode))^2+mean(imag(yincode))^2;
         if (p==fs/length(code)*10) % after 10 s
            figure
            plot(angle([yint(indice2(p)-1:end) ; yint(1:indice2(p)-2)]))
