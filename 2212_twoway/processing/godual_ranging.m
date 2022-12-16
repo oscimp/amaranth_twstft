@@ -3,16 +3,14 @@ pkg load signal
 
 fs=5e6;
 Nint=1;
-OP=0;
+remote=0
+OP=1
 
-dirlist=dir('../tmp/*bin')
-dirbit=dir('../codes/*bin')
+dirlist=dir('./*bin');
+dirbit=dir('../codes/*bin');
 for dirnum=1:length(dirlist)
-  if (OP==1)
-    nom=dirbit(mod(dirnum-1,length(dirbit))*2+2).name
-  else
-    nom=dirbit(mod(dirnum-1,length(dirbit))*2+1).name
-  end
+  nom=dirbit(mod(dirnum-1,length(dirbit))*2+mod(OP+remote,2)+1).name  % LTFB=odd OP=even
+  % OP=1, remote=0 or OP=0, remote=1 => even ; OP=0, remote=0 or OP=1, remote=1 => odd
   f=fopen(['../codes/',nom]);
   code=fread(f,inf,'int8');
   code=repelems(code,[[1:length(code)] ; ones(1,length(code))*2]); % interpolate
@@ -21,9 +19,10 @@ for dirnum=1:length(dirlist)
   fclose(f);
 
   dirlist(dirnum).name           % (dirnum)
-  eval(["f=fopen('../tmp/",dirlist(dirnum).name,"')"]); % (dirnum)
+  eval(["f=fopen('./",dirlist(dirnum).name,"');"]); % (dirnum)
   
   p=1;
+  printf("n\tdt\tdf1\tP1\tSNR1\tdf2\tP2\tSNR2\r\n");
   do
     d=fread(f,length(fcode)*4,'int16');  % 1 code length
     longueur=length(d);
@@ -32,14 +31,23 @@ for dirnum=1:length(dirlist)
     d2=d(2:2:end);  % reference
     d1=d1-mean(d1);
     d2=d2-mean(d2);
+    if (OP==1)
+%       tmp=d1;
+%       d1=d2;
+%       d2=tmp;
+    end
     clear d
   %  x1avant=abs(xcorr(d1,code));x1avant=x1avant(length(code):end);
     if (longueur==length(fcode)*4)  
       freq=linspace(-fs/2,fs/2,length(d1));
-      if (OP!=1)
+      if (remote!=1)
          k=find((freq<20000)&(freq>-20000));
       else
-         k=find((freq<120000)&(freq>80000));
+         if (OP==1)
+            k=find((freq>-120000)&(freq<-80000)); % -50 kHz
+         else
+            k=find((freq<120000)&(freq>80000));
+         end
       end
   %%% d1
       d22=fftshift(abs(fft(d1.^2))); % 0.1 Hz accuracy
@@ -89,7 +97,7 @@ for dirnum=1:length(dirlist)
   %    cint=real((ifft(fftshift(cint))));       % back to time /!\ outer fftshift for 0-delay at center
   
   %%% d2
-      if (OP!=1)
+      if (remote!=1)
         d22=fftshift(abs(fft(d2.^2))); % 0.1 Hz accuracy
         [~,df2(p)]=max(d22(k));df2(p)=df2(p)+k(1)-1;df2(p)=freq(df2(p))/2;offset2=df2(p);
         temps=[0:length(d2)-1]'/fs;
@@ -112,9 +120,9 @@ for dirnum=1:length(dirlist)
         correction2_3(p)=-u(2)/2/u(1);
         correction2_a(p)=(abs(prnmap02(indice2(p)-1))-abs(prnmap02(indice2(p)+1)))/(abs(prnmap02(indice2(p)-1))+abs(prnmap02(indice2(p)+1))-2*abs(prnmap02(indice2(p))))/2;
         if (p==fs/length(code)*10) % after 10 s
-           plot(abs(prnmap01(indice1-2:indice1+2)))
+           plot(abs(prnmap01(indice1(p)-2:indice1(p)+2)))
            hold on
-           plot(abs(prnmap02(indice2-2:indice2+2)))
+           plot(abs(prnmap02(indice2(p)-2:indice2(p)+2)))
            indice1(p)
            indice2(p)
         end
@@ -148,7 +156,7 @@ for dirnum=1:length(dirlist)
   until (longueur<length(fcode)*4);
   fclose(f)
   solution1=indice1+correction1_a;
-  if (OP!=1)
+  if (remote!=1)
     solution2=indice2+correction2_a;
   end
   subplot(211)
@@ -164,10 +172,10 @@ for dirnum=1:length(dirlist)
   xlabel('time (s)')
   ylabel('delay - parabolic fit (s)')
   nom=strrep(dirlist(dirnum).name,'.bin','.mat');
-  if (OP!=1)
+  if (remote!=1)
     eval(['save -mat /tmp/',nom,' xv* corr* df1 df2 indic* SNR* code puissan*']);
   else
-    eval(['save -mat /tmp/OP',nom,' xv* corr* df1 indic* SNR* code puissa*']);
+    eval(['save -mat /tmp/remote',nom,' xv* corr* df1 indic* SNR* code puissa*']);
   end
   clear xv* corr* df* indic* p SNR* puissa*
 end
