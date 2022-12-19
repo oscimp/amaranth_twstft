@@ -5,6 +5,7 @@ from amaranth.build import *
 from amaranth_boards.resources import *
 from amaranth_twstft.Synchronizer import *
 from amaranth_twstft.Prescaler import *
+from amaranth_twstft.pwmStatic import *
 
 
 
@@ -162,20 +163,20 @@ class Mixer(Elaboratable):
         if 1==1 : #debug ?
         
             m.submodules.vingtmega = presc20MHz = Prescaler(self.clock_freq,20000000)
-            m.submodules.highstate200ns = hs200ns = GlobalCounter(56000000, reload=self._reload)
+            m.submodules.highstate200ns = hs200ns = PWMStatic(56000000, int(280e6), wait_first_reset=False)
             the_pps_we_love = Signal()
             dixmega = Signal()
             
             m.d.comb += [
                 presc20MHz.enable.eq(1),
-                hs200ns.tick.eq(1),
+                hs200ns.enable.eq(1),
+                hs200ns.reset.eq(0),
                 the_pps_we_love.eq(hs200ns.output),
             ]
             with m.If(presc20MHz.output):
                 m.d.sync += dixmega.eq(~dixmega)
             
             m.d.sync+=[
-                hs200ns.reset.eq(prn_gen.rise_pps),
                 self.the_pps_we_love.eq(the_pps_we_love),
                 self.dixmega.eq(dixmega),
                 self.pps_out.eq(self.pps_in),
