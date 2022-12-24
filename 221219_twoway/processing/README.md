@@ -30,3 +30,18 @@ deviation as well. The frequency shift introduced by the satellite transponder
 is consistent with 200 Hz fluctuations overs 5 days. The power emitted from LTFB
 remained constant and so did its SNR measurement. The OP drop of SNR by 15 dB is
 matched with a rise of its ranging standard deviation to about 1 ns.
+
+# C++ application
+
+Compiled with ``make`` if host and target are the same (e.g. x86 PC) or
+``make FFTW_THREADS=0`` for single-threaded application (default), or
+``make FFTW_THREADS=1`` for activating multi-threading.
+
+For cross-compiling to the RPi4, assuming Buildroot is located in ``$BR``:
+```
+make BR_DIR=$BR CROSS_COMPILE=aarch64-linux-
+```
+which expects FFTW3 with double precision to be active in BR (as well as matio and libz).
+
+The application expects two arguments, respectively the data file (interleaved complex
+short integers) and the code sequence (unsigned 8-bit integers).
