@@ -28,4 +28,5 @@ is in the 200 ps range integrated over 2 minutes, LTFB exhibits some local
 fluctuations in the ns range in the beginning and then settles to 200 ps standard
 deviation as well. The frequency shift introduced by the satellite transponder
 is consistent with 200 Hz fluctuations overs 5 days. The power emitted from LTFB
-remained constant and so did its SNR measurement.
+remained constant and so did its SNR measurement. The OP drop of SNR by 15 dB is
+matched with a rise of its ranging standard deviation to about 1 ns.
