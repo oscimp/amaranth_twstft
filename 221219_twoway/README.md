@@ -33,7 +33,8 @@ laptop fitted with a Intel i5-3610ME CPU @ 2.70GHz. The sample file is a 5 secon
 | GNU/Octave [0]               | 58 s       | XXX s      |
 | Python/numpy [1]             | 97 s       | XXX s      |
 | Python/pyfft [2]             | 85 s (4 threads)/76 (1-thread)       | XXX s      |
-| C++ [3]                      | 14 s       | XXX s      |
+| C++ [3]                      | 22 s       | XXX s      |
+| C++ [3] on RPi4/performance  | 54 s       | XXX s      |
 
 [0]
 ```
@@ -65,7 +66,12 @@ n      dt1     df1     P1      SNR1    dt2     df2     P2      SNR2
 
 [3]
 ```
-TODO (at the moment erroneous output)
+file size : 5000000 5000000
+0 0.988264034738	1780.750	 0.725310774166	0.250
+1 0.988264031236	1780.750	 0.725310774171	0.250
+2 0.988264028141	1780.750	 0.725310774194	0.250
+3 0.988264024427	1780.750	 0.725310774201	0.250
+4 0.988264021646	1780.750	 0.725310774204	0.250
 ```
 
 ## SDR data loss
@@ -77,3 +83,7 @@ happens during datastreaming, it might be that since both loopback and reception
 to the same timescale, the dataloss will compensate but this remains to be assessed.
 
 <img src="processing/dataloss.png">
+
+The red vertical line indicates RPi4 reboot in an attempt to reduce packet loss, to no avail. It might
+be that the usage of ramfs is excessive, with a 7.5 GB RAMdisk out of the available 8 GB, leading to
+swapping and the need to restore RAM during the next acquisition.
