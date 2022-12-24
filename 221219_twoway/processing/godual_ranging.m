@@ -24,7 +24,7 @@ for dirnum=1:length(dirlist)
   eval(["f=fopen('",datalocation,"/",dirlist(dirnum).name,"');"]); % (dirnum)
   
   p=1;
-  printf("n\tdt\tdf1\tP1\tSNR1\tdf2\tP2\tSNR2\r\n");
+  printf("n\tdt1\tdf1\tP1\tSNR1\tdt2\tdf2\tP2\tSNR2\r\n");
   do
     d=fread(f,length(fcode)*4,'int16');  % 1 code length
     longueur=length(d);
@@ -151,9 +151,9 @@ for dirnum=1:length(dirlist)
            plot(codetmp)
            pause(0.1)
         end
-        printf("%d\t%f\t%f\t%f\t%f\t%f\t%f\t%f\r\n",p,(indice1(p)+correction1_a(p)-indice2(p)-correction2_a(p))/fs/(2*Nint+1),offset1,10*log10(puissance1total(p)),10*log10(SNR1i(p)+SNR1r(p)),offset2,10*log10(puissance2total(p)),10*log10(SNR2i(p)+SNR2r(p)))
+        printf("%d\t%.12f\t%.3f\t%.1f\t%.1f\t%.12f\t%.3f\t%.1f\t%.1f\r\n",p,(indice1(p)+correction1_a(p))/fs/(2*Nint+1),offset1,10*log10(puissance1total(p)),10*log10(SNR1i(p)+SNR1r(p)),(indice2(p)-correction2_a(p))/fs/(2*Nint+1),offset2,10*log10(puissance2total(p)),10*log10(SNR2i(p)+SNR2r(p)))
       else
-        printf("%d\t%f\t%f\t%f\t%f\r\n",p,(indice1(p)+correction1_a(p))/fs/(2*Nint+1),offset1,10*log10(puissance1total(p)),10*log10(SNR1i(p)+SNR1r(p)))
+        printf("%d\t%.12f\t%.3f\t%.1f\t%.1f\r\n",p,(indice1(p)+correction1_a(p))/fs/(2*Nint+1),offset1,10*log10(puissance1total(p)),10*log10(SNR1i(p)+SNR1r(p)))
       end
       p=p+1;
     end
