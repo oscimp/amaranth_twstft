@@ -252,7 +252,7 @@ void GoRanging::compute()
 //TODO      puissance1total(p)=var(y);
 //TODO      puissance1code(p)=mean(real(yincode))^2+mean(imag(yincode))^2;
 
-        if (_remote!=0) {
+        if (_remote==0) {
 // analysis of d2
             for (size_t i = 0; i < _fcode_len; i++) {
                 std::complex<double> tmp = d2[i] * d2[i];
@@ -318,6 +318,7 @@ void GoRanging::compute()
     
             printf(" %0.12lf\t%.3f\n", ((double)indice2+corr2)/fs/(2*Nint+1.),df2);
         }
+        else printf("\n");
         p++;
             //must_stop = true;
     }
