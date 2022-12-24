@@ -1,4 +1,11 @@
-# Zedboard
+# Assessing the impact of the code length
+
+The objective of this set of experiments is on the one hand to assess the
+impact in a two-way link of the code length, and on the other hand to validate
+the automation of the measurement sequence (crontab synchronized on a common
+NTP server with second accuracy and minute resolution) and processing.
+
+## Zedboard
 
 The Zedboard bitstreams were generated using
 ```bash
@@ -57,7 +64,7 @@ in the [installation documentation](../Doc/0_Installation.md)
 automatic IQ control diverges: make sure to disable the IQ Imbalance Correction in the
 flograph (USRP Source -> FE Corrections -> Enable IQ Imbalance Correction: Disabled).
 
-# X310
+## X310
 
 Flashing the X310 with a new bitstream is achieved from a PC using
 ```
