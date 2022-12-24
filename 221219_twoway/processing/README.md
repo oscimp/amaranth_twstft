@@ -45,3 +45,9 @@ which expects FFTW3 with double precision to be active in BR (as well as matio a
 
 The application expects two arguments, respectively the data file (interleaved complex
 short integers) and the code sequence (unsigned 8-bit integers).
+
+# Algorithm
+
+The processing sequence is summarized as follows:
+
+<img src="algo.png">
