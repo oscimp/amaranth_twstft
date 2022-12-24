@@ -20,3 +20,12 @@ a different sub-directory name). Below the result of post-analysis:
 * ranging from OP
 
 <img src="OP_OP.png">
+
+Notice the signal drop from OP at the middle of the session due to a damaged 
+buffer. The SNR measurement at OP and LTFB confirms the power drop by 15 dB 
+also observed on the emitter monitoring power probe. OP ranging standard deviation
+is in the 200 ps range integrated over 2 minutes, LTFB exhibits some local
+fluctuations in the ns range in the beginning and then settles to 200 ps standard
+deviation as well. The frequency shift introduced by the satellite transponder
+is consistent with 200 Hz fluctuations overs 5 days. The power emitted from LTFB
+remained constant and so did its SNR measurement.
