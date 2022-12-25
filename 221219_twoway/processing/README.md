@@ -87,7 +87,7 @@ allowing to align both timescales
 * All timescales -- LTFB ranging, OP ranging and OP TW -- are aligned on the common signal 
 transmitted by LTFB and received as ranging by LTFB and TW by OP.
 
-The resulting TW exchance analyzed this way is shown below:
+The resulting TW exchange analyzed this way is shown below:
 
 <img src="tw_final.png">
 
