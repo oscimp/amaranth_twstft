@@ -51,3 +51,43 @@ short integers) and the code sequence (unsigned 8-bit integers).
 The processing sequence is summarized as follows:
 
 <img src="algo.png">
+
+# Alignement
+
+The final result of the Two-Way exchange is to compare the timestamps of the correlation
+peaks at the two ends of the link. Such a comparison requires a common timescale between
+the two datasets, which is not obvious since the two speakers are at different locations.
+The proposed solution according to the following recording sequence
+
+<img src="alignement.png">
+
+is as follows:
+* on both ends of the link, the processing script is started with a second resolution by
+a crontab synchronized on NTP. The time needed to start the shell script is unknown but in
+the second range
+* on both ends of the link, the software defined radio is started. It is known that the
+X310 starts faster than the B210, and that both need less than 10 seconds to start
+* once the SDR launch sequence is started, a delay of 10 seconds is started. Each SDR
+will take an unknown amount of time, assumed to be less than 10 seconds, to start
+collecting data. Hence, the time scale on both ends start at different unknown times
+noted t(OP) and t(LTFB)
+* at some point, both speakers start emitting, at different start time due to the unknown
+shell script execution latency
+* from the GNU Radio acqusition script, it is known that both speakers transmit the exact same
+duration (determined by the number of collected samples). 
+
+The proposed alignement procedure is as follows (implemented in gofinal.m):
+* LTFB has timestamped the exact (within 1 s) emission start time
+* LTFB has recorded the ranging date as detected from a sharp rise in the SNR. This timestamp
+is recorded as T
+* OP has received the signal transmitted by LTFB with a delay equal to more or less the
+ranging delay, both OP and LTFB being in Europe and at a similar view angle from the satellite.
+Hence, the reception by OP of the signal transmitted by LTFB is known to be timestamped at T,
+allowing to align both timescales
+* All timescales -- LTFB ranging, OP ranging and OP TW -- are aligned on the common signal 
+transmitted by LTFB and received as ranging by LTFB and TW by OP.
+
+The resulting TW exchance analyzed this way is shown below:
+
+<img src="tw_final.png">
+
