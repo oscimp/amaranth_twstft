@@ -37,6 +37,7 @@ class GoRanging {
         double _fs;
         size_t _fcode_len;
         std::vector<std::complex<double>> _fcode;
+        std::vector<double> _tcode;
         std::vector<double> _freq;
         std::vector<double> _temps;
         std::vector<double> _k;
@@ -151,7 +152,6 @@ void GoRanging::compute()
     auto t_start = std::chrono::high_resolution_clock::now();
 #endif
     while(!must_stop) {
-        // printf("%d ", p);
         size_t res = fread(data, sizeof(int16_t), _fcode_len * 4, _fd);
         if (res < _fcode_len * 4) {
             printf("No more data\n");
@@ -226,7 +226,7 @@ void GoRanging::compute()
             prnmap01[i].real(_result_ifft[i][0]);
             prnmap01[i].imag(_result_ifft[i][1]);
                        }
-        int indice1 = arg_max(prnmap01); // only one correlation peak
+        unsigned int indice1 = arg_max(prnmap01); // only one correlation peak
         double xval1   = std::abs(prnmap01[indice1]);
         double xval1m1 = std::abs(prnmap01[indice1-1]);
         double xval1p1 = std::abs(prnmap01[indice1+1]);
@@ -245,10 +245,35 @@ void GoRanging::compute()
             _chan_ifft[ii][1] = y[i].imag();
         }
         fftw_execute(_ifft);                                 //  yint=ifft(yint);
-//TODO      codetmp=repelems(code,[[1:length(code)] ; ones(1,length(code))*(2*Nint+1)])'; % interpolate  <- necessite raw_prn qui est local
+        for (size_t i = 0; i < prnmap01.size(); i++) {
+            prnmap01[i].real(_result_ifft[i][0]);            // re-use prnmap01 for a different purpose
+            prnmap01[i].imag(_result_ifft[i][1]);
+                       }
+
 //TODO      yincode=[yint(indice1(p)-1:end) ; yint(1:indice1(p)-2)].*codetmp;
+        std::rotate(prnmap01.begin(),prnmap01.begin()+indice1+4,prnmap01.end());
+//TODO  codetmp=repelems(code,[[1:length(code)] ; ones(1,length(code))*(2*Nint+1)])'; % interpolate  <- _tcode is interpolated
+        double SNR1r(0), SNR1i(0), SNR1s(0);
+        for (size_t i = 0; i < prnmap01.size(); i++) {
+            double R=real(prnmap01[i]*_tcode[i]);
+            double I=imag(prnmap01[i]*_tcode[i]);
+            SNR1r+=R;
+            SNR1i+=I;
+           }
+	SNR1r/=prnmap01.size();
+	SNR1i/=prnmap01.size();
+        for (size_t i = 0; i < prnmap01.size(); i++) {
+            double R=real(prnmap01[i]*_tcode[i]);
+            double I=imag(prnmap01[i]*_tcode[i]);
+            SNR1s+=(R-SNR1r)*(R-SNR1r)+(I-SNR1i)*(I-SNR1i);  // (v-<v>)^2
+           } 
 //TODO      SNR1r(p)=mean(real(yincode))^2/var(yincode);
 //TODO      SNR1i(p)=mean(imag(yincode))^2/var(yincode);
+	SNR1s/=prnmap01.size();
+        SNR1r=SNR1r*SNR1r/SNR1s; // <.>^2/var
+        SNR1i=SNR1i*SNR1i/SNR1s; 
+        printf("%0.1lf\t", 10*log10(SNR1r+SNR1i)); // JMF ERROR /!\
+
 //TODO      puissance1total(p)=var(y);
 //TODO      puissance1code(p)=mean(real(yincode))^2+mean(imag(yincode))^2;
 
@@ -273,9 +298,8 @@ void GoRanging::compute()
     
             // tmp = freq[tmp]/2
             double df2 = _freq[pos] / 2;
-    // TODO annuler d2 si inferieur a bin size
-    
-            //FILE *fd = fopen("y_cpp.txt", "w+");
+    // TODO annuler d2 si inferieur a bin size i
+    // if (abs(df2(p))<(freq(2)-freq(1))) df2(p)=0;end;
             // lo = np.exp(-1j * 2 * np.pi * tmp * temps)
             t = std::complex<double>(0, -1) * (double)2.0f * M_PI * df2;
             for (size_t i = 0; i < _fcode_len; i++) {
@@ -315,7 +339,18 @@ void GoRanging::compute()
             _xval2.push_back(prnmap02[indice2]);
             _xval2m1.push_back(prnmap02[indice2-1]);
             _xval2p1.push_back(prnmap02[indice2+1]);
-    
+/* 
+    % SNR computation
+        yint=zeros(length(y)*(2*Nint+1),1);
+        yint(1:length(y)/2)=ffty(1:length(y)/2);
+        yint(end-length(y)/2+1:end)=ffty(length(y)/2+1:end);
+        yint=ifft(yint);
+        yincode=[yint(indice2(p)-1:end) ; yint(1:indice2(p)-2)].*codetmp;
+        SNR2r(p)=mean(real(yincode))^2/var(yincode);
+        SNR2i(p)=mean(imag(yincode))^2/var(yincode);
+        puissance2total(p)=var(y);
+        puissance2code(p)=mean(real(yincode))^2+mean(imag(yincode))^2;
+*/
             printf(" %0.12lf\t%.3f\n", ((double)indice2+corr2)/fs/(2*Nint+1.),df2);
         }
         else printf("\n");
@@ -431,6 +466,7 @@ bool GoRanging::fill_fcode(const std::string &filename)
 
     /* FFT buffer length */
     size_t fft_size = 2 * file_size;
+    _tcode.resize((2*Nint+1)*file_size*2);
 
     uint8_t *raw_prn = (uint8_t *)malloc(sizeof(uint8_t) * file_size);
     size_t ret = fread(raw_prn, sizeof(uint8_t), file_size, prn_fd);
@@ -463,6 +499,11 @@ bool GoRanging::fill_fcode(const std::string &filename)
         raw[ii+1].real((double)raw_prn[i]-0.5);
         raw[ii+1].imag(0);
     }
+    for (size_t i = 0, ii=0; i < file_size; i++, ii+=(2*Nint+1)) {
+        _tcode[ii]=((double)raw_prn[i]-0.5);
+        _tcode[ii+1]=((double)raw_prn[i]-0.5);
+        _tcode[ii+2]=((double)raw_prn[i]-0.5);
+       }
 
     for (size_t i = 0; i < fft_size; i++) {
         _chan1[i][0] = raw[i].real();
@@ -529,25 +570,3 @@ int main(int argc, char **argv) {
     return EXIT_SUCCESS;
 }
 
-/* octave
-
-  %%% d2
-        d22=fftshift(abs(fft(d2.^2))); % 0.1 Hz accuracy
-        [~,df2(p)]=max(d22(k));df2(p)=df2(p)+k(1)-1;df2(p)=freq(df2(p))/2;offset2=df2(p);
-        temps=[0:length(d2)-1]'/fs;
-        if (abs(df2(p))<(freq(2)-freq(1))) df2(p)=0;end;
-        lo=exp(-j*2*pi*df2(p)*temps); % frequency offset
-        y=d2.*lo;                      % frequency transposition
-        ffty=fft(y);
-        prnmap02=fftshift(ffty.*fcode);      % xcorr
-    % SNR computation
-        yint=zeros(length(y)*(2*Nint+1),1);
-        yint(1:length(y)/2)=ffty(1:length(y)/2);
-        yint(end-length(y)/2+1:end)=ffty(length(y)/2+1:end);
-        yint=ifft(yint);
-        yincode=[yint(indice2(p)-1:end) ; yint(1:indice2(p)-2)].*codetmp;
-        SNR2r(p)=mean(real(yincode))^2/var(yincode);
-        SNR2i(p)=mean(imag(yincode))^2/var(yincode);
-        puissance2total(p)=var(y);
-        puissance2code(p)=mean(real(yincode))^2+mean(imag(yincode))^2;
-*/
