@@ -242,8 +242,8 @@ void GoRanging::compute()
         _xval1p1.push_back(prnmap01[indice1+1]);
         printf("%d %0.12lf\t%.3f\t", p, ((double)indice1+corr1)/fs/(2*Nint+1.),df1);
 //  % SNR computation
-        for (size_t i = 0; i < _fcode_len * (2*Nint+1); i++) //  yint=zeros(length(y)*(2*Nint+1),1);
-            _chan_ifft[i][0] = _chan_ifft[i][1] = 0;
+        for (size_t i = 0; i < _fcode_len * (2*Nint); i++) //  yint=zeros(length(y)*(2*Nint+1),1);
+            _chan_ifft[i+_fcode_len / 2][0] = _chan_ifft[i+_fcode_len / 2][1] = 0;
         for (size_t i = 0; i < _fcode_len; i++) {           
             int ii = (i < _fcode_len / 2) ? i : (i + (2*_fcode_len));
             _chan_ifft[ii][0] = y[i].real();                 // yint(1:length(y)/2)=ffty(1:length(y)/2);
@@ -309,8 +309,8 @@ void GoRanging::compute()
             // fft(d2) + prnmap02
             fftw_execute(_plan_a);
     
-            for (size_t i = 0; i < _fcode_len * (2*Nint+1); i++)
-                _chan_ifft[i][0] = _chan_ifft[i][1] = 0;
+            for (size_t i = 0; i < _fcode_len * (2*Nint); i++)
+                _chan_ifft[i+_fcode_len / 2][0] = _chan_ifft[i+_fcode_len / 2][1] = 0;
             for (size_t i = 0; i < _fcode_len; i++) {
                 y[i] = std::complex<double>(_result[i][0], _result[i][1]);
                 std::complex<double> d = y[i] * _fcode[i];
@@ -340,8 +340,8 @@ void GoRanging::compute()
             printf(" %0.12lf\t%.3f\t", ((double)indice2+corr2)/fs/(2.*Nint+1.),df2);
 
 //  % SNR computation
-        for (size_t i = 0; i < _fcode_len * (2*Nint+1); i++) //  yint=zeros(length(y)*(2*Nint+1),1);
-            _chan_ifft[i][0] = _chan_ifft[i][1] = 0;
+        for (size_t i = 0; i < _fcode_len * (2*Nint); i++) //  yint=zeros(length(y)*(2*Nint+1),1);
+            _chan_ifft[i+_fcode_len / 2][0] = _chan_ifft[i+_fcode_len / 2][1] = 0;
         for (size_t i = 0; i < _fcode_len; i++) {
             int ii = (i < _fcode_len / 2) ? i : (i + (2*_fcode_len));
             _chan_ifft[ii][0] = y[i].real();
