@@ -38,12 +38,15 @@ class GoRanging {
         size_t _fcode_len;
         std::vector<std::complex<double>> _fcode;
         std::vector<double> _tcode;
+        std::vector<double> _code;
         std::vector<double> _freq;
         std::vector<double> _temps;
         std::vector<double> _k;
         std::vector<double> _correction1;
         std::vector<double> _correction2;
-        std::vector<double> _df;
+        std::vector<double> _df1, _df2;
+        std::vector<double> _puissance1, _puissance2;
+        std::vector<double> _SNR1, _SNR2;
         std::vector<std::complex<double>> _xval1, _xval1m1, _xval1p1;
         std::vector<std::complex<double>> _xval2, _xval2m1, _xval2p1;
         std::string _filename;
@@ -193,9 +196,9 @@ void GoRanging::compute()
         std::vector<std::complex<double>> subvector1;
         std::copy(d1_fft.begin() + kmin, d1_fft.begin() + kmax, std::back_inserter(subvector1));
         int pos = arg_max(subvector1) + kmin;                  // [~,df1(p)]=max(d22(k));df1(p)=df1(p)+k(1)-1;df1(p)=freq(df1(p))/2;offset1=df1(p);
-        _df.push_back(pos);
+        _df1.push_back( _freq[pos] / 2.);
 
-        double df1 = _freq[pos] / 2;
+        double df1 = _freq[pos] / 2.;
 
         // lo = np.exp(-1j * 2 * np.pi * tmp * temps)
         std::complex<double>t = std::complex<double>(0, -1) * (double)2.0f * M_PI * df1;
@@ -272,6 +275,8 @@ void GoRanging::compute()
         SNR1r=SNR1r*SNR1r/SNR1s;                             // <.>^2/var
         SNR1i=SNR1i*SNR1i/SNR1s; 
         printf("%.1lf\t%0.1lf\t", 10*log10(puissance1code),10*log10(SNR1r+SNR1i));
+        _SNR1.push_back( 10*log10(SNR1r+SNR1i) );
+        _puissance1.push_back( 10*log10(puissance1code) );
 
         if (_remote==0) {                                    // analysis of d2
             for (size_t i = 0; i < _fcode_len; i++) {
@@ -289,9 +294,9 @@ void GoRanging::compute()
             std::vector<std::complex<double>> subvector2;
             std::copy(d2_fft.begin() + kmin, d2_fft.begin() + kmax, std::back_inserter(subvector2));
             pos = arg_max(subvector2) + kmin;
-            _df.push_back(pos);
+            _df2.push_back( _freq[pos] / 2.);
     
-            double df2 = _freq[pos] / 2;
+            double df2 = _freq[pos] / 2.;
             if (abs(df2)<(_freq[1]-_freq[0])) df2=0.;     // cancel d2 if smaller than bin size
             t = std::complex<double>(0, -1) * df2 * M_PI;
             for (size_t i = 0; i < _fcode_len; i++) {
@@ -369,6 +374,8 @@ void GoRanging::compute()
         SNR2i=SNR2i*SNR2i/SNR2s; // SNR2i(p)=mean(imag(yincode))^2/var(yincode);
 
         printf("%.1lf\t%0.1lf\n", 10*log10(puissance2code), 10*log10(SNR2r+SNR2i));
+        _SNR2.push_back( 10*log10(SNR2r+SNR2i) );
+        _puissance2.push_back( 10*log10(puissance2code) );
         }
         else printf("\n");
         p++;
@@ -405,14 +412,42 @@ bool GoRanging::save(std::string filename)
     size_t dim[2] = {array_length, 1};
     matvar_t *mat_var;
     
-    /* correction1 */
-    mat_var = Mat_VarCreate("correction1", MAT_C_DOUBLE, MAT_T_DOUBLE, 2, dim, &_correction1[0], 0);
+    /* correction1 */    // eval(['save -mat ',datalocation,'/remote',nom,' xv* corr* df1 indic* SNR* code puissa*']);
+    mat_var = Mat_VarCreate("correction1", MAT_C_DOUBLE, MAT_T_DOUBLE, 2, dim, &_correction1[0], 0); // indice+corr
     Mat_VarWrite(matfp, mat_var, MAT_COMPRESSION_NONE); //or MAT_COMPRESSION_ZLIB
     Mat_VarFree(mat_var);
     /* correction2 */
     mat_var = Mat_VarCreate("correction2", MAT_C_DOUBLE, MAT_T_DOUBLE, 2, dim, &_correction2[0], 0);
     Mat_VarWrite(matfp, mat_var, MAT_COMPRESSION_NONE); //or MAT_COMPRESSION_ZLIB
     Mat_VarFree(mat_var);
+    /* SNR1 */
+    mat_var = Mat_VarCreate("SNR1", MAT_C_DOUBLE, MAT_T_DOUBLE, 2, dim, &_SNR1[0], 0);
+    Mat_VarWrite(matfp, mat_var, MAT_COMPRESSION_NONE); //or MAT_COMPRESSION_ZLIB
+    Mat_VarFree(mat_var);
+    /* SNR2 */
+    mat_var = Mat_VarCreate("SNR2", MAT_C_DOUBLE, MAT_T_DOUBLE, 2, dim, &_SNR2[0], 0);
+    Mat_VarWrite(matfp, mat_var, MAT_COMPRESSION_NONE); //or MAT_COMPRESSION_ZLIB
+    Mat_VarFree(mat_var);
+    /* df1 */
+    mat_var = Mat_VarCreate("df1", MAT_C_DOUBLE, MAT_T_DOUBLE, 2, dim, &_df1[0], 0);
+    Mat_VarWrite(matfp, mat_var, MAT_COMPRESSION_NONE); //or MAT_COMPRESSION_ZLIB
+    Mat_VarFree(mat_var);
+    /* df2 */
+    mat_var = Mat_VarCreate("df2", MAT_C_DOUBLE, MAT_T_DOUBLE, 2, dim, &_df2[0], 0);
+    Mat_VarWrite(matfp, mat_var, MAT_COMPRESSION_NONE); //or MAT_COMPRESSION_ZLIB
+    Mat_VarFree(mat_var);
+    /* puissance1 */
+    mat_var = Mat_VarCreate("puissance1", MAT_C_DOUBLE, MAT_T_DOUBLE, 2, dim, &_puissance1[0], 0);
+    Mat_VarWrite(matfp, mat_var, MAT_COMPRESSION_NONE); //or MAT_COMPRESSION_ZLIB
+    Mat_VarFree(mat_var);
+    /* puissance2 */
+    mat_var = Mat_VarCreate("puissance2", MAT_C_DOUBLE, MAT_T_DOUBLE, 2, dim, &_puissance2[0], 0);
+    Mat_VarWrite(matfp, mat_var, MAT_COMPRESSION_NONE); //or MAT_COMPRESSION_ZLIB
+    Mat_VarFree(mat_var);
+    /* code */
+    //mat_var = Mat_VarCreate("code", MAT_C_DOUBLE, MAT_T_DOUBLE, 2, dim, &_code[0], 0);
+    //Mat_VarWrite(matfp, mat_var, MAT_COMPRESSION_NONE); //or MAT_COMPRESSION_ZLIB
+    //Mat_VarFree(mat_var);
     
     /* xvalx */
     double xval1_r[array_length], xval1_i[array_length];
