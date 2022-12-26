@@ -135,4 +135,4 @@ def ranging(filename, prn_code):
             print(str(p)+" "+datetime.utcfromtimestamp(ts+p).strftime('%Y %m %d %H %M %S')+"\t"+str(round((indice1+correction1)/fs/3,12))+"\t"+str(round(dftmp,3))+"\t"+str(round(10*np.log10(puissance1),1))+"\t"+str(round(10*np.log10(SNR1i+SNR1r),1))+"\t"+str(round((indice2+correction2)/fs/(2*Nint+1),12))+"\t"+str(round(10*np.log10(puissance2),1))+"\t"+str(round(10*np.log10(SNR2i+SNR2r),1)))
             p += 1
 
-ranging("1671606372short.bin","./codes/noiselen2500000_bitlen22_taps03.bin");
+ranging("1671606372short.bin","./noiselen2500000_bitlen22_taps03.bin");

@@ -161,29 +161,29 @@ void GoRanging::compute()
         std::complex<double> mean1(0, 0), mean2(0, 0);
         // convert to complex
         for (size_t i = 0, ii=0; i < _fcode_len; ii+=4, i++) {
-            d1[i].real((double)data[ii + 0]);
-            d1[i].imag((double)data[ii + 1]);
-            d2[i].real((double)data[ii + 2]);
+            d1[i].real((double)data[ii + 0]); // d=fread(f,length(fcode)*4,'int16');  % 1 code length
+                                              // d=d(1:2:end)+j*d(2:2:end);
+            d1[i].imag((double)data[ii + 1]); // d1=d(1:2:end);  % measurement
+            d2[i].real((double)data[ii + 2]); // d2=d(2:2:end);  % reference
             d2[i].imag((double)data[ii + 3]);
             mean1 += d1[i];
             mean2 += d2[i];
         }
-        // remove mean
-        mean1 /= _fcode_len;
-        mean2 /= _fcode_len;
+        mean1 /= _fcode_len;                  
+        mean2 /= _fcode_len;                  
 
 // analysis of d1
 // find frequency offset from d^2
         // fft & co for d1
-        //d1_fft = np.fft.fftshift(np.abs(np.fft.fft(d1 * d1)))
+        // d1_fft = np.fft.fftshift(np.abs(np.fft.fft(d1 * d1)))
         for (size_t i = 0; i < _fcode_len; i++) {
-            d1[i] -= mean1;
-            d2[i] -= mean2;
+            d1[i] -= mean1;                   //  d1=d1-mean(d1);   remove mean
+            d2[i] -= mean2;                   //  d2=d2-mean(d2);
             std::complex<double> tmp = d1[i] * d1[i];
             _chan1[i][0] = tmp.real();
             _chan1[i][1] = tmp.imag();
         }
-        fftw_execute(_plan_a); // d1^2
+        fftw_execute(_plan_a); // d1^2                         //  d22=fftshift(abs(fft(d1.^2))); % 0.1 Hz accuracy
 
         for (size_t i = 0; i < _fcode_len; i++) {
             size_t ii = (i < _fcode_len/2) ? i + (_fcode_len / 2) : i - (_fcode_len / 2); // fftshift
@@ -192,7 +192,7 @@ void GoRanging::compute()
         // tmp = d1_fft[k].argmax()+k[0]
         std::vector<std::complex<double>> subvector1;
         std::copy(d1_fft.begin() + kmin, d1_fft.begin() + kmax, std::back_inserter(subvector1));
-        int pos = arg_max(subvector1) + kmin;
+        int pos = arg_max(subvector1) + kmin;                  // [~,df1(p)]=max(d22(k));df1(p)=df1(p)+k(1)-1;df1(p)=freq(df1(p))/2;offset1=df1(p);
         _df.push_back(pos);
 
         double df1 = _freq[pos] / 2;
@@ -200,14 +200,14 @@ void GoRanging::compute()
         // lo = np.exp(-1j * 2 * np.pi * tmp * temps)
         std::complex<double>t = std::complex<double>(0, -1) * (double)2.0f * M_PI * df1;
         for (size_t i = 0; i < _fcode_len; i++) {
-            std::complex<double> lo = std::exp(t * _temps[i]);
-            // y = d1 * lo
-            std::complex<double> ytmp = d1[i] * lo; // frequency transposition
+            std::complex<double> lo = std::exp(t * _temps[i]); // lo=exp(-j*2*pi*df1(p)*temps); % frequency offset
+            std::complex<double> ytmp = d1[i] * lo;            // y=d1.*lo;                      % frequency transposition
             _chan1[i][0] = ytmp.real();
             _chan1[i][1] = ytmp.imag();
         }
+
         // multmp1 = np.fft.fftshift(np.fft.fft(y) * fcode)
-        fftw_execute(_plan_a);
+        fftw_execute(_plan_a);                                 //  ffty=fft(y);
         for (size_t i = 0; i < _fcode_len * (2*Nint+1); i++)
             _chan_ifft[i][0] = _chan_ifft[i][1] = 0;
         for (size_t i = 0; i < _fcode_len; i++) {
@@ -223,15 +223,17 @@ void GoRanging::compute()
 #endif
         fftw_execute(_ifft);
         for (size_t i = 0; i < prnmap01.size(); i++) {
-            prnmap01[i].real(_result_ifft[i][0]);
-            prnmap01[i].imag(_result_ifft[i][1]);
+            prnmap01[i].real(_result_ifft[i][0]);         // prnmap01=fftshift(ffty.*fcode);      % xcorr
+            prnmap01[i].imag(_result_ifft[i][1]);         // prnmap01=[zeros(length(y)*(Nint),1) ; prnmap01 ; zeros(length(y)*(Nint),1)]; % interpolation to 3x samp_rate
+                                                          // prnmap01=(ifft(fftshift(prnmap01))); % back to time /!\ NO outer fftshift for 0-delay at left
                        }
-        unsigned int indice1 = arg_max(prnmap01); // only one correlation peak
-        double xval1   = std::abs(prnmap01[indice1]);
-        double xval1m1 = std::abs(prnmap01[indice1-1]);
-        double xval1p1 = std::abs(prnmap01[indice1+1]);
-        double corr1 = (xval1m1 - xval1p1)/2./(xval1m1 + xval1p1-2*xval1);
+        unsigned int indice1 = arg_max(prnmap01);         //  [~,indice1(p)]=max(abs(prnmap01));  % only one correlation peak
+        double xval1   = std::abs(prnmap01[indice1]);     //  xval1(p)=prnmap01(indice1(p));
+        double xval1m1 = std::abs(prnmap01[indice1-1]);   //  xval1m1(p)=prnmap01(indice1(p)-1);
+        double xval1p1 = std::abs(prnmap01[indice1+1]);   //  xval1p1(p)=prnmap01(indice1(p)+1);
+        double corr1 = (xval1m1 - xval1p1)/2./(xval1m1 + xval1p1-2*xval1); //  correction1_a(p)=(abs(prnmap01(indice1(p)-1))-abs(prnmap01(indice1(p)+1)))/(abs(prnmap01(indice1(p)-1))+abs(prnmap01(indice1(p)+1))-2*abs(prnmap01(indice1(p))))/2;
         _correction1.push_back(indice1 + corr1);
+      
         _xval1.push_back(prnmap01[indice1]);
         _xval1m1.push_back(prnmap01[indice1-1]);
         _xval1p1.push_back(prnmap01[indice1+1]);
@@ -239,46 +241,39 @@ void GoRanging::compute()
 //  % SNR computation
         for (size_t i = 0; i < _fcode_len * (2*Nint+1); i++) //  yint=zeros(length(y)*(2*Nint+1),1);
             _chan_ifft[i][0] = _chan_ifft[i][1] = 0;
-        for (size_t i = 0; i < _fcode_len; i++) {
+        for (size_t i = 0; i < _fcode_len; i++) {           
             int ii = (i < _fcode_len / 2) ? i : (i + (2*_fcode_len));
-            _chan_ifft[ii][0] = y[i].real();
-            _chan_ifft[ii][1] = y[i].imag();
+            _chan_ifft[ii][0] = y[i].real();                 // yint(1:length(y)/2)=ffty(1:length(y)/2);
+            _chan_ifft[ii][1] = y[i].imag();                 // yint(end-length(y)/2+1:end)=ffty(length(y)/2+1:end);
         }
-        fftw_execute(_ifft);                                 //  yint=ifft(yint);
-        for (size_t i = 0; i < prnmap01.size(); i++) {
+        fftw_execute(_ifft);                                 // yint=ifft(yint);   vvv- _tcode is interpolated
+        for (size_t i = 0; i < prnmap01.size(); i++) {       // codetmp=repelems(code,[[1:length(code)] ; ones(1,length(code))*(2*Nint+1)])'; % interpolate
             prnmap01[i].real(_result_ifft[i][0]);            // re-use prnmap01 for a different purpose
             prnmap01[i].imag(_result_ifft[i][1]);
-                       }
+           }
 
-//TODO      yincode=[yint(indice1(p)-1:end) ; yint(1:indice1(p)-2)].*codetmp;
-        std::rotate(prnmap01.begin(),prnmap01.begin()+indice1+4,prnmap01.end());
-//TODO  codetmp=repelems(code,[[1:length(code)] ; ones(1,length(code))*(2*Nint+1)])'; % interpolate  <- _tcode is interpolated
-        double SNR1r(0), SNR1i(0), SNR1s(0);
+        std::rotate(prnmap01.begin(),prnmap01.begin()+indice1-1,prnmap01.end());
+        double SNR1r(0), SNR1i(0), SNR1s(0), puissance1code(0);
         for (size_t i = 0; i < prnmap01.size(); i++) {
-            double R=real(prnmap01[i]*_tcode[i]);
+            double R=real(prnmap01[i]*_tcode[i]);            //  yincode=[yint(indice1(p)-1:end) ; yint(1:indice1(p)-2)].*codetmp;
             double I=imag(prnmap01[i]*_tcode[i]);
-            SNR1r+=R;
-            SNR1i+=I;
+            SNR1r+=R;                                        // SNR1r(p)=mean(real(yincode))^2/var(yincode);
+            SNR1i+=I;                                        // SNR1i(p)=mean(imag(yincode))^2/var(yincode);
            }
 	SNR1r/=prnmap01.size();
 	SNR1i/=prnmap01.size();
+        puissance1code=SNR1r*SNR1r+SNR1i*SNR1i;              // puissance1code(p)=mean(real(yincode))^2+mean(imag(yincode))^2;
         for (size_t i = 0; i < prnmap01.size(); i++) {
-            double R=real(prnmap01[i]*_tcode[i]);
+            double R=real(prnmap01[i]*_tcode[i]);            // puissance1total(p)=var(y);
             double I=imag(prnmap01[i]*_tcode[i]);
             SNR1s+=(R-SNR1r)*(R-SNR1r)+(I-SNR1i)*(I-SNR1i);  // (v-<v>)^2
            } 
-//TODO      SNR1r(p)=mean(real(yincode))^2/var(yincode);
-//TODO      SNR1i(p)=mean(imag(yincode))^2/var(yincode);
 	SNR1s/=prnmap01.size();
-        SNR1r=SNR1r*SNR1r/SNR1s; // <.>^2/var
+        SNR1r=SNR1r*SNR1r/SNR1s;                             // <.>^2/var
         SNR1i=SNR1i*SNR1i/SNR1s; 
-        printf("%0.1lf\t", 10*log10(SNR1r+SNR1i)); // JMF ERROR /!\
+        printf("%.1lf\t%0.1lf\t", 10*log10(puissance1code),10*log10(SNR1r+SNR1i));
 
-//TODO      puissance1total(p)=var(y);
-//TODO      puissance1code(p)=mean(real(yincode))^2+mean(imag(yincode))^2;
-
-        if (_remote==0) {
-// analysis of d2
+        if (_remote==0) {                                    // analysis of d2
             for (size_t i = 0; i < _fcode_len; i++) {
                 std::complex<double> tmp = d2[i] * d2[i];
                 _chan1[i][0] = tmp.real();
@@ -296,14 +291,11 @@ void GoRanging::compute()
             pos = arg_max(subvector2) + kmin;
             _df.push_back(pos);
     
-            // tmp = freq[tmp]/2
             double df2 = _freq[pos] / 2;
-    // TODO annuler d2 si inferieur a bin size i
-    // if (abs(df2(p))<(freq(2)-freq(1))) df2(p)=0;end;
-            // lo = np.exp(-1j * 2 * np.pi * tmp * temps)
-            t = std::complex<double>(0, -1) * (double)2.0f * M_PI * df2;
+            if (abs(df2)<(_freq[1]-_freq[0])) df2=0.;     // cancel d2 if smaller than bin size
+            t = std::complex<double>(0, -1) * df2 * M_PI;
             for (size_t i = 0; i < _fcode_len; i++) {
-                std::complex<double> lo = std::exp(t * _temps[i]);
+                std::complex<double> lo = std::exp(t * _temps[i]);  // lo = np.exp(-1j * 2 * np.pi * tmp * temps)
                 // y = d2 * lo
                 std::complex<double> ytmp = d2[i] * lo; // frequency transposition
                 _chan1[i][0] = ytmp.real();
@@ -339,19 +331,44 @@ void GoRanging::compute()
             _xval2.push_back(prnmap02[indice2]);
             _xval2m1.push_back(prnmap02[indice2-1]);
             _xval2p1.push_back(prnmap02[indice2+1]);
-/* 
-    % SNR computation
-        yint=zeros(length(y)*(2*Nint+1),1);
-        yint(1:length(y)/2)=ffty(1:length(y)/2);
-        yint(end-length(y)/2+1:end)=ffty(length(y)/2+1:end);
-        yint=ifft(yint);
-        yincode=[yint(indice2(p)-1:end) ; yint(1:indice2(p)-2)].*codetmp;
-        SNR2r(p)=mean(real(yincode))^2/var(yincode);
-        SNR2i(p)=mean(imag(yincode))^2/var(yincode);
-        puissance2total(p)=var(y);
-        puissance2code(p)=mean(real(yincode))^2+mean(imag(yincode))^2;
-*/
-            printf(" %0.12lf\t%.3f\n", ((double)indice2+corr2)/fs/(2*Nint+1.),df2);
+
+            printf(" %0.12lf\t%.3f\t", ((double)indice2+corr2)/fs/(2.*Nint+1.),df2);
+
+//  % SNR computation
+        for (size_t i = 0; i < _fcode_len * (2*Nint+1); i++) //  yint=zeros(length(y)*(2*Nint+1),1);
+            _chan_ifft[i][0] = _chan_ifft[i][1] = 0;
+        for (size_t i = 0; i < _fcode_len; i++) {
+            int ii = (i < _fcode_len / 2) ? i : (i + (2*_fcode_len));
+            _chan_ifft[ii][0] = y[i].real();
+            _chan_ifft[ii][1] = y[i].imag();
+        }
+        fftw_execute(_ifft);                                 //  yint=ifft(yint);
+        for (size_t i = 0; i < prnmap02.size(); i++) {
+            prnmap02[i].real(_result_ifft[i][0]);            // re-use prnmap02 for a different purpose
+            prnmap02[i].imag(_result_ifft[i][1]);
+                       }
+
+        std::rotate(prnmap02.begin(),prnmap02.begin()+indice2-1,prnmap02.end()); // yincode=[yint(indice1(p)-1:end) ; yint(1:indice1(p)-2)].*codetmp;
+        double SNR2r(0), SNR2i(0), SNR2s(0), puissance2code(0);
+        for (size_t i = 0; i < prnmap02.size(); i++) {
+            double R=real(prnmap02[i]*_tcode[i]);
+            double I=imag(prnmap02[i]*_tcode[i]);
+            SNR2r+=R;
+            SNR2i+=I;
+           }
+	SNR2r/=prnmap02.size();
+	SNR2i/=prnmap02.size();
+        puissance2code=SNR2r*SNR2r+SNR2i*SNR2i; //  puissance2code(p)=mean(real(yincode))^2+mean(imag(yincode))^2;
+        for (size_t i = 0; i < prnmap02.size(); i++) {
+            double R=real(prnmap02[i]*_tcode[i]);
+            double I=imag(prnmap02[i]*_tcode[i]);
+            SNR2s+=(R-SNR2r)*(R-SNR2r)+(I-SNR2i)*(I-SNR2i);  // (v-<v>)^2
+           } 
+	SNR2s/=prnmap02.size();  // <.>^2/var
+        SNR2r=SNR2r*SNR2r/SNR2s; // SNR2r(p)=mean(real(yincode))^2/var(yincode);
+        SNR2i=SNR2i*SNR2i/SNR2s; // SNR2i(p)=mean(imag(yincode))^2/var(yincode);
+
+        printf("%.1lf\t%0.1lf\n", 10*log10(puissance2code), 10*log10(SNR2r+SNR2i));
         }
         else printf("\n");
         p++;
@@ -493,18 +510,11 @@ bool GoRanging::fill_fcode(const std::string &filename)
 
     std::vector<std::complex<double>> raw(fft_size, 0);
     for (size_t i = 0, ii=0; i < file_size; i++, ii+=2) {
-        // interpolation
-        raw[ii].real((double)raw_prn[i]-0.5);
+        raw[ii].real((double)raw_prn[i]*2.-1.);   // interpolation = fs/fchip = 5 MHz/2.5 MHz
         raw[ii].imag(0);
-        raw[ii+1].real((double)raw_prn[i]-0.5);
+        raw[ii+1].real((double)raw_prn[i]*2.-1.);
         raw[ii+1].imag(0);
     }
-    for (size_t i = 0, ii=0; i < file_size; i++, ii+=(2*Nint+1)) {
-        _tcode[ii]=((double)raw_prn[i]-0.5);
-        _tcode[ii+1]=((double)raw_prn[i]-0.5);
-        _tcode[ii+2]=((double)raw_prn[i]-0.5);
-       }
-
     for (size_t i = 0; i < fft_size; i++) {
         _chan1[i][0] = raw[i].real();
         _chan1[i][1] = raw[i].imag();
@@ -518,6 +528,12 @@ bool GoRanging::fill_fcode(const std::string &filename)
         _fcode.push_back(std::conj(std::complex<double>(_result[i][0], _result[i][1])));
     printf("file size : %ld %ld\n", 2 * file_size, _fcode.size());
 
+    for (size_t i = 0; i < raw.size(); i++) {
+        _tcode[(Nint*2+1)*i]=real(raw[i]);
+        _tcode[(Nint*2+1)*i+1]=real(raw[i]);
+        _tcode[(Nint*2+1)*i+2]=real(raw[i]);
+       }
+
     fftw_free(_chan1);
     fftw_free(_result);
     fftw_destroy_plan(_plan_a);
@@ -526,7 +542,7 @@ bool GoRanging::fill_fcode(const std::string &filename)
 }
 
 std::vector<double> GoRanging::linspace(double start_in, double end_in, int num_in)
-{
+{ // https://gist.github.com/lorenzoriano/5414671
 
     std::vector<double> linspaced;
 
@@ -546,8 +562,7 @@ std::vector<double> GoRanging::linspace(double start_in, double end_in, int num_
     for(int i=0; i < num-1; ++i)
         linspaced.push_back(start + delta * i);
 
-    linspaced.push_back(end); // I want to ensure that start and end
-                              // are exactly the same as the input
+    linspaced.push_back(end);
     return linspaced;
 }
     
@@ -569,4 +584,3 @@ int main(int argc, char **argv) {
 
     return EXIT_SUCCESS;
 }
-

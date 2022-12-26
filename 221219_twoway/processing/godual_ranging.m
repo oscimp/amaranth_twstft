@@ -5,11 +5,16 @@ fs=5e6;
 Nint=1;
 remote=0
 OP=0
+debug=1
 datalocation='./'
-codelocation='./codes/'
+if (debug != 1)
+  codelocation='./codes/'
+else
+  codelocation='./'
+end
 
-dirlist=dir([datalocation,'/*.bin']);
-dirbit=dir([codelocation,'/*.bin']);
+dirlist=dir([datalocation,'/1*.bin']);
+dirbit=dir([codelocation,'/n*.bin']);
 for dirnum=1:length(dirlist)
   nom=dirbit(mod(OP+remote,2)+1).name  % LTFB=odd OP=even
   % OP=1, remote=0 or OP=0, remote=1 => even ; OP=0, remote=0 or OP=1, remote=1 => odd
@@ -139,6 +144,13 @@ for dirnum=1:length(dirlist)
         yint(end-length(y)/2+1:end)=ffty(length(y)/2+1:end);
         yint=ifft(yint);
         yincode=[yint(indice2(p)-1:end) ; yint(1:indice2(p)-2)].*codetmp;
+%        if (debug==1)
+%           format long
+%           indice2(p)
+%           yrotate=[yint(indice2(p)-1:end) ; yint(1:indice2(p)-2)];
+%           save -mat debug.mat yrotate codetmp
+%           exit
+%        end
         SNR2r(p)=mean(real(yincode))^2/var(yincode);
         SNR2i(p)=mean(imag(yincode))^2/var(yincode);
         puissance2total(p)=var(y);
