@@ -64,6 +64,12 @@ for dirnum=1:length(dirlist)
       lo=exp(-j*2*pi*df1(p)*temps); % frequency offset
     
       y=d1.*lo;                      % frequency transposition
+% addition 221228: fine frequency from phase drift
+[a,b]=polyfit([1:10:fs/10]/fs,conv(angle(y(1:10:fs/10)),ones(100,1)/100)(50:end-50),1);
+dfleftover1=a(1)/2/pi
+lo=exp(-j*2*pi*dfleftover1*temps); % frequency offset
+y=y.*lo;                      % frequency transposition
+df1(p)+=dfleftover1;
   % the phase of the correlation can be found to identify the oscillator drift but not before correlation at low SNR!
       ffty=fft(y);
       prnmap01=fftshift(ffty.*fcode);      % xcorr
@@ -109,10 +115,15 @@ for dirnum=1:length(dirlist)
         d22=fftshift(abs(fft(d2.^2))); % 0.1 Hz accuracy
         [~,df2(p)]=max(d22(k));df2(p)=df2(p)+k(1)-1;df2(p)=freq(df2(p))/2;offset2=df2(p);
         temps=[0:length(d2)-1]'/fs;
-        if (abs(df2(p))<(freq(2)-freq(1))) df2(p)=0;end;
+%        if (abs(df2(p))<(freq(2)-freq(1))) df2(p)=0;end;
         lo=exp(-j*2*pi*df2(p)*temps); % frequency offset
-      
         y=d2.*lo;                      % frequency transposition
+% addition 221228: fine frequency from phase drift
+[a,b]=polyfit([1:10:fs/10]/fs,conv(angle(y(1:10:fs/10)),ones(100,1)/100)(50:end-50),1);
+dfleftover2=a(1)/2/pi
+lo=exp(-j*2*pi*dfleftover2*temps); % frequency offset
+y=y.*lo;                      % frequency transposition
+df2(p)+=dfleftover2;
         ffty=fft(y);
         prnmap02=fftshift(ffty.*fcode);      % xcorr
         prnmap02=[zeros(length(y)*(Nint),1) ; prnmap02 ; zeros(length(y)*(Nint),1)]; % interpolation to 3x samp_rate
@@ -163,7 +174,7 @@ for dirnum=1:length(dirlist)
            plot(codetmp)
            pause(0.1)
         end
-        printf("%d\t%.12f\t%.3f\t%.1f\t%.1f\t%.12f\t%.3f\t%.1f\t%.1f\r\n",p,(indice1(p)+correction1_a(p))/fs/(2*Nint+1),offset1,10*log10(puissance1total(p)),10*log10(SNR1i(p)+SNR1r(p)),(indice2(p)-correction2_a(p))/fs/(2*Nint+1),offset2,10*log10(puissance2total(p)),10*log10(SNR2i(p)+SNR2r(p)))
+        printf("%d\t%.12f\t%.3f\t%.1f\t%.1f\t%.12f\t%.3f\t%.1f\t%.1f\r\n",p,(indice1(p)+correction1_a(p))/fs/(2*Nint+1),df1(p),10*log10(puissance1total(p)),10*log10(SNR1i(p)+SNR1r(p)),(indice2(p)-correction2_a(p))/fs/(2*Nint+1),df2(p),10*log10(puissance2total(p)),10*log10(SNR2i(p)+SNR2r(p)))
       else
         printf("%d\t%.12f\t%.3f\t%.1f\t%.1f\r\n",p,(indice1(p)+correction1_a(p))/fs/(2*Nint+1),offset1,10*log10(puissance1total(p)),10*log10(SNR1i(p)+SNR1r(p)))
       end
