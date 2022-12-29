@@ -65,7 +65,7 @@ for dirnum=1:length(dirlist)
     
       y=d1.*lo;                      % frequency transposition
 % addition 221228: fine frequency from phase drift
-[a,b]=polyfit([1:10:fs/10]/fs,conv(angle(y(1:10:fs/10)),ones(100,1)/100)(50:end-50),1);
+[a,b]=polyfit([1:10:fs/3]/fs,conv(angle(y(1:10:fs/3)),ones(100,1)/100)(50:end-50),1);
 dfleftover1=a(1)/2/pi
 lo=exp(-j*2*pi*dfleftover1*temps); % frequency offset
 y=y.*lo;                      % frequency transposition
@@ -119,7 +119,7 @@ df1(p)+=dfleftover1;
         lo=exp(-j*2*pi*df2(p)*temps); % frequency offset
         y=d2.*lo;                      % frequency transposition
 % addition 221228: fine frequency from phase drift
-[a,b]=polyfit([1:10:fs/10]/fs,conv(angle(y(1:10:fs/10)),ones(100,1)/100)(50:end-50),1);
+[a,b]=polyfit([1:10:fs/3]/fs,conv(angle(y(1:10:fs/3)),ones(100,1)/100)(50:end-50),1);
 dfleftover2=a(1)/2/pi
 lo=exp(-j*2*pi*dfleftover2*temps); % frequency offset
 y=y.*lo;                      % frequency transposition

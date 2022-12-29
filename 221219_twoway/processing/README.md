@@ -91,3 +91,23 @@ The resulting TW exchange analyzed this way is shown below:
 
 <img src="tw_final.png">
 
+# Fine frequency correction
+
+The frequency offset between the local oscillator and the received signal is roughly
+estimated by squaring the received signal, removing hence the BPSK moduation and looking
+at the frequency of peak power: this frequency is double the frequency offset. The frequency
+resolution is hence (sampling rate)/(code duration)/2 (the /2 due to squaring) and for
+a 1-second code, is half a Hz. On the loopback signal with the FPGA and the B210 both clocked
+by the same reference, the offset should be 0 Hz and is observed at 0.25 Hz, consistent with a
+center bin ranging from -0.25 to +0.25 Hz.
+
+Fine frequency estimate is attempted by measuring the phase drift dphi over time t since 
+dphi=2xpixdfxt with df the residual frequency offset. This works well on the reference channel
+since the 0.25 Hz offset is identified as erroneous and is compensated for by the slope of the
+phase, but hardly affects the returned signal measurement (top). Consequently, the SNR estimate
+of the returned signal is not stabilized with the fine frequency adjustement, although the SNR
+on the reference channel is improved by cancelling the leftover frequency offset which
+degrades the correlation calculation.
+
+<img src="fine_freq_corr.png">
+
