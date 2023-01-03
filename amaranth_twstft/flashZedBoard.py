@@ -144,6 +144,7 @@ class TWSTFT_top(Elaboratable):
                     Subsignal('B8_o', Pins('10', conn = connb, dir='o')),
                     
                     Subsignal('C1_i', Pins('1', conn = connc, dir='i')),
+                    Subsignal('C2_i', Pins('2', conn = connc, dir='i')),
                     Subsignal('C4_i', Pins('4', conn = connc, dir='i')),
                     
                     Subsignal('D4_o', Pins('4', conn = connd, dir='o')),
@@ -161,6 +162,7 @@ class TWSTFT_top(Elaboratable):
             mixer.pps_in.eq(pins.C4_i),
             mixer.switch_mode.eq(switch_mode),
             mixer.global_enable.eq(pins.C1_i),
+            mixer.output_carrier.eq(pins.C2_i),
         ]
 
         m.d.sync += pins.D4_o.eq(mixer.mod_out)

@@ -43,6 +43,9 @@ class Mixer(Elaboratable):
     modulated : Signal()
         the output signal of the module
         the value of the carrier signal modulated by our PRN
+
+    output_carrier : Signal()
+        force carrier output (without modulation)
     
     _seed : positive integer
         the initial state of the LFSR
@@ -60,12 +63,13 @@ class Mixer(Elaboratable):
     def __init__(self, bit_len, noise_len, reload=True, taps = 0, seed = 0x1,
                  freqin = 280e6, freqout=2500000):
     
-        self.carrier0 = Signal()
-        self.carrier90 = Signal()
-        self.modulatedI = Signal()
-        self.modulatedQ = Signal()
-        self.mod_out    = Signal()
-        self.pps_in     = Signal()
+        self.carrier0       = Signal()
+        self.carrier90      = Signal()
+        self.modulatedI     = Signal()
+        self.modulatedQ     = Signal()
+        self.mod_out        = Signal()
+        self.pps_in         = Signal()
+        self.output_carrier = Signal()
         
         # debug
         self.pps_out         = Signal()
@@ -125,39 +129,37 @@ class Mixer(Elaboratable):
             self.output.eq(prn_gen.output),
             self.output2.eq(prn_gen.output2),
             prn_gen.global_enable.eq(self.global_enable),
-        ]
-        
-        with m.If(carrier_selector):
-            m.d.sync += [
-                self.carrier0.eq(~self.carrier0),
-                self.modulatedI.eq(prn_gen.output ^ self.carrier0) #alternating the carrier to modulate
-            ]
-
-            
-        with m.Else():
-            m.d.sync += [
-                self.carrier90.eq(~self.carrier90),
-                self.modulatedQ.eq(prn_gen.output2 ^ self.carrier90) #alternating the carrier to modulate
-            ]
-
-        m.d.comb += [
             prn_gen.pps.eq(self.pps_in),
         ]
-        
-        with m.If(self.global_enable):# put to 1 if you want to start generating on the pps rising edge
+
+        # put to 1 if you want to start generating on the next pps rising edge
+        output_en = Signal(reset_less=True)
+        with m.If(~self.global_enable):
+            m.d.sync += output_en.eq(0)
+        with m.Elif(prn_gen.rise_pps):
+            m.d.sync += output_en.eq(1)
+
+        with m.If(output_en | self.output_carrier):
+            with m.If(carrier_selector):
+                m.d.sync += [
+                    self.carrier0.eq(~self.carrier0),
+                    self.modulatedI.eq(prn_gen.output ^ self.carrier0) #alternating the carrier to modulate
+                ]
+            with m.Else():
+                m.d.sync += [
+                    self.carrier90.eq(~self.carrier90),
+                    self.modulatedQ.eq(prn_gen.output2 ^ self.carrier90) #alternating the carrier to modulate
+                ]
+
             #Defining if we are using BPSK (1) or QPSK (2)
             with m.If(self.switch_mode):
                 m.d.comb+= prn_gen.mode.eq(1)
                 m.d.sync += [
-#                    pins.D4_o.eq(Mux(prn_gen.output ^ prn_gen.output2, self.modulatedI,self.modulatedQ)),
                     self.mod_out.eq(self.modulatedI & self.modulatedQ),
-#                    pins.B1_o.eq(prn_gen.output), #debug reasons
-#                    pins.B2_o.eq(prn_gen.output2), #debug reasons
                 ]
             with m.Else():
                 m.d.comb+= prn_gen.mode.eq(0)
                 m.d.sync += [
-#                    pins.B1_o.eq(prn_gen.output), #debug reasons
                     self.mod_out.eq(self.modulatedI),
                 ]
         if 1==1 : #debug ?
