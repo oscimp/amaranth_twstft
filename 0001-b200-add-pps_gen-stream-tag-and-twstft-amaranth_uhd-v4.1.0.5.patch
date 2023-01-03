@@ -1,4 +1,4 @@
-From 25a468d10233d7acff0e6b81f12fcc89a8c9b2df Mon Sep 17 00:00:00 2001
+From 841e320d04532730b37cdef7dbb0a7460fa49446 Mon Sep 17 00:00:00 2001
 From: Gwenhael Goavec-Merou <gwenhael.goavec-merou@trabucayre.com>
 Date: Fri, 8 Jul 2022 07:46:01 +0200
 Subject: [PATCH] b200: add pps_gen, stream tag and twstft amaranth
@@ -7,9 +7,9 @@ Signed-off-by: Gwenhael Goavec-Merou <gwenhael.goavec-merou@trabucayre.com>
 ---
  fpga/usrp3/lib/radio_200/radio_legacy.v     |  42 ++++++--
  fpga/usrp3/top/b200/.gitignore              |   1 +
- fpga/usrp3/top/b200/Makefile                |   4 +
+ fpga/usrp3/top/b200/Makefile                |   5 +
  fpga/usrp3/top/b200/Makefile.b200.inc       |   4 +
- fpga/usrp3/top/b200/b200.v                  | 103 ++++++++++++++++--
+ fpga/usrp3/top/b200/b200.v                  | 104 ++++++++++++++++--
  fpga/usrp3/top/b200/b200_core.v             |  11 ++
  fpga/usrp3/top/b200/coregen/coregen.cgp     |   2 +-
  fpga/usrp3/top/b200/coregen_dsp/coregen.cgp |   2 +-
@@ -17,7 +17,7 @@ Signed-off-by: Gwenhael Goavec-Merou <gwenhael.goavec-merou@trabucayre.com>
  fpga/usrp3/top/b200/gpio.ucf                |  19 ++--
  fpga/usrp3/top/b200/my_pps_gen.v            | 113 ++++++++++++++++++++
  fpga/usrp3/top/b200/pps_atr.v               |  96 +++++++++++++++++
- 12 files changed, 470 insertions(+), 27 deletions(-)
+ 12 files changed, 472 insertions(+), 27 deletions(-)
  create mode 100644 fpga/usrp3/top/b200/ggm_b210_hack.v
  create mode 100644 fpga/usrp3/top/b200/my_pps_gen.v
  create mode 100644 fpga/usrp3/top/b200/pps_atr.v
@@ -104,23 +104,24 @@ index 376246b05..17317f434 100644
  isim*
 +amaranth
 diff --git a/fpga/usrp3/top/b200/Makefile b/fpga/usrp3/top/b200/Makefile
-index 8a3569e00..bd00a60ca 100644
+index 8a3569e00..89f8b6a8f 100644
 --- a/fpga/usrp3/top/b200/Makefile
 +++ b/fpga/usrp3/top/b200/Makefile
-@@ -2,6 +2,8 @@
+@@ -2,6 +2,9 @@
  # Copyright 2012-2014 Ettus Research LLC
  #
  
 +TAPS?=3
 +NOISELEN?=2500000
++BITLEN?=22
  # NOTE: All comments prefixed with a "##" will be displayed as a part of the "make help" target
  ##-------------------
  ##USRP B2X0 FPGA Help
-@@ -75,12 +77,14 @@ B200:  ##Build USRP B200 design.
+@@ -75,12 +78,14 @@ B200:  ##Build USRP B200 design.
  
  B210:  ##Build USRP B210 design.
  	$(call pre_build,B210)
-+	python -m amaranth_twstft.flashZedBoard --no-load --no-build --build-dir amaranth --taps $(TAPS) --noiselen $(NOISELEN)
++	python -m amaranth_twstft.flashZedBoard --no-load --no-build --build-dir amaranth --taps $(TAPS) --noiselen $(NOISELEN) --bitlen $(BITLEN)
  	$(call ise_build,XC6SLX150,TARGET_B210=1)
  	$(call post_build,B210)
  
@@ -147,7 +148,7 @@ index 788280c6a..e7beb5923 100644
  S6CLK2PIN.v \
  $(B200_COREGEN_SRCS)
 diff --git a/fpga/usrp3/top/b200/b200.v b/fpga/usrp3/top/b200/b200.v
-index 811842f32..ef0d47f64 100644
+index 811842f32..762ef1c2f 100644
 --- a/fpga/usrp3/top/b200/b200.v
 +++ b/fpga/usrp3/top/b200/b200.v
 @@ -97,7 +97,14 @@ module b200 (
@@ -166,7 +167,7 @@ index 811842f32..ef0d47f64 100644
    `endif
     // Misc Hardware Control
     output 	 ref_sel,
-@@ -134,13 +141,89 @@ module b200 (
+@@ -134,13 +141,90 @@ module b200 (
      ///////////////////////////////////////////////////////////////////////
      wire bus_clk, gpif_clk, radio_clk;
      wire locked;
@@ -227,7 +228,7 @@ index 811842f32..ef0d47f64 100644
 +	/* fp_gpio
 +     *
 +     * +-----+  HACK_PPS     0 x x 1 GLOB EN
-+     * | SP6 |  1'b0         2 x x 3 OUTPUT
++     * | SP6 |  OUT CARRIER  2 x x 3 OUTPUT
 +     * |     |  1'b0         4 x x 5 AMARANTH_PPS_OUT
 +     * |     |  AMARANTH_10M 6 x x 7 SWITCH MODE
 +     * |     |  GND          8 x x 9 GND
@@ -237,6 +238,7 @@ index 811842f32..ef0d47f64 100644
 +	mixer mixer (
 +		.clk(amaranth_clk280),
 +		.global_enable(fp_gpio1),
++		.output_carrier(fp_gpio2),
 +		.mod_out(fp_gpio3),
 +		.pps_in(PPS_IN_EXT),
 +		.rst(!amaranth_rst),
@@ -257,7 +259,7 @@ index 811842f32..ef0d47f64 100644
     // Bus Clock and GPIF Clock both same 100MHz clock.
     assign bus_clk = gpif_clk;
  
-@@ -182,7 +265,7 @@ module b200 (
+@@ -182,7 +266,7 @@ module b200 (
     wire [31:0] rx_data0, rx_data1;
     wire [31:0] tx_data0, tx_data1;
     wire mimo;
@@ -266,7 +268,7 @@ index 811842f32..ef0d47f64 100644
     b200_io b200_io_i0
       (
        .reset(reset),
-@@ -212,7 +295,7 @@ module b200 (
+@@ -212,7 +296,7 @@ module b200 (
        );
     
     assign {rx_data0[19:16],rx_data0[3:0],rx_data1[19:16],rx_data1[3:0]} = 16'h0;
@@ -275,7 +277,7 @@ index 811842f32..ef0d47f64 100644
     ///////////////////////////////////////////////////////////////////////
     // SPI connections
     ///////////////////////////////////////////////////////////////////////
-@@ -309,19 +392,27 @@ module b200 (
+@@ -309,19 +393,27 @@ module b200 (
  `endif
  
        .lock_signals(codec_ctrl_out[7:6]),
