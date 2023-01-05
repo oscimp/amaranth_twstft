@@ -1,4 +1,4 @@
-From 841e320d04532730b37cdef7dbb0a7460fa49446 Mon Sep 17 00:00:00 2001
+From cd703b03932ae94bc9f732c260c875fd4cc8ad41 Mon Sep 17 00:00:00 2001
 From: Gwenhael Goavec-Merou <gwenhael.goavec-merou@trabucayre.com>
 Date: Fri, 8 Jul 2022 07:46:01 +0200
 Subject: [PATCH] b200: add pps_gen, stream tag and twstft amaranth
@@ -9,7 +9,7 @@ Signed-off-by: Gwenhael Goavec-Merou <gwenhael.goavec-merou@trabucayre.com>
  fpga/usrp3/top/b200/.gitignore              |   1 +
  fpga/usrp3/top/b200/Makefile                |   5 +
  fpga/usrp3/top/b200/Makefile.b200.inc       |   4 +
- fpga/usrp3/top/b200/b200.v                  | 104 ++++++++++++++++--
+ fpga/usrp3/top/b200/b200.v                  |  99 ++++++++++++++++-
  fpga/usrp3/top/b200/b200_core.v             |  11 ++
  fpga/usrp3/top/b200/coregen/coregen.cgp     |   2 +-
  fpga/usrp3/top/b200/coregen_dsp/coregen.cgp |   2 +-
@@ -17,13 +17,13 @@ Signed-off-by: Gwenhael Goavec-Merou <gwenhael.goavec-merou@trabucayre.com>
  fpga/usrp3/top/b200/gpio.ucf                |  19 ++--
  fpga/usrp3/top/b200/my_pps_gen.v            | 113 ++++++++++++++++++++
  fpga/usrp3/top/b200/pps_atr.v               |  96 +++++++++++++++++
- 12 files changed, 472 insertions(+), 27 deletions(-)
+ 12 files changed, 469 insertions(+), 25 deletions(-)
  create mode 100644 fpga/usrp3/top/b200/ggm_b210_hack.v
  create mode 100644 fpga/usrp3/top/b200/my_pps_gen.v
  create mode 100644 fpga/usrp3/top/b200/pps_atr.v
 
 diff --git a/fpga/usrp3/lib/radio_200/radio_legacy.v b/fpga/usrp3/lib/radio_200/radio_legacy.v
-index 76183b493..4530df162 100644
+index 76183b493..13533b4c6 100644
 --- a/fpga/usrp3/lib/radio_200/radio_legacy.v
 +++ b/fpga/usrp3/lib/radio_200/radio_legacy.v
 @@ -33,6 +33,10 @@ module radio_legacy
@@ -57,7 +57,7 @@ index 76183b493..4530df162 100644
 +   //         (.clk(radio_clk),.reset(radio_rst),
 +   //         .set_stb(set_stb),.set_addr(set_addr),.set_data(set_data),
 +   //         .rx(run_rx), .tx(run_tx),
-+   //         .gpio_in(fp_gpio_in), .gpio_out(fp_gpio_out), .gpio_ddr(fp_gpio_ddr), 
++   //         .gpio_in(fp_gpio_in), .gpio_out(fp_gpio_out), .gpio_ddr(fp_gpio_ddr),
 +   //         .gpio_out_fab(10'h000 /* no fabric control */), .gpio_sw_rb(fp_gpio_readback));
 +   //   end
 +   //endgenerate
@@ -80,7 +80,7 @@ index 76183b493..4530df162 100644
 +			.ext_pps_i(ggm_ext_pps), .fp_gpio(fp_gpio)
 +		 );
 +      end else begin
-+	  	assign sample_rx_ggm = sample_rx;
++         assign sample_rx_ggm = sample_rx;
 +	  end
 +   endgenerate
 +
@@ -148,7 +148,7 @@ index 788280c6a..e7beb5923 100644
  S6CLK2PIN.v \
  $(B200_COREGEN_SRCS)
 diff --git a/fpga/usrp3/top/b200/b200.v b/fpga/usrp3/top/b200/b200.v
-index 811842f32..762ef1c2f 100644
+index 811842f32..7eb0bac4a 100644
 --- a/fpga/usrp3/top/b200/b200.v
 +++ b/fpga/usrp3/top/b200/b200.v
 @@ -97,7 +97,14 @@ module b200 (
@@ -158,7 +158,7 @@ index 811842f32..762ef1c2f 100644
 -   inout [7:0] 	 fp_gpio,
 +   inout       	 fp_gpio0,
 +   input    	 fp_gpio1,
-+   inout    	 fp_gpio2,
++   input    	 fp_gpio2,
 +   output   	 fp_gpio3,
 +   inout    	 fp_gpio4,
 +   input    	 fp_gpio5,
@@ -167,7 +167,7 @@ index 811842f32..762ef1c2f 100644
    `endif
     // Misc Hardware Control
     output 	 ref_sel,
-@@ -134,13 +141,90 @@ module b200 (
+@@ -134,13 +141,89 @@ module b200 (
      ///////////////////////////////////////////////////////////////////////
      wire bus_clk, gpif_clk, radio_clk;
      wire locked;
@@ -249,7 +249,6 @@ index 811842f32..762ef1c2f 100644
 +	);
 +
 +	assign fp_gpio0 = ggm_fp_gpio[0];
-+	assign fp_gpio2 = 1'b0;
 +	assign fp_gpio4 = 1'b0;
 +	assign fp_gpio6 = 1'b0;
 +
@@ -259,25 +258,7 @@ index 811842f32..762ef1c2f 100644
     // Bus Clock and GPIF Clock both same 100MHz clock.
     assign bus_clk = gpif_clk;
  
-@@ -182,7 +266,7 @@ module b200 (
-    wire [31:0] rx_data0, rx_data1;
-    wire [31:0] tx_data0, tx_data1;
-    wire mimo;
--   
-+
-    b200_io b200_io_i0
-      (
-       .reset(reset),
-@@ -212,7 +296,7 @@ module b200 (
-       );
-    
-    assign {rx_data0[19:16],rx_data0[3:0],rx_data1[19:16],rx_data1[3:0]} = 16'h0;
--   
-+
-    ///////////////////////////////////////////////////////////////////////
-    // SPI connections
-    ///////////////////////////////////////////////////////////////////////
-@@ -309,19 +393,27 @@ module b200 (
+@@ -309,19 +392,27 @@ module b200 (
  `endif
  
        .lock_signals(codec_ctrl_out[7:6]),
@@ -376,11 +357,11 @@ index 52a3a53e7..7dbb4006e 100644
  SET package = fgg484
 diff --git a/fpga/usrp3/top/b200/ggm_b210_hack.v b/fpga/usrp3/top/b200/ggm_b210_hack.v
 new file mode 100644
-index 000000000..fa1567a31
+index 000000000..2c3527fcc
 --- /dev/null
 +++ b/fpga/usrp3/top/b200/ggm_b210_hack.v
 @@ -0,0 +1,100 @@
-+module ggm_b210_hack #( 
++module ggm_b210_hack #(
 +	parameter SR_FP_GPIO = 8'd200
 +) (
 +	input         radio_clk,
@@ -463,7 +444,7 @@ index 000000000..fa1567a31
 +		int_pps_resync_d1_s <= int_pps_resync_d0_s;
 +		ext_pps_resync_d0_s <= ext_pps_i;
 +		ext_pps_resync_d1_s <= ext_pps_resync_d0_s;
-+		
++
 +		if (strobe_rx) begin
 +			int_pps_rise_d <= 1'b0;
 +		end else if (int_pps_rise_s) begin
