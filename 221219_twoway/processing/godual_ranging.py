@@ -23,7 +23,7 @@ def ranging(filename, prn_code,foffset,remote):
         codeb = fd.read()
         print(codeb[0:20])
         code = list(codeb)
-        code=np.repeat(code,2)  # interpolate
+        code=np.repeat(code,2)  # interpolate (ASSUMES 2.5 Mchips/2)
         print(code[0:40])
         code=code*2-1
         fcode=np.conj(np.fft.fft(code))
@@ -61,10 +61,9 @@ def ranging(filename, prn_code,foffset,remote):
             y1 = d1 * lo                             # frequency transposition
             a=np.polyfit(np.arange(1,fs//3,10)/fs,np.convolve(np.angle(y1[0:int(fs//3):10]),np.ones(100)/100)[49:-50],1)
             dfleftover1=a[0]/2/np.pi
-            print(dfleftover1)
             lo=np.exp(-1j*2*np.pi*dfleftover1*temps) # frequency offset
             y1=y1 * lo                               # fine frequency transposition
-            df1tmp+=dfleftover1;
+            df1tmp+=dfleftover1
             df1.append(df1tmp)
             fft1tmp=np.fft.fft(y1)
             multmp1 = fft1tmp * fcode
@@ -79,6 +78,7 @@ def ranging(filename, prn_code,foffset,remote):
             xval1p1 = prnmap01[indice1+1]
             correction1=((abs(xval1m1)-abs(xval1p1))/(abs(xval1m1)+abs(xval1p1)-2*abs(xval1))/2);
             if debug==1:
+                print(dfleftover1)
                 print(xval1m1)
                 print(xval1)
                 print(xval1p1)
@@ -109,7 +109,6 @@ def ranging(filename, prn_code,foffset,remote):
                 y2 = d2 * lo              # frequency transposition
                 a=np.polyfit(np.arange(1,fs//3,10)/fs,np.convolve(np.angle(y2[0:int(fs//3):10]),np.ones(100)/100)[49:-50],1)
                 dfleftover2=a[0]/2/np.pi
-                print(dfleftover2)
                 lo=np.exp(-1j*2*np.pi*dfleftover2*temps) # frequency offset
                 y2=y2 * lo                               # fine frequency transposition
                 df2tmp+=dfleftover2;
@@ -126,6 +125,7 @@ def ranging(filename, prn_code,foffset,remote):
                 xval2m1 = prnmap02[indice2-1]
                 xval2p1 = prnmap02[indice2+1]
                 if debug==1:
+                    print(dfleftover2)
                     print(xval2m1)
                     print(xval2)
                     print(xval2p1)
@@ -151,9 +151,9 @@ def ranging(filename, prn_code,foffset,remote):
                 plt.plot(abs(prnmap01[indice1-2:indice1+3]))
                 if remote==0:
                     plt.plot(abs(prnmap02[indice2-2:indice2+3]))
-                plt.figure()
-                plt.plot(np.real(np.concatenate( (yinti[indice2-2:] , yinti[:indice2-2]) ))[0:1001]/max(np.real(yinti[indice2-2:])))
-                plt.plot(codetmp[0:1001])
+                    plt.figure()
+                    plt.plot(np.real(np.concatenate( (yinti[indice2-1:] , yinti[:indice2-1]) ))[0:1001]/max(np.real(yinti[indice2-2:])))
+                    plt.plot(codetmp[0:1001])
                 plt.show()
 # year month day hour minute second delay frequency power SNR
             if (debug == 1):
