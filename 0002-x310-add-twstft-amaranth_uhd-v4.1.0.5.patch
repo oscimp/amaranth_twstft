@@ -1,6 +1,6 @@
 From b204f371151d071a7211eee784d6877ed3d8253f Mon Sep 17 00:00:00 2001
 From: Gwenhael Goavec-Merou <gwenhael.goavec-merou@trabucayre.com>
-Date: Tue, 12 Sep 2022 18:50:29 +0200
+Date: Mon, 12 Sep 2022 18:50:29 +0200
 Subject: [PATCH]  adding a patch for UHD to integrate twstft into X310
  firmware
 
@@ -50,7 +50,7 @@ index 1f18cbf02..2ff6c86d9 100644
  soft_ctrl.v \
  capture_ddrlvds.v \
 diff --git a/fpga/usrp3/top/x300/x300.v b/fpga/usrp3/top/x300/x300.v
-index 8fbfa39b9..46db1b8d4 100644
+index 8fbfa39b9..573a92563 100644
 --- a/fpga/usrp3/top/x300/x300.v
 +++ b/fpga/usrp3/top/x300/x300.v
 @@ -168,7 +168,14 @@ module x300
@@ -61,7 +61,7 @@ index 8fbfa39b9..46db1b8d4 100644
 +   //GGM
 +   //inout [11:0] FrontPanelGpio,
 +   inout [6:0] FrontPanelGpio,
-+   output      FrontPanelGpio7, // OUT carrier
++   input       FrontPanelGpio7, // OUT carrier
 +   output      FrontPanelGpio8, // PPS
 +   input       FrontPanelGpio9, // ENABLE
 +   output      FrontPanelGpio10, // OUTPUT
@@ -118,7 +118,7 @@ index 8fbfa39b9..46db1b8d4 100644
 +    mixer mixer (
 +        .clk(amaranth_clk280),
 +        .global_enable(FrontPanelGpio9),
-+		.output_carrier(FrontPanelGpio7),
++        .output_carrier(FrontPanelGpio7),
 +        .mod_out(FrontPanelGpio10),
 +        .pps_in(EXT_PPS_IN),
 +        .pps_out(FrontPanelGpio8),
@@ -137,11 +137,11 @@ index 8fbfa39b9..46db1b8d4 100644
  
 -`ifdef DEBUG_UART
 +
-+   gpio_atr_io #(.WIDTH(8)) fp_gpio_atr_inst (
-+      .clk(radio_clk), .gpio_pins(FrontPanelGpio[7:0]),
-+      .gpio_ddr(fp_gpio_ddr[7:0]), .gpio_out(fp_gpio_out[7:0]), .gpio_in(fp_gpio_in[7:0])
++   gpio_atr_io #(.WIDTH(7)) fp_gpio_atr_inst (
++      .clk(radio_clk), .gpio_pins(FrontPanelGpio[6:0]),
++      .gpio_ddr(fp_gpio_ddr[6:0]), .gpio_out(fp_gpio_out[6:0]), .gpio_in(fp_gpio_in[6:0])
 +   );
-+   assign fp_gpio_in[11:8] = 0;
++   assign fp_gpio_in[11:7] = 0;
 +/*`ifdef DEBUG_UART
     gpio_atr_io #(.WIDTH(10)) fp_gpio_atr_inst (
        .clk(radio_clk), .gpio_pins(FrontPanelGpio[9:0]),
