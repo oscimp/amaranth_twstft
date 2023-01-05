@@ -60,7 +60,7 @@ for dirnum=1:length(dirlist)
       d22=fftshift(abs(fft(d1.^2))); % 0.1 Hz accuracy
       [~,df1(p)]=max(d22(k));df1(p)=df1(p)+k(1)-1;df1(p)=freq(df1(p))/2;offset1=df1(p);
       temps=[0:length(d1)-1]'/fs;
-      if (abs(df1(p))<(freq(2)-freq(1))) df1(p)=0;end;
+      % if (abs(df1(p))<(freq(2)-freq(1))) df1(p)=0;end;
       lo=exp(-j*2*pi*df1(p)*temps); % frequency offset
     
       y=d1.*lo;                      % frequency transposition
@@ -115,7 +115,7 @@ df1(p)+=dfleftover1;
         d22=fftshift(abs(fft(d2.^2))); % 0.1 Hz accuracy
         [~,df2(p)]=max(d22(k));df2(p)=df2(p)+k(1)-1;df2(p)=freq(df2(p))/2;offset2=df2(p);
         temps=[0:length(d2)-1]'/fs;
-%        if (abs(df2(p))<(freq(2)-freq(1))) df2(p)=0;end;
+%        if (abs(df2(p))<(freq(2)-freq(1))) df2(p)=0;end;  % will be taken care of by fine frequency removal
         lo=exp(-j*2*pi*df2(p)*temps); % frequency offset
         y=d2.*lo;                      % frequency transposition
 % addition 221228: fine frequency from phase drift
@@ -174,17 +174,17 @@ df2(p)+=dfleftover2;
            plot(codetmp)
            pause(0.1)
         end
-        printf("%d\t%.12f\t%.3f\t%.1f\t%.1f\t%.12f\t%.3f\t%.1f\t%.1f\r\n",p,(indice1(p)+correction1_a(p))/fs/(2*Nint+1),df1(p),10*log10(puissance1total(p)),10*log10(SNR1i(p)+SNR1r(p)),(indice2(p)-correction2_a(p))/fs/(2*Nint+1),df2(p),10*log10(puissance2total(p)),10*log10(SNR2i(p)+SNR2r(p)))
+        printf("%d\t%.12f\t%.3f\t%.1f\t%.1f\t%.12f\t%.3f\t%.1f\t%.1f\r\n",p,(indice1(p)-1+correction1_a(p))/fs/(2*Nint+1),df1(p),10*log10(puissance1total(p)),10*log10(SNR1i(p)+SNR1r(p)),(indice2(p)-1-correction2_a(p))/fs/(2*Nint+1),df2(p),10*log10(puissance2total(p)),10*log10(SNR2i(p)+SNR2r(p)))
       else
-        printf("%d\t%.12f\t%.3f\t%.1f\t%.1f\r\n",p,(indice1(p)+correction1_a(p))/fs/(2*Nint+1),offset1,10*log10(puissance1total(p)),10*log10(SNR1i(p)+SNR1r(p)))
+        printf("%d\t%.12f\t%.3f\t%.1f\t%.1f\r\n",p,(indice1(p)-1+correction1_a(p))/fs/(2*Nint+1),offset1,10*log10(puissance1total(p)),10*log10(SNR1i(p)+SNR1r(p)))
       end
       p=p+1;
     end
   until (longueur<length(fcode)*4);
   fclose(f)
-  solution1=indice1+correction1_a;
+  solution1=indice1-1+correction1_a;
   if (remote!=1)
-    solution2=indice2+correction2_a;
+    solution2=indice2-1+correction2_a;
   end
   [a,b]=polyfit([1:length(solution1)],(solution1)/(2*Nint+1)/fs,2);
   std((solution1)/(2*Nint+1)/fs-b.yf)
