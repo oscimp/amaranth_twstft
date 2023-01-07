@@ -93,6 +93,7 @@ def ranging(filename, prn_code,foffset,remote):
             xval1p1 = prnmap01[indice1+1]
             correction1=((abs(xval1m1)-abs(xval1p1))/(abs(xval1m1)+abs(xval1p1)-2*abs(xval1))/2);
             if debug==1:
+                print(indice1)
                 print(str(df1tmp)+" + "+str(dfleftover1))
                 print(xval1m1)
                 print(xval1)
@@ -142,6 +143,7 @@ def ranging(filename, prn_code,foffset,remote):
                 xval2m1 = prnmap02[indice2-1]
                 xval2p1 = prnmap02[indice2+1]
                 if debug==1:
+                    print(indice2)
                     print(str(df2tmp)+" + "+str(dfleftover2))
                     print(xval2m1)
                     print(xval2)
