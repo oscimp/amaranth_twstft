@@ -95,7 +95,7 @@ for dirnum=1:length(dirlist)
         [indice2(p),correction2(p),SNR2r(p),SNR2i(p),df2(p),puissance2(p),puissance2code(p),puissance2noise(p)]=processing(d2,k);
         printf("%d\t%.12f\t%.3f\t%.1f\t%.1f\t%.12f\t%.3f\t%.1f\t%.1f\r\n",p,(indice1(p)-1+correction1(p))/fs/(2*Nint+1),df1(p),10*log10(puissance1(p)),10*log10(SNR1i(p)+SNR1r(p)),(indice2(p)-1-correction2(p))/fs/(2*Nint+1),df2(p),10*log10(puissance2(p)),10*log10(SNR2i(p)+SNR2r(p)))
     else
-        printf("%d\t%.12f\t%.3f\t%.1f\t%.1f\r\n",p,(indice1(p)-1+correction1(p))/fs/(2*Nint+1),offset1(p),10*log10(puissance1(p)),10*log10(SNR1i(p)+SNR1r(p)))
+        printf("%d\t%.12f\t%.3f\t%.1f\t%.1f\r\n",p,(indice1(p)-1+correction1(p))/fs/(2*Nint+1),df1(p),10*log10(puissance1(p)),10*log10(SNR1i(p)+SNR1r(p)))
     end
     p=p+1;
   end
