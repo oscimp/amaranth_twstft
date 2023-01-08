@@ -26,15 +26,18 @@ result and the computation duration associated with each language on a common pl
 Since GNU/Octave is not available on the Raspberry Pi4, the selected platform is a 
 Panasonic [CF19 MK8](https://www.bobjohnson.com/blog/a-note-on-model-numbers-for-toughbook-nerds/) 
 laptop fitted with a Intel i5-3610ME CPU @ 2.70GHz. The sample file is a 5 second long, 
-200 MB record, while the following benchmark was run on a 185-s long, 7.4 GB large sample file.
+200 MB record.
 
-| Processing time v.s language | Ranging     | Two-way    |
-| ---------------------------- | ----------- |----------- |
-| GNU/Octave [0]               | 10.5"/s       | XXX s      |
-| Python/numpy [1]             | 18.1"/s       | XXX s      |
-| Python/pyfft [2]             | 14'47" (1-thread)       | XXX s      |
-| C++ [3]                      | TODO s       | XXX s      |
-| C++ [3] on RPi4/performance  | TODO s       | XXX s      |
+| Processing time v.s language | Ranging         | Two-way    | Difference (single channel processing time)|
+| ---------------------------- | ----------------|------------|-----------|
+| GNU/Octave [0]               | 104"/5 s record | 53"/5 s record  | 51"/5 s|
+| Python/numpy [1]             | 240"/5 s record | 128"/5 s record |112"/5 s|
+| Python/pyfft [2]             | 215" (1-thread) | 125"/5 s record | 90"/5 s|
+| C++ [3]                      | 29"/5 s record  | 16"/5 s record  | 13"/5 s|
+| C++ [3] on RPi4/performance  | TODO s       | TODO s      | TODO s      |
+
+Two-way means only processing half the dataset since the loopback delay has already been
+processed during ranging analysis.
 
 [0]
 ```
