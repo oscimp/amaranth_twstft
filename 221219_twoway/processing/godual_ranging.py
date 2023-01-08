@@ -15,52 +15,54 @@ debug=0
 if (affiche==1):
     import matplotlib.pyplot as plt
 
-def processing(d1,k,freq,temps,fcode,code):
-        interpolation1=np.zeros((Nint*2+1)*len(code))+1j*np.zeros((Nint*2+1)*len(code))  # prepare empty array for interpolation
+def processing(d,k,freq,temps,fcode,code):
+        interpolation=np.zeros((Nint*2+1)*len(code))+1j*np.zeros((Nint*2+1)*len(code))  # prepare empty array for interpolation
         yint=np.zeros((2*Nint+1)*len(code))+1j*np.zeros((2*Nint+1)*len(code))
-        d1_fft = np.fft.fftshift(np.abs(np.fft.fft(d1 * d1)))
-        tmp = d1_fft[k].argmax()+k[0]
-        df1tmp = freq[tmp]/2
-        lo = np.exp(-1j * 2 * np.pi * df1tmp * temps)
-        y1 = d1 * lo                             # frequency transposition
-        a=np.polyfit(np.arange(1,fs//3,10)/fs,np.convolve(np.angle(y1[0:int(fs//3):10]),np.ones(100)/100)[49:-50],1)
-        dfleftover1=a[0]/2/np.pi
-        lo=np.exp(-1j*2*np.pi*dfleftover1*temps) # frequency offset
-        y1=y1 * lo                               # fine frequency transposition
-        df1tmp+=dfleftover1
-        fft1tmp=np.fft.fft(y1)
-        multmp1 = fft1tmp * fcode
+        d2_fft = np.fft.fftshift(np.abs(np.fft.fft(d * d)))
+        tmp = d2_fft[k].argmax()+k[0]
+        dftmp = freq[tmp]/2
+        lo = np.exp(-1j * 2 * np.pi * dftmp * temps)
+        y = d * lo                             # frequency transposition
+        a=np.polyfit(np.arange(1,fs//3,10)/fs,np.convolve(np.angle(y[0:int(fs//3):10]),np.ones(100)/100)[49:-50],1)
+        dfleftover=a[0]/2/np.pi
+        lo=np.exp(-1j*2*np.pi*dfleftover*temps)  # frequency offset
+        y=y * lo                                 # fine frequency transposition
+        dftmp+=dfleftover
+        ffttmp=np.fft.fft(y)
+        multmp = ffttmp * fcode
 #       interpolation1=np.concatenate( (np.zeros(len(y))+1j*np.zeros(len(y)) , multmp1, np.zeros(len(y))+1j*np.zeros(len(y))))     # Nint=1
-        interpolation1[:len(y1)//2]=multmp1[:len(y1)//2]
-        interpolation1[-len(y1)//2:]=multmp1[-len(y1)//2:]
+        interpolation[:len(y)//2]=multmp[:len(y)//2]
+        interpolation[-len(y)//2:]=multmp[-len(y)//2:]
 #       multmp1 = np.fft.fftshift(interpolation1)
-        prnmap01 = np.fft.ifft(interpolation1)   # correlation with returned signal
-        indice1 = abs(prnmap01).argmax()         # only one correlation peak
-        xval1 = prnmap01[indice1]
-        xval1m1= prnmap01[indice1-1]
-        xval1p1 = prnmap01[indice1+1]
-        correction1=((abs(xval1m1)-abs(xval1p1))/(abs(xval1m1)+abs(xval1p1)-2*abs(xval1))/2);
+        prnmap = np.fft.ifft(interpolation)   # correlation with returned signal
+        indice = abs(prnmap).argmax()         # only one correlation peak
+        xval = prnmap[indice]
+        xvalm1= prnmap[indice-1]
+        xvalp1 = prnmap[indice+1]
+        correction=(abs(xvalm1)-abs(xvalp1))/(abs(xvalm1)+abs(xvalp1)-2*abs(xval))/2;
         if debug==1:
-            print(indice1)
-            print(dfleftover1)
-            print(xval1m1)
-            print(xval1)
-            print(xval1p1)
+            print(indice)
+            print(correction)
+            print((correction+indice)/(2*Nint+1)/fs)
+            print(dfleftover)
+            print(xvalm1)
+            print(xval)
+            print(xvalp1)
 # SNR1 computation
 #       yf = np.fft.fftshift(np.fft.fft(y))
 #       yint = np.concatenate( (np.zeros(len(y))+1j*np.zeros(len(yf)) , yf , np.zeros(len(y))+1j*np.zeros(len(y))))  # Nint=1
 #       yint=np.fft.ifft(np.fft.fftshift(yint))  # back to time /!\ outer fftshift for 0-delay at center
-        yint[:len(y1)//2]=fft1tmp[:len(y1)//2]
-        yint[-len(y1)//2:]=fft1tmp[-len(y1)//2:]
+        yint[:len(y)//2]=ffttmp[:len(y)//2]
+        yint[-len(y)//2:]=ffttmp[-len(y)//2:]
         yinti=np.fft.ifft(yint)
         codetmp=np.repeat(code,2*Nint+1)   # interpolate 2*Nint+1
-        yincode=np.concatenate((yinti[indice1-1:] , yinti[:indice1-1]))*codetmp;
-        SNR1r=np.mean(np.real(yincode))**2/np.var(yincode);
-        SNR1i=np.mean(np.imag(yincode))**2/np.var(yincode);
-        puissance1=np.var(y1)
-        puissance1code=np.mean(np.real(yincode))**2+np.mean(np.imag(yincode))**2
-        puissance1noise=np.var(yincode)
-        return indice1,correction1,SNR1r,SNR1i,df1tmp,puissance1,puissance1code,puissance1noise
+        yincode=np.concatenate((yinti[indice-1:] , yinti[:indice-1]))*codetmp;
+        SNRr=np.mean(np.real(yincode))**2/np.var(yincode);
+        SNRi=np.mean(np.imag(yincode))**2/np.var(yincode);
+        puissance=np.var(y)
+        puissancecode=np.mean(np.real(yincode))**2+np.mean(np.imag(yincode))**2
+        puissancenoise=np.var(yincode)
+        return indice,correction,SNRr,SNRi,dftmp,puissance,puissancecode,puissancenoise
 
 def ranging(filename, prn_code,foffset,remote):
     print(filename[0:10])
