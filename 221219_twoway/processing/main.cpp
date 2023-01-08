@@ -62,7 +62,7 @@ class GoRanging {
 };
 
 GoRanging::GoRanging(double fs, const std::string &filename, const std::string &prn_file, int remote): 
-                        _fs(fs), _fcode_len(0), _filename(filename), _remote(0)
+                        _fs(fs), _fcode_len(0), _filename(filename), _remote(remote)
 {
     _fd = fopen(filename.c_str(), "r");
     if (!_fd)
