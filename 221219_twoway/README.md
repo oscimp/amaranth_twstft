@@ -33,8 +33,8 @@ laptop fitted with a Intel i5-3610ME CPU @ 2.70GHz. The sample file is a 5 secon
 | GNU/Octave [0]               | 104"/5 s record | 53"/5 s record  | 51"/5 s|
 | Python/numpy [1]             | 240"/5 s record | 128"/5 s record |112"/5 s|
 | Python/pyfft [2]             | 215" (1-thread) | 125"/5 s record | 90"/5 s|
-| C++ [3]                      | 19"/5 s record  | 13"/5 s record  | 6"/5 s|
-| C++ [3] on RPi4/performance  | 76"/5 s record       | TODO s      | TODO s      |
+| C++ [3]                      | 19"/5 s record  | 13"/5 s record  | 6"/5 s |
+| C++ [3] on RPi4/performance  | 56"/5 s record  | 39"/5 s record  | 17"/5 s|
 
 Two-way means only processing half the dataset since the loopback delay has already been
 processed during ranging analysis.
@@ -79,7 +79,7 @@ squared phase, hence the slight discrepency in the tens of ps range
 4    0.988264021646  1780.750        207.8   -5.1   0.725310774223 0.000   216.3   0.6
 ```
 
-76 seconds on a RPi4 in performance mode for a 5 second record means 46 minute processing for a 3 
+56 seconds on a RPi4 in performance mode for a 5 second record means 34 minute processing for a 3 
 minute-long record.
 
 ## SDR data loss
