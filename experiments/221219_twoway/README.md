@@ -28,13 +28,14 @@ Panasonic [CF19 MK8](https://www.bobjohnson.com/blog/a-note-on-model-numbers-for
 laptop fitted with a Intel i5-3610ME CPU @ 2.70GHz. The sample file is a 5 second long, 
 200 MB record.
 
-| Processing time v.s language | Ranging         | Two-way    | Difference (single channel processing time)|
-| ---------------------------- | ----------------|------------|-----------|
+| Processing time v.s language | Ranging         | Two-way         | Difference (single channel processing time)|
+| ---------------------------- | ----------------|-----------------|--------|
 | GNU/Octave [0]               | 104"/5 s record | 53"/5 s record  | 51"/5 s|
 | Python/numpy [1]             | 240"/5 s record | 128"/5 s record |112"/5 s|
 | Python/pyfft [2]             | 215" (1-thread) | 125"/5 s record | 90"/5 s|
-| C++ [3]                      | 29"/5 s record  | 16"/5 s record  | 13"/5 s|
-| C++ [3] on RPi4/performance  | TODO s       | TODO s      | TODO s      |
+| C++ [3]                      | 19"/5 s record  | 13"/5 s record  | 6"/5 s |
+| C++ [3] on RPi4/performance (1.5 GHz)   | 58"/5 s record  | 44"/5 s record  | 14"/5 s|
+| C++ [3] on RPi4/performance overclocked | 56"/5 s record  | 39"/5 s record  | 17"/5 s|
 
 Two-way means only processing half the dataset since the loopback delay has already been
 processed during ranging analysis.
@@ -79,8 +80,13 @@ squared phase, hence the slight discrepency in the tens of ps range
 4    0.988264021646  1780.750        207.8   -5.1   0.725310774223 0.000   216.3   0.6
 ```
 
-72 seconds on a RPi4 in performance mode for a 5 second record means 45 minute processing for a 3 
-minute-long record.
+56 seconds on a RPi4 in performance mode for a 5 second record means 34 minute processing for a 3 
+minute-long record. Overclocking is achieved with
+```
+arm_freq=2275 
+over_voltage=8 
+```
+in the RPi4's first partition ``config.txt`` although the actual core clock frequency is not known.
 
 ## SDR data loss
 
