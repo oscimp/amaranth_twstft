@@ -17,11 +17,11 @@ function [indice,correction,SNRr,SNRi,df,puissance,puissancecode,puissancenoise]
       lo=exp(-j*2*pi*df*temps);         % coarse frequency offset
       y=d.*lo;                          % coarse frequency transposition
 % addition 221228: fine frequency from phase drift
-      [a,b]=polyfit([1:10:fs/3]'/fs,conv(angle(y(1:10:fs/3)),ones(100,1)/100)(50:end-50),1);
-      dfleftover=a(1)/2/pi;             % fine frequency correction
-      lo=exp(-j*2*pi*dfleftover*temps); % frequency offset
-      y=y.*lo;                          % frequency transposition
-      df+=dfleftover;
+%      [a,b]=polyfit([1:10:fs/3]'/fs,conv(angle(y(1:10:fs/3)),ones(100,1)/100)(50:end-50),1);
+%      dfleftover=a(1)/2/pi;             % fine frequency correction
+%      lo=exp(-j*2*pi*dfleftover*temps); % frequency offset
+%      y=y.*lo;                          % frequency transposition
+%      df+=dfleftover;
       ffty=fft(y);
       prnmap=fftshift(ffty.*fcode);     % xcorr
       prnmap=[zeros(length(y)*(Nint),1) ; prnmap ; zeros(length(y)*(Nint),1)]; % interpolation to 3x samp_rate
