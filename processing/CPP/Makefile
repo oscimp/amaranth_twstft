@@ -19,7 +19,7 @@ CXXFLAGS += -O3 -Wall
 LDFLAGS  += -O3 -Wall
 CXXFLAGS += -g
 LDFLAGS  += -g
-SRC=main_thread.cpp
+SRC=main.cpp
 OBJS=$(SRC:.cpp=.o)
 DEST=godual
 
