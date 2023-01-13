@@ -291,7 +291,7 @@ void GoRanging::_process_method(uint8_t chan_id)
 		_xvalx[chan_id].push_back(prnmap0x[indice1]);
 		_xvalxm1[chan_id].push_back(prnmap0x[indice1 - 1]);
 		_xvalxp1[chan_id].push_back(prnmap0x[indice1 + 1]);
-		printf("%d %0.12lf\t%.3f\t", p,
+		printf("%d/%d %0.12lf\t%.3f\t", p, chan_id,
 			   ((double)indice1 + corr1) / fs / (2 * Nint + 1.), df1);
 //  % SNR computation
 		//  yint=zeros(length(y)*(2*Nint+1),1);
