@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstring>
+#include <regex>
 #include <thread>
 
 #include <fftw3.h>
@@ -59,6 +60,7 @@ class GoRanging {
 	std::vector < std::vector < double >>_correction;
 	std::vector < std::vector < double >>_dfx_array;
 	std::vector < std::vector < double >>_puissance;
+	std::vector < std::vector < double >>_puissancecode;
 	std::vector < std::vector < double >>_SNRx;
 	std::vector < std::vector < std::complex <double >>>_xvalx, _xvalxm1, _xvalxp1;
 	std::string _filename;
@@ -111,6 +113,7 @@ GoRanging::GoRanging(double fs, const std::string & filename,
 
 	_correction.resize(_nb_chan);
 	_puissance.resize(_nb_chan);
+	_puissancecode.resize(_nb_chan);
 	_SNRx.resize(_nb_chan);
 	_sema_dx.resize(_nb_chan);
 	_sema_dx_rdy.resize(_nb_chan);
@@ -265,6 +268,7 @@ void GoRanging::_process_method(uint8_t chan_id)
 		}
 
 		// multmp1 = np.fft.fftshift(np.fft.fft(y) * fcode)
+		double puissance = 0;
 		fftw_execute(_plan_a_dx[chan_id]);	//  ffty=fft(y);
 		for (size_t i = _fcode_len; i < _ifft_size - _fcode_len; i++)
 			chan_ifft_dx[i] = 0;
@@ -272,6 +276,7 @@ void GoRanging::_process_method(uint8_t chan_id)
 			y[i] = result_dx[i];	// y = FFT(d1*lo)
 			int ii = (i < _fcode_len / 2) ? i : (i + (2 * _fcode_len));
 			chan_ifft_dx[ii] = y[i] * _fcode[i];
+			puissance += std::norm(y[i]);
 		}
 
 #ifdef DISPLAY_TIME
@@ -329,10 +334,11 @@ void GoRanging::_process_method(uint8_t chan_id)
 		SNR1s /= _ifft_size;
 		SNR1r = SNR1.real() * SNR1.real() / SNR1s;	// <.>^2/var
 		SNR1i = SNR1.imag() * SNR1.imag() / SNR1s;
-		printf("%.1lf\t%0.1lf\t", puissance1code,
+		printf("%.1lf\t%0.1lf\t", puissance,
 			   10 * log10(SNR1r + SNR1i));
 		_SNRx[chan_id].push_back(10 * log10(SNR1r + SNR1i));
-		_puissance[chan_id].push_back(puissance1code);
+		_puissancecode[chan_id].push_back(puissance1code);
+		_puissance[chan_id].push_back(puissance);
 		p++;
 		sem_post(&_sema_dx_rdy[chan_id]);
 	}
@@ -442,6 +448,10 @@ bool GoRanging::save(std::string filename)
 	mat_var = Mat_VarCreate("puissance1", MAT_C_DOUBLE, MAT_T_DOUBLE, 2, dim, &_puissance[0][0], 0);
 	Mat_VarWrite(matfp, mat_var, MAT_COMPRESSION_NONE);	//or MAT_COMPRESSION_ZLIB
 	Mat_VarFree(mat_var);
+	/* puissance1cpde */
+	mat_var = Mat_VarCreate("puissance1code", MAT_C_DOUBLE, MAT_T_DOUBLE, 2, dim, &_puissancecode[0][0], 0);
+	Mat_VarWrite(matfp, mat_var, MAT_COMPRESSION_NONE);	//or MAT_COMPRESSION_ZLIB
+	Mat_VarFree(mat_var);
 	/* code */
 	//mat_var = Mat_VarCreate("code", MAT_C_DOUBLE, MAT_T_DOUBLE, 2, dim, &_code[0], 0);
 	//Mat_VarWrite(matfp, mat_var, MAT_COMPRESSION_NONE); //or MAT_COMPRESSION_ZLIB
@@ -512,6 +522,10 @@ bool GoRanging::save(std::string filename)
 		Mat_VarFree(mat_var);
 		/* puissance2 */
 		mat_var = Mat_VarCreate("puissance2", MAT_C_DOUBLE, MAT_T_DOUBLE, 2, dim, &_puissance[1][0], 0);
+		Mat_VarWrite(matfp, mat_var, MAT_COMPRESSION_NONE);	//or MAT_COMPRESSION_ZLIB
+		Mat_VarFree(mat_var);
+		/* puissance2code */
+		mat_var = Mat_VarCreate("puissance2code", MAT_C_DOUBLE, MAT_T_DOUBLE, 2, dim, &_puissancecode[1][0], 0);
 		Mat_VarWrite(matfp, mat_var, MAT_COMPRESSION_NONE);	//or MAT_COMPRESSION_ZLIB
 		Mat_VarFree(mat_var);
 		mat_var =
@@ -656,9 +670,12 @@ int main(int argc, char **argv)
 		remote = atoi(argv[3]);
 	if (argc >= 5)
 		foffset = atof(argv[4]); // 2 * (_foffset + frange) with frange=8 kHz
-	GoRanging ranging(5e6, argv[1], argv[2], remote, foffset);
+	std::string filename = argv[1];
+	std::regex e ("([^ ]*)(.bin)");   // matches words beginning by "sub"
+	std::string matname = std::regex_replace (filename,e,"$1.mat");
+	GoRanging ranging(5e6, filename, argv[2], remote, foffset);
 	ranging.compute();
-	ranging.save("myfile.mat");
+	ranging.save(matname);
 
 	return EXIT_SUCCESS;
 }
