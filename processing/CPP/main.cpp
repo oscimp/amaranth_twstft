@@ -672,7 +672,9 @@ int main(int argc, char **argv)
 		foffset = atof(argv[4]); // 2 * (_foffset + frange) with frange=8 kHz
 	std::string filename = argv[1];
 	std::regex e ("([^ ]*)(.bin)");   // matches words beginning by "sub"
-	std::string matname = std::regex_replace (filename,e,"$1.mat");
+ 	std::string matname = std::regex_replace (filename,e,"$1C.mat");
+	if (remote==1)
+	        matname = std::regex_replace (filename,e,"remote$1C.mat");
 	GoRanging ranging(5e6, filename, argv[2], remote, foffset);
 	ranging.compute();
 	ranging.save(matname);
