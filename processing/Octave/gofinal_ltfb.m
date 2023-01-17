@@ -3,7 +3,7 @@ format long
 affiche=0;
 fs=5e6;
 Nint=1;
-global code=ones(2*fs,1); % needed if not stored in .mat archive, will be overwritten otherwise
+global code=ones(fs,1); % needed if not stored in .mat archive, will be overwritten otherwise
 
 if (affiche==1)
   graphics_toolkit('gnuplot')  % beware of steps with fltk !
