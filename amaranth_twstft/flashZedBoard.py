@@ -54,7 +54,7 @@ class TWSTFT_top(Elaboratable):
     
     """
 
-    def __init__(self, bit_len, noise_len, reload=True, taps = 0, seed = 0x1, freqout=2500000):
+    def __init__(self, bit_len, noise_len, reload=True, lock_pps_gen=True, taps = 0, seed = 0x1, freqout=2500000):
     
         self.pps_out = Signal()
         self.the_pps_we_love = Signal()
@@ -62,7 +62,7 @@ class TWSTFT_top(Elaboratable):
         self.ref_clk = Signal()
 
         self._freqout = freqout
-        self.mixer = Mixer(bit_len, noise_len, reload, taps, seed, int(280e6), freqout)
+        self.mixer = Mixer(bit_len, noise_len, reload, lock_pps_gen, taps, seed, int(280e6), freqout)
         
     def elaborate(self,platform):
         m = Module()

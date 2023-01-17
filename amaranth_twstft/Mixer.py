@@ -60,7 +60,7 @@ class Mixer(Elaboratable):
     
     """
 
-    def __init__(self, bit_len, noise_len, reload=True, taps = 0, seed = 0x1,
+    def __init__(self, bit_len, noise_len, reload=True, lock_pps_gen=True, taps = 0, seed = 0x1,
                  freqin = 280e6, freqout=2500000):
     
         self.carrier0       = Signal()
@@ -87,6 +87,8 @@ class Mixer(Elaboratable):
         self._bit_len = bit_len
         self._freqout = freqout
         self.clock_freq = freqin
+
+        self._lock_pps_gen = lock_pps_gen
 
         self.output = Signal()
         self.output2 = Signal()
@@ -165,14 +167,18 @@ class Mixer(Elaboratable):
         if 1==1 : #debug ?
         
             m.submodules.vingtmega = presc20MHz = Prescaler(self.clock_freq,20000000)
-            m.submodules.highstate200ns = hs200ns = PWMStatic(56000000, int(280e6), wait_first_reset=False)
+            m.submodules.highstate200ns = hs200ns = PWMStatic(56000000, int(280e6), wait_first_reset=self._lock_pps_gen)
             the_pps_we_love = Signal()
             dixmega = Signal()
+
+            if self._lock_pps_gen:
+                m.d.sync += hs200ns.reset.eq(prn_gen.rise_pps)
+            else:
+                m.d.comb += hs200ns.reset.eq(0),
             
             m.d.comb += [
                 presc20MHz.enable.eq(1),
                 hs200ns.enable.eq(1),
-                hs200ns.reset.eq(0),
                 the_pps_we_love.eq(hs200ns.output),
             ]
             with m.If(presc20MHz.output):
