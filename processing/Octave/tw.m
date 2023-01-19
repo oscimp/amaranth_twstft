@@ -1,9 +1,9 @@
 dirop='OP/'
 dirltfb='LTFB/'
 
-graphics_toolkit('gnuplot')
+% graphics_toolkit('gnuplot')
 
-affiche=0;
+affiche=1;
 m=1;
 
 dop=dir([dirop,'*.*.*.txt']);
@@ -27,7 +27,7 @@ for l=1:length(dop)
        ltfb=ltfb(1:length(op),:);
     end
     printf(" diff=%d\n",difference)
-    if (difference<10)
+    if (difference<180)
       k=find(ltfb(:,9)>max(ltfb(:,9)-10));k=[k(1)+1:k(end)-1];  % SNR criterion: remove beginning & end
       ltfb=ltfb(k,:); op=op(k,:);
       k=find(op(:,9)>max(op(:,9)-10));k=[k(1)+1:k(end)-1];      % SNR criterion: remove beginning & end
@@ -39,13 +39,13 @@ for l=1:length(dop)
       if (isempty(k)) printf("%.12f\n",mean(res)*1e9);
       end
       res=res(k);
-      if (affiche==1)
+      if ((affiche==1)&&(m>length(dop)-5))
          if (std(res)<1e-6)
            figure
   	 % subplot(8,1,m)
            plot(res*1e9);
            xlabel('sample number (s)');ylabel('tw difference (ns)');title([dop(l).name,' - ',dltfb(1).name]);
-  	 legend(['std=',num2str(std(res)),' <.>=',num2str(mean(res))]);
+     	   legend(['std=',num2str(std(res)),' <.>=',num2str(mean(res))]);
          end
       end
       res=res*1e9;
@@ -56,8 +56,11 @@ for l=1:length(dop)
         moy(m)=mean(res);
         temps(m)=str2num(dltfb(1).name(1:10))/86400+40587;
 	[uu(m),vv(m)]=max(abs(fft(res-mean(res)))(1:20));
+	[ad(:,m),bb]=polyfit([1:length(ltfb)]',ltfb(:,7)-ltfb(:,10),1);
+	[a07(:,m),bbb]=polyfit([1:length(ltfb)]',ltfb(:,7),1);
+	[a10(:,m),bbb]=polyfit([1:length(ltfb)]',ltfb(:,10),1);
       else
-        if (affiche==1)
+        if ((affiche==1)&&(m>length(dop)-5))
           figure
           subplot(311)
           plot(ltfb(:,10)-ltfb(:,13))
@@ -75,12 +78,11 @@ for l=1:length(dop)
   end
 end
 
-if (affiche==1)
+% if (affiche==1)
   figure
   k=find(temps>0);
-  subplot(311);plot(temps(k)-59000,moy(k),'x');ylabel('<tw> (ns)')
-  subplot(312);plot(temps(k)-59000,sta(k),'x');ylabel('std(tw) (ns)');xlabel('MJD-59000 (days)')
+  subplot(311);plot(temps(k)-59000,moy(k),'-');ylabel('<tw> (ns)')
+  subplot(312);plot(temps(k)-59000,sta(k),'-');ylabel('std(tw) (ns)');xlabel('MJD-59000 (days)')
   k=find(vv>0);
-  subplot(313);plot(temps(k)-59000,vv(k),'x');ylabel('FFT(tw)');xlabel('MJD-59000 (days)')
-end
-
+  subplot(313);plot(temps(k)-59000,vv(k),'-');ylabel('FFT(tw)');xlabel('MJD-59000 (days)')
+% end
