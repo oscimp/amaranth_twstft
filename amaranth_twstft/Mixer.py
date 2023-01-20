@@ -61,7 +61,7 @@ class Mixer(Elaboratable):
     """
 
     def __init__(self, bit_len, noise_len, reload=True, lock_pps_gen=True, taps = 0, seed = 0x1,
-                 freqin = 280e6, freqout=2500000):
+                 freqin = 280e6, freqout=2500000, invert_first_code=False):
     
         self.carrier0       = Signal()
         self.carrier90      = Signal()
@@ -76,6 +76,7 @@ class Mixer(Elaboratable):
         self.the_pps_we_love = Signal()
         self.dixmega         = Signal()
         self.ref_clk         = Signal()
+        self.invert_prn_o    = Signal()
 
         # ctrl
         self.global_enable = Signal()
@@ -92,6 +93,8 @@ class Mixer(Elaboratable):
 
         self.output = Signal()
         self.output2 = Signal()
+
+        self._invert_first_code = invert_first_code
         
         if taps==0:
             self.dynamic_taps = True
@@ -113,7 +116,8 @@ class Mixer(Elaboratable):
                                                             self._bit_len, 
                                                             noise_len=self._noise_len, 
                                                             reload=self._reload,
-                                                            seed = self._seed)
+                                                            seed = self._seed,
+                                                            invert_first_code=self._invert_first_code)
             m.d.comb += prn_gen.tsel.eq(self.tsel)
         else :
             m.submodules.prn_gen = prn_gen = Synchronizer(self.clock_freq, 
@@ -122,7 +126,8 @@ class Mixer(Elaboratable):
                                                             noise_len=self._noise_len, 
                                                             reload=self._reload,
                                                             taps =self.taps, 
-                                                            seed = self._seed)
+                                                            seed = self._seed,
+                                                            invert_first_code=self._invert_first_code)
                 
                 
         carrier_selector = Signal()
@@ -132,6 +137,7 @@ class Mixer(Elaboratable):
             self.output2.eq(prn_gen.output2),
             prn_gen.global_enable.eq(self.global_enable),
             prn_gen.pps.eq(self.pps_in),
+            self.invert_prn_o.eq(prn_gen.invert_prn_o),
         ]
 
         # put to 1 if you want to start generating on the next pps rising edge

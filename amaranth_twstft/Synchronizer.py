@@ -78,13 +78,15 @@ class Synchronizer(Elaboratable):
         output signal indicating that the LFSR is shifting
     """
 
-    def __init__(self, freqin, freqout, bit_len, noise_len, reload=True, taps=0, seed = 0x1):
+    def __init__(self, freqin, freqout, bit_len, noise_len, reload=True, taps=0,
+                 seed = 0x1, invert_first_code=False):
         self.pps = Signal(name="sync_pps_input")
         self.output = Signal(name="sync_output")
         self.output2 = Signal(name="sync_output2")
         self.shifting = Signal(name="shifting_prn_signal")
         self.mode = Signal()
         self.global_enable = Signal()
+        self.invert_prn_o = Signal()
 
         if taps == 0:
             self.dynamic_taps = True
@@ -101,6 +103,7 @@ class Synchronizer(Elaboratable):
         self._bit_len = bit_len
         self._cnt = GlobalCounter(self.noise_len, reload)
         self.rise_pps = Signal()
+        self._invert_first_code = invert_first_code
 
     def elaborate(self, platform):
         m = Module()
@@ -157,6 +160,17 @@ class Synchronizer(Elaboratable):
             self._cnt.enable.eq(self.global_enable),
         ]
 
+        invert_prn = Signal()
+        if self._invert_first_code:
+            with m.If(self.rise_pps | ~self.global_enable):
+                m.d.sync += invert_prn.eq(1)
+            with m.Elif(self._cnt.overflow):
+                m.d.sync += invert_prn.eq(0)
+            with m.Else():
+                m.d.sync += invert_prn.eq(invert_prn)
+        else:
+            m.d.comb += invert_prn.eq(0)
+
         #outputing the signals I and Q
         # and updating them only when the LFSR isn't shifting
         old_output = Signal()
@@ -164,7 +178,8 @@ class Synchronizer(Elaboratable):
 
         m.d.comb += [
             self.output.eq(old_output),
-            self.output2.eq(old_output2)
+            self.output2.eq(old_output2),
+            self.invert_prn_o.eq(invert_prn)
         ]
         m.d.sync += [
             old_output.eq(old_output),
@@ -172,8 +187,8 @@ class Synchronizer(Elaboratable):
         ]
         with m.If(~self.shifting):
             m.d.sync += [
-                old_output.eq(prn.output),
-                old_output2.eq(prn.output2)
+                old_output.eq(prn.output ^ invert_prn),
+                old_output2.eq(prn.output2 ^ invert_prn)
             ]
 
         return m

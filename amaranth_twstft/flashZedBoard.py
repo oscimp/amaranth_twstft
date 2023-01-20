@@ -54,7 +54,8 @@ class TWSTFT_top(Elaboratable):
     
     """
 
-    def __init__(self, bit_len, noise_len, reload=True, lock_pps_gen=True, taps = 0, seed = 0x1, freqout=2500000):
+    def __init__(self, bit_len, noise_len, reload=True, lock_pps_gen=True, taps = 0, seed = 0x1, freqout=2500000,
+                 invert_first_code=False):
     
         self.pps_out = Signal()
         self.the_pps_we_love = Signal()
@@ -62,7 +63,8 @@ class TWSTFT_top(Elaboratable):
         self.ref_clk = Signal()
 
         self._freqout = freqout
-        self.mixer = Mixer(bit_len, noise_len, reload, lock_pps_gen, taps, seed, int(280e6), freqout)
+        self.mixer = Mixer(bit_len, noise_len, reload, lock_pps_gen, taps, seed, int(280e6), freqout,
+                           invert_first_code)
         
     def elaborate(self,platform):
         m = Module()
@@ -149,6 +151,7 @@ class TWSTFT_top(Elaboratable):
                     
                     Subsignal('D4_o', Pins('4', conn = connd, dir='o')),
                     Subsignal('D1_o', Pins('1', conn = connd, dir='o')),
+                    Subsignal('D2_o', Pins('2', conn = connd, dir='o')), # invert_prn
                     Attrs(IOSTANDARD="LVCMOS33")
                 )
             ])
@@ -174,6 +177,7 @@ class TWSTFT_top(Elaboratable):
                 pins.B3_o.eq(mixer.pps_out),
                 pins.B5_o.eq(mixer.output),
                 pins.B6_o.eq(mixer.output2),
+                pins.D2_o.eq(mixer.invert_prn_o),
                 #pins.B4_o.eq(mixer.ref_clk),
                 #pins.C1_o.eq(mmcm_locked),
             ]
@@ -196,6 +200,7 @@ if __name__ == "__main__":
     parser.add_argument("-s","--seed",    default=1, help="initial value of the LFSR (default 1)", type=int)
     parser.add_argument("-t","--taps",    help="taps positions for the LFSR (if not defined, allows to dynamically define taps (currently not supported so default taps will be the smallest msequence generator taps))", type=int)
     parser.add_argument("-m","--modfreq", default=int(2.5e6), help="frequency of the PSK modulation (Herz) (default :2.5e6)", type=int)
+    parser.add_argument("--invert-first-code", help="invert (xor) the first code after PPS rise", action="store_true")
     parser.add_argument("-p","--print",   help="creates a binary file containing the PRN sequence that should be generated", action="store_true")
     parser.add_argument("-v","--verbose", help="prints all the parameters used for this instance of the program", action="store_true")
     parser.add_argument("--no-build",     help="sources generate only", action="store_true")
@@ -215,17 +220,23 @@ if __name__ == "__main__":
     if args.print :
         write_prn_seq(args.bitlen, t, args.seed, seqlen=int(args.noiselen))
 
+    invert_first_code = args.invert_first_code
+    if invert_first_code and int(args.noiselen) >= int(args.modfreq):
+        invert_first_code = False
+        print(f"First code invertion disabled: noiselen ({args.noiselen}) >= modfreq ({args.modfreq})")
+
     if args.verbose:
         print("bit length of the LFSR : "+str(args.bitlen))
         print("number of bits generated per pps signal received : "+ str(args.noiselen))
         print("baseband signal frequency : "+str(args.modfreq))
         print("seed : "+str(args.seed))
         print("taps : "+ str(t))
+        print("First code xoring: " + ("Enabled" if invert_first_code else "Disabled"))
 
     gateware = ZedBoardPlatform().build(
         TWSTFT_top(args.bitlen, int(args.noiselen), reload=not args.no_reload,
                    taps=t, seed=args.seed,
-                   freqout=args.modfreq),
+                   freqout=args.modfreq, invert_first_code=True),
         do_program=not args.no_load, do_build=not args.no_build, build_dir=args.build_dir)
     # if no build nothing produces -> force
     if args.no_build:
