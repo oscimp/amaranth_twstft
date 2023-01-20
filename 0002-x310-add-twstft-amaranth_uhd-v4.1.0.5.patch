@@ -6,17 +6,17 @@ Subject: [PATCH]  adding a patch for UHD to integrate twstft into X310
 
 Signed-off-by: Gwenhael Goavec-Merou <gwenhael.goavec-merou@trabucayre.com>
 ---
- fpga/usrp3/top/x300/Makefile          |  7 +++
+ fpga/usrp3/top/x300/Makefile          | 15 ++++++
  fpga/usrp3/top/x300/Makefile.x300.inc |  1 +
- fpga/usrp3/top/x300/x300.v            | 74 +++++++++++++++++++++++++--
- fpga/usrp3/top/x300/x300.xdc          | 10 ++--
- 4 files changed, 84 insertions(+), 8 deletions(-)
+ fpga/usrp3/top/x300/x300.v            | 76 +++++++++++++++++++++++++--
+ fpga/usrp3/top/x300/x300.xdc          | 12 ++---
+ 4 files changed, 95 insertions(+), 9 deletions(-)
 
 diff --git a/fpga/usrp3/top/x300/Makefile b/fpga/usrp3/top/x300/Makefile
-index 2f5e1b924..d188093c5 100644
+index 2f5e1b924..42b91aa3a 100644
 --- a/fpga/usrp3/top/x300/Makefile
 +++ b/fpga/usrp3/top/x300/Makefile
-@@ -64,6 +64,12 @@ else
+@@ -64,6 +64,20 @@ else
  	post_build = @echo "Skipping bitfile export."
  endif
  
@@ -25,15 +25,23 @@ index 2f5e1b924..d188093c5 100644
 +TAPS?=0
 +NOISELEN?=2500000
 +BITLEN?=22
++INVERT_FIRST_CODE?=0
++
++AMARANTH_OPTS = -v --taps $(TAPS) --noiselen $(NOISELEN) --bitlen $(BITLEN)
++
++ifeq ($(INVERT_FIRST_CODE),1)
++AMARANTH_OPTS += --invert-first-code
++endif
++
 +
  ##
  ##Supported Targets
  ##-----------------
-@@ -82,6 +88,7 @@ X300_1G:
+@@ -82,6 +96,7 @@ X300_1G:
  
  ##X310_HG:  1GigE on SFP+ Port0, 10Gig on SFP+ Port1.
  X310_HG:
-+	python -m amaranth_twstft.flashZedBoard --no-load --no-build --build-dir amaranth --taps $(TAPS) --noiselen $(NOISELEN) --bitlen $(BITLEN)
++	python -m amaranth_twstft.flashZedBoard --no-load --no-build --build-dir amaranth $(AMARANTH_OPTS)
  	$(call vivado_build,X310,$(HG_DEFS) X310=1)
  	$(call post_build,X310,HG)
  
@@ -50,17 +58,18 @@ index 1f18cbf02..2ff6c86d9 100644
  soft_ctrl.v \
  capture_ddrlvds.v \
 diff --git a/fpga/usrp3/top/x300/x300.v b/fpga/usrp3/top/x300/x300.v
-index 8fbfa39b9..573a92563 100644
+index 8fbfa39b9..ddbc9491c 100644
 --- a/fpga/usrp3/top/x300/x300.v
 +++ b/fpga/usrp3/top/x300/x300.v
-@@ -168,7 +168,14 @@ module x300
+@@ -168,7 +168,15 @@ module x300
     //
     ///////////////////////////////////
  
 -   inout [11:0] FrontPanelGpio,
 +   //GGM
 +   //inout [11:0] FrontPanelGpio,
-+   inout [6:0] FrontPanelGpio,
++   inout [5:0] FrontPanelGpio,
++   output      FrontPanelGpio6, // invert prn o
 +   input       FrontPanelGpio7, // OUT carrier
 +   output      FrontPanelGpio8, // PPS
 +   input       FrontPanelGpio9, // ENABLE
@@ -69,7 +78,7 @@ index 8fbfa39b9..573a92563 100644
  
     output LED_ACT1, output LED_ACT2,
     output LED_LINK1, output LED_LINK2,
-@@ -383,6 +390,61 @@ module x300
+@@ -383,6 +391,62 @@ module x300
        .CLK_OUT1(radio_clk), .CLK_OUT2(radio_clk_2x), .CLK_OUT3(dac_dci_clk),
        .RESET(sw_rst[2]), .LOCKED(radio_clk_locked));
  
@@ -124,6 +133,7 @@ index 8fbfa39b9..573a92563 100644
 +        .pps_out(FrontPanelGpio8),
 +        .the_pps_we_love(FrontPanelGpio11),
 +        .rst(!amaranth_rst),
++        .invert_prn_o(FrontPanelGpio6),
 +        .switch_mode(1'b0/*FrontPanelGpio11*/)
 +    );
 +
@@ -131,22 +141,22 @@ index 8fbfa39b9..573a92563 100644
     ////////////////////////////////////////////////////////////////////
     //
     // IJB. Radio PLL doesn't seem to lock at power up.
-@@ -1304,7 +1366,13 @@ module x300
+@@ -1304,7 +1368,13 @@ module x300
        .gpio_ddr(db1_gpio_ddr), .gpio_out(db1_gpio_out), .gpio_in(db1_gpio_in)
     );
  
 -`ifdef DEBUG_UART
 +
-+   gpio_atr_io #(.WIDTH(7)) fp_gpio_atr_inst (
-+      .clk(radio_clk), .gpio_pins(FrontPanelGpio[6:0]),
-+      .gpio_ddr(fp_gpio_ddr[6:0]), .gpio_out(fp_gpio_out[6:0]), .gpio_in(fp_gpio_in[6:0])
++   gpio_atr_io #(.WIDTH(6)) fp_gpio_atr_inst (
++      .clk(radio_clk), .gpio_pins(FrontPanelGpio[5:0]),
++      .gpio_ddr(fp_gpio_ddr[5:0]), .gpio_out(fp_gpio_out[5:0]), .gpio_in(fp_gpio_in[5:0])
 +   );
-+   assign fp_gpio_in[11:7] = 0;
++   assign fp_gpio_in[11:6] = 0;
 +/*`ifdef DEBUG_UART
     gpio_atr_io #(.WIDTH(10)) fp_gpio_atr_inst (
        .clk(radio_clk), .gpio_pins(FrontPanelGpio[9:0]),
        .gpio_ddr(fp_gpio_ddr[9:0]), .gpio_out(fp_gpio_out[9:0]), .gpio_in(fp_gpio_in[9:0])
-@@ -1317,7 +1385,7 @@ module x300
+@@ -1317,7 +1387,7 @@ module x300
        .gpio_ddr(fp_gpio_ddr[11:0]), .gpio_out(fp_gpio_out[11:0]), .gpio_in(fp_gpio_in[11:0])
     );
     assign debug_rxd = 1'b0;
@@ -156,18 +166,20 @@ index 8fbfa39b9..573a92563 100644
  
     ///////////////////////////////////////////////////////////////////////////////////
 diff --git a/fpga/usrp3/top/x300/x300.xdc b/fpga/usrp3/top/x300/x300.xdc
-index 11290b79f..9a9fff984 100644
+index 11290b79f..946f563a7 100644
 --- a/fpga/usrp3/top/x300/x300.xdc
 +++ b/fpga/usrp3/top/x300/x300.xdc
-@@ -511,11 +511,11 @@ set_property PACKAGE_PIN   AG30     [get_ports {FrontPanelGpio[3]}]
+@@ -510,12 +510,12 @@ set_property PACKAGE_PIN   AD28     [get_ports {FrontPanelGpio[2]}]
+ set_property PACKAGE_PIN   AG30     [get_ports {FrontPanelGpio[3]}]
  set_property PACKAGE_PIN   AH30     [get_ports {FrontPanelGpio[4]}]
  set_property PACKAGE_PIN   AC26     [get_ports {FrontPanelGpio[5]}]
- set_property PACKAGE_PIN   AD26     [get_ports {FrontPanelGpio[6]}]
+-set_property PACKAGE_PIN   AD26     [get_ports {FrontPanelGpio[6]}]
 -set_property PACKAGE_PIN   AJ27     [get_ports {FrontPanelGpio[7]}]
 -set_property PACKAGE_PIN   AK28     [get_ports {FrontPanelGpio[8]}]
 -set_property PACKAGE_PIN   AG27     [get_ports {FrontPanelGpio[9]}]
 -set_property PACKAGE_PIN   AG28     [get_ports {FrontPanelGpio[10]}]
 -set_property PACKAGE_PIN   AH26     [get_ports {FrontPanelGpio[11]}]
++set_property PACKAGE_PIN   AD26     [get_ports {FrontPanelGpio6}]
 +set_property PACKAGE_PIN   AJ27     [get_ports {FrontPanelGpio7}]
 +set_property PACKAGE_PIN   AK28     [get_ports {FrontPanelGpio8}]
 +set_property PACKAGE_PIN   AG27     [get_ports {FrontPanelGpio9}]

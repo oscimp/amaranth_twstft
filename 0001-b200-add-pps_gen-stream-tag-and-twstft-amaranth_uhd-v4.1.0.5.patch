@@ -7,7 +7,7 @@ Signed-off-by: Gwenhael Goavec-Merou <gwenhael.goavec-merou@trabucayre.com>
 ---
  fpga/usrp3/lib/radio_200/radio_legacy.v     |  42 ++++++--
  fpga/usrp3/top/b200/.gitignore              |   1 +
- fpga/usrp3/top/b200/Makefile                |   5 +
+ fpga/usrp3/top/b200/Makefile                |  13 +++
  fpga/usrp3/top/b200/Makefile.b200.inc       |   4 +
  fpga/usrp3/top/b200/b200.v                  |  99 ++++++++++++++++-
  fpga/usrp3/top/b200/b200_core.v             |  11 ++
@@ -17,7 +17,7 @@ Signed-off-by: Gwenhael Goavec-Merou <gwenhael.goavec-merou@trabucayre.com>
  fpga/usrp3/top/b200/gpio.ucf                |  19 ++--
  fpga/usrp3/top/b200/my_pps_gen.v            | 113 ++++++++++++++++++++
  fpga/usrp3/top/b200/pps_atr.v               |  96 +++++++++++++++++
- 12 files changed, 469 insertions(+), 25 deletions(-)
+ 12 files changed, 477 insertions(+), 25 deletions(-)
  create mode 100644 fpga/usrp3/top/b200/ggm_b210_hack.v
  create mode 100644 fpga/usrp3/top/b200/my_pps_gen.v
  create mode 100644 fpga/usrp3/top/b200/pps_atr.v
@@ -104,24 +104,32 @@ index 376246b05..17317f434 100644
  isim*
 +amaranth
 diff --git a/fpga/usrp3/top/b200/Makefile b/fpga/usrp3/top/b200/Makefile
-index 8a3569e00..89f8b6a8f 100644
+index 8a3569e00..5e0940d4c 100644
 --- a/fpga/usrp3/top/b200/Makefile
 +++ b/fpga/usrp3/top/b200/Makefile
-@@ -2,6 +2,9 @@
+@@ -2,6 +2,17 @@
  # Copyright 2012-2014 Ettus Research LLC
  #
  
 +TAPS?=3
 +NOISELEN?=2500000
 +BITLEN?=22
++INVERT_FIRST_CODE?=0
++
++AMARANTH_OPTS = -v --taps $(TAPS) --noiselen $(NOISELEN) --bitlen $(BITLEN)
++
++ifeq ($(INVERT_FIRST_CODE),1)
++AMARANTH_OPTS += --invert-first-code
++endif
++
  # NOTE: All comments prefixed with a "##" will be displayed as a part of the "make help" target
  ##-------------------
  ##USRP B2X0 FPGA Help
-@@ -75,12 +78,14 @@ B200:  ##Build USRP B200 design.
+@@ -75,12 +86,14 @@ B200:  ##Build USRP B200 design.
  
  B210:  ##Build USRP B210 design.
  	$(call pre_build,B210)
-+	python -m amaranth_twstft.flashZedBoard --no-load --no-build --build-dir amaranth --taps $(TAPS) --noiselen $(NOISELEN) --bitlen $(BITLEN)
++	python -m amaranth_twstft.flashZedBoard --no-load --no-build --build-dir amaranth $(AMARANTH_OPTS)
  	$(call ise_build,XC6SLX150,TARGET_B210=1)
  	$(call post_build,B210)
  
@@ -711,5 +719,5 @@ index 000000000..f2ac0667b
 +
 +endmodule // gpio_atr
 -- 
-2.37.4
+2.39.1
 
