@@ -13,6 +13,12 @@
 #include <matio.h>
 #include <semaphore.h>
 
+#include "sigpack.h"
+
+using namespace std;
+using namespace arma;
+using namespace sp;
+
 #define DISPLAY_TIME
 //#undef DISPLAY_TIME
 
@@ -608,6 +614,10 @@ bool GoRanging::fill_fcode(const std::string & filename)
 		_fcode.push_back(std::conj(std::complex <double >(_result_d2[i][0],
 							 _result_d2[i][1])));
 	printf("file size : %ld %ld\n", 2 * file_size, _fcode.size());
+
+        arma::vec fenetre=hamming( _fcode.size() );
+	for (size_t i = 0; i < _fcode.size(); i++)
+		_fcode[i]=_fcode[i]*fenetre[i]; // hamming windowing
 
 	for (size_t i = 0; i < raw.size(); i++) {
 		_tcode[(Nint * 2 + 1) * i] = real(raw[i]);

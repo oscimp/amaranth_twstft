@@ -17,7 +17,7 @@ endif
 
 CXXFLAGS += -O3 -Wall
 LDFLAGS  += -O3 -Wall
-CXXFLAGS += -g
+CXXFLAGS += -g -I./sigpack-1.2.7/sigpack
 LDFLAGS  += -g
 SRC=main.cpp
 OBJS=$(SRC:.cpp=.o)
