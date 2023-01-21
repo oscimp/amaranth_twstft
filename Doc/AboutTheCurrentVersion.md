@@ -10,14 +10,15 @@ The version of the python implementation available in this repository is a littl
 ```
 ./amaranth_twstft/flashZedBoard.py -h
 
-usage: flashZedBoard.py [-h] [--bitlen BITLEN] [--noiselen NOISELEN] [-s SEED]
-                        [-t TAPS] [-m MODFREQ] [-p] [-v] [--no-build]
+usage: flashZedBoard.py [-h] [--bitlen BITLEN] [--noiselen NOISELEN] [--no-reload] [-s SEED]
+                        [-t TAPS] [-m MODFREQ] [--invert-first-code] [-p] [-v] [--no-build]
                         [--no-load] [--build-dir BUILD_DIR]
 
 options:
   -h, --help            show this help message and exit
   --bitlen BITLEN       number of bits of the LFSR
   --noiselen NOISELEN   length of the PRN sequence
+  --no-reload           stop generation after noiselen bits
   -s SEED, --seed SEED  initial value of the LFSR (default 1)
   -t TAPS, --taps TAPS  taps positions for the LFSR (if not defined, allows to
                         dynamically define taps (currently not supported so
@@ -26,6 +27,7 @@ options:
   -m MODFREQ, --modfreq MODFREQ
                         frequency of the PSK modulation (Herz) (default
                         :2.5e6)
+  --invert-first-code   invert (xor) the first code after PPS rise
   -p, --print           creates a binary file containing the PRN sequence that
                         should be generated
   -v, --verbose         prints all the parameters used for this instance of
