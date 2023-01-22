@@ -279,7 +279,7 @@ void GoRanging::_process_method(uint8_t chan_id)
 		dfx->push_back(df1);
 
 		// lo = np.exp(-1j * 2 * np.pi * tmp * temps)
-		std::complex <double >t = tlo * df1;
+		std::complex <double >t = tlo * df1;     // tlo=-j*2*pi
 		for (size_t i = 0; i < _fcode_len; i++) {
 			// lo=exp(-j*2*pi*df1(p)*temps); % frequency offset
 			// y=d1.*lo;                     % frequency transposition
@@ -420,7 +420,7 @@ void GoRanging::df(double fs, size_t N, int remote, double foffset)
   	       	out[i+x1.size()/2].imag(_out[i][1]);
         }
 	int pos = arg_max(out);
-	_foffset1 = _freq[pos] / 2.;
+	_foffset1 = _freq[pos] / 2. + _foffset;
 	printf("df1=%.3f\n",_foffset1);
 	if (remote==0)
 	{
@@ -440,7 +440,7 @@ void GoRanging::df(double fs, size_t N, int remote, double foffset)
   	       		out[i+x1.size()/2].imag(_out[i][1]);
         	}
 		pos = arg_max(out);
-		_foffset2 = _freq[pos] / 2.;
+		_foffset2 = _freq[pos] / 2. + _foffset;
 		printf(" df2=%.3f\n",_foffset2);
 	}
 	else printf("\n");
