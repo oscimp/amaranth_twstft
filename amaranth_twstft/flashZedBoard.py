@@ -83,7 +83,7 @@ class TWSTFT_top(Elaboratable):
         new_clk = platform.request('external_clk',0)
         
         platform_clk = new_clk.A4_i
-        base_clk_freq    = 20000000
+        base_clk_freq    = 10000000
         mmcm_clk_out     = Signal()
         mmcm_locked      = Signal()
         mmcm_feedback    = Signal()
@@ -94,8 +94,12 @@ class TWSTFT_top(Elaboratable):
             o_O  = clk_input_buf,
         )
         
-        vco_mult = 42.0
-        mmc_out_div = 3.0
+        if base_clk_freq == 20000000:
+            vco_mult = 42.0
+            mmc_out_div = 3.0
+        else:
+            vco_mult = 63.0
+            mmc_out_div = 2.25
         mmc_out_period = 1e9 / (base_clk_freq * vco_mult / mmc_out_div)
                 
         m.submodules.mmcm = Instance("MMCME2_BASE",
@@ -236,7 +240,7 @@ if __name__ == "__main__":
     gateware = ZedBoardPlatform().build(
         TWSTFT_top(args.bitlen, int(args.noiselen), reload=not args.no_reload,
                    taps=t, seed=args.seed,
-                   freqout=args.modfreq, invert_first_code=True),
+                   freqout=args.modfreq, invert_first_code=invert_first_code),
         do_program=not args.no_load, do_build=not args.no_build, build_dir=args.build_dir)
     # if no build nothing produces -> force
     if args.no_build:
