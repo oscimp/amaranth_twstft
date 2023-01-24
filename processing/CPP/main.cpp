@@ -779,10 +779,21 @@ int main(int argc, char **argv)
 	if (argc >= 5)
 		foffset = atof(argv[4]); // 2 * (_foffset + frange) with frange=8 kHz
 	std::string filename = argv[1];
-	std::regex e ("([^ ]*)(.bin)");   // matches words beginning by "sub"
- 	std::string matname = std::regex_replace (filename,e,"$1C.mat");
-	if (remote==1)
-	        matname = std::regex_replace (filename,e,"remote$1C.mat");
+
+	std::string matname;
+	/* extract path and filename */
+	std::string fullpath(filename);
+	const size_t index = fullpath.find_last_of('/') + 1;
+	if (std::string::npos != index) {        // when filename contains a path
+		matname = fullpath.substr(0, index); // add to output
+		fullpath.erase(0, index); // remove path
+	}
+	if (remote == 1) // append filename with 'remote'
+		matname += "remote";
+
+	std::regex e ("([^ ]*)(.+bin)");   // matches words beginning by "bin"
+	matname += std::regex_replace(fullpath,e,"$1C.mat");
+
 	GoRanging ranging(fs, filename, argv[2], remote, foffset);
 	ranging.df(fs, N, remote, foffset);
 	ranging.compute();
