@@ -40,7 +40,7 @@ class GoRanging {
 	~GoRanging();
 
 	void compute();
-        void df(double, size_t, int, double); // fs, N, remote, foffset
+	void df(double, size_t, int, double); // fs, N, remote, foffset
 	bool save(std::string filename);
 
  private:
@@ -231,7 +231,7 @@ void GoRanging::_process_method(uint8_t chan_id)
 	std::vector < std::complex <double >>dx1;
 	std::vector < std::complex <double >>prnmap0x(_ifft_size, 0);
 	int p = 0;
-	std::complex<double>*mean = (chan_id == 0) ? &_mean1 : &_mean2; 
+	std::complex<double>*mean = (chan_id == 0) ? &_mean1 : &_mean2;
 	std::complex<double> *dx = dx_array[chan_id];
 	std::vector<double> *dfx = &_dfx_array[chan_id];
 	/* fft */
@@ -365,85 +365,80 @@ void GoRanging::_process_method(uint8_t chan_id)
 
 void GoRanging::df(double fs, size_t N, int remote, double foffset)
 {
-	int n=0;
 	double t=0.;
 	std::vector < std::complex <double >> x1, x2;
 	std::vector < std::complex <double >> out;
-	std::complex<double> _mean1,_mean2;
 	std::complex<double> dx1,dx2;
-	int16_t *data = (int16_t *) malloc(sizeof(int16_t) * N * 4);
-	_mean1.real(0.); _mean1.imag(0.);
-	_mean2.real(0.); _mean2.imag(0.);
-	while (!_must_stop) {
-	        size_t res = fread(data, sizeof(int16_t), N * 4, _fd);
-		if (res < N * 4) {
-			printf("No more data\n");
-			break;
-		}
-		else
-		{
-			dx1.real((double)data[0]);
-			dx1.imag((double)data[0 + 1]);
-			_mean1 += dx1;
-			x1.push_back(dx1*exp(std::complex<double>(0,-1)*(double)2.0f*M_PI*foffset*t));
-			if (remote==0)
-			{
-				dx2.real((double)data[2]);
-				dx2.imag((double)data[2 + 1]);
-				_mean2 += dx2;
-				x2.push_back(dx2*exp(std::complex<double>(0,-1)*(double)2.0f*M_PI*foffset*t)); 
-			}
-			t+=(double)N/fs;
-			n++;
-		}
-	}
-	_freq = linspace(-fs / 2 / N, fs / 2 / N, x1.size());
-	fseek(_fd, 0, SEEK_SET); // rewind file
-	fftw_complex *_in = (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * x1.size());
-	fftw_complex *_out= (fftw_complex *) fftw_malloc(sizeof(fftw_complex) * x1.size());
+	int16_t data[4];
+	_mean1 = _mean2 = 0.;
+	const size_t seek_step = sizeof(int16_t) * (4 * (N-1));
+	const std::complex<double> tlo_foffset = tlo * foffset;
 
-	fftw_plan _plan_a= fftw_plan_dft_1d(x1.size(), _in, _out, FFTW_FORWARD, FFTW_ESTIMATE);
-	_mean1 /= (double)n;
-	for (size_t i=0;i<x1.size();i++)
-	{	std::complex <double > tmp;
-		x1[i]-=_mean1;
-		tmp=x1[i]*x1[i];
-		_in[i][0]=real(tmp);
-		_in[i][1]=imag(tmp);
+	fseek(_fd, 0, SEEK_END);
+	const size_t file_size = ftell(_fd) / (sizeof(int16_t) * (4 * N));
+	fseek(_fd, 0, SEEK_SET);
+
+	for (size_t i = 0; i < file_size; i++) {
+		size_t res = fread(data, sizeof(int16_t), 4, _fd);
+		if (res < 4)
+			break;
+		fseek(_fd, seek_step, SEEK_CUR);
+		dx1.real((double)data[0]);
+		dx1.imag((double)data[0 + 1]);
+		_mean1 += dx1;
+		const std::complex<double> tlo_foffset_t = exp(tlo_foffset * t);
+		x1.push_back(dx1* tlo_foffset_t);
+		if (remote==0) {
+			dx2.real((double)data[2]);
+			dx2.imag((double)data[2 + 1]);
+			_mean2 += dx2;
+			x2.push_back(dx2*tlo_foffset_t);
+		}
+		t+=(double)N/fs;
 	}
-	fftw_execute(_plan_a);
-	out.resize(x1.size());
-	for (size_t i = 0; i < x1.size()/2; i++) {
-	       	out[i].real(_out[i+x1.size()/2][0]);
- 	       	out[i].imag(_out[i+x1.size()/2][1]);
-  	       	out[i+x1.size()/2].real(_out[i][0]);
-  	       	out[i+x1.size()/2].imag(_out[i][1]);
-        }
+	fseek(_fd, 0, SEEK_SET); // rewind file
+
+	const size_t x1_size = x1.size();
+	_freq = linspace(-fs / 2 / N, fs / 2 / N, x1_size);
+	std::complex<double> *fft_in = new std::complex<double>[x1_size];
+	std::complex<double> *fft_out = new std::complex<double>[x1_size];
+
+	fftw_plan plan_a = fftw_plan_dft_1d(x1_size,
+				reinterpret_cast<fftw_complex*>(&fft_in[0]),
+				reinterpret_cast<fftw_complex*>(&fft_out[0]),
+				FFTW_FORWARD, FFTW_ESTIMATE);
+
+	_mean1 /= (double)x1_size;
+	for (size_t i=0;i<x1_size;i++) {
+		x1[i]-=_mean1;
+		fft_in[i] = x1[i] * x1[i];
+	}
+	fftw_execute(plan_a);
+	out.resize(x1_size);
+	memcpy(&out[0], &fft_out[x1_size/2], sizeof(std::complex<double>) * x1_size / 2);
+	memcpy(&out[x1_size/2], &fft_out[0], sizeof(std::complex<double>) * x1_size / 2);
+
 	int pos = arg_max(out);
 	_foffset1 = _freq[pos] / 2. + _foffset;
 	printf("df1=%.3f\n",_foffset1);
-	if (remote==0)
-	{
-		_mean2 /= (double)n;
-		for (size_t i=0;i<x1.size();i++)
-		{	std::complex <double > tmp; 
+
+	if (remote==0) {
+		_mean2 /= (double)x1_size;
+		for (size_t i=0;i<x1_size;i++) {
 			x2[i]-=_mean2;
-			tmp=x2[i]*x2[i];
-			_in[i][0]=real(tmp);
-			_in[i][1]=imag(tmp);
+			fft_in[i] = x2[i] * x2[i];
 		}
-		fftw_execute(_plan_a);
-		for (size_t i = 0; i < x1.size()/2; i++) {
- 	       		out[i].real(_out[i+x1.size()/2][0]);
- 	       		out[i].imag(_out[i+x1.size()/2][1]);
-  	       		out[i+x1.size()/2].real(_out[i][0]);
-  	       		out[i+x1.size()/2].imag(_out[i][1]);
-        	}
+		fftw_execute(plan_a);
+		memcpy(&out[0], &fft_out[x1_size/2], sizeof(std::complex<double>) * x1_size / 2);
+		memcpy(&out[x1_size/2], &fft_out[0], sizeof(std::complex<double>) * x1_size / 2);
 		pos = arg_max(out);
 		_foffset2 = _freq[pos] / 2. + _foffset;
 		printf(" df2=%.3f\n",_foffset2);
 	}
 	else printf("\n");
+
+	fftw_free(plan_a);
+	delete fft_out;
 }
 
 void GoRanging::compute()
@@ -796,9 +791,9 @@ int main(int argc, char **argv)
 
 	GoRanging ranging(fs, filename, argv[2], remote, foffset);
 	ranging.df(fs, N, remote, foffset);
-	ranging.compute();
+	//ranging.compute();
 
-	ranging.save(matname);
+	//ranging.save(matname);
 
 	return EXIT_SUCCESS;
 }
