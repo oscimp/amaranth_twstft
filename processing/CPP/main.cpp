@@ -70,9 +70,9 @@ class GoRanging {
 	std::vector < std::vector < double >>_puissancecode;
 	std::vector < std::vector < double >>_SNRx;
 	std::vector < std::vector < std::complex <double >>>_xvalx, _xvalxm1, _xvalxp1;
+	int _N;
 	std::string _filename;
 	int _remote;
-	int _N;
 	FILE *_fd;
 	/* fft */
 	std::vector<std::complex<double>*> _chan_dx_array;
