@@ -166,14 +166,14 @@ GoRanging::GoRanging(double fs, const std::string & filename,
 					FFTW_BACKWARD, FFTW_ESTIMATE);
 	}
 
-	_freq = linspace(-fs / 2 / _N, fs / 2 / _N, _fcode_len);
-	double frange = 8000;
+	//_freq = linspace(-fs / 2 / _N, fs / 2 / _N, _fcode_len);
+	//double frange = 8000;
 	_temps.resize(_fcode_len);
 	for (size_t i = 0; i < _fcode_len; i++) {
-		if (_freq[i] < 2 * (_foffset + frange))
+		/*if (_freq[i] < 2 * (_foffset + frange))
 			kmax = i;
 		if (_freq[i] <= 2 * (_foffset - frange))
-			kmin = i;
+			kmin = i;*/
 		_temps[i] = i / fs;
 	}
 
@@ -397,6 +397,13 @@ void GoRanging::df(double fs, size_t N, int remote, double foffset)
 
 	const size_t x1_size = x1.size();
 	_freq = linspace(-fs / 2 / N, fs / 2 / N, x1_size);
+	double frange = 8000;
+	for (size_t i = 0; i < x1_size; i++) {
+		if (_freq[i] < 2 * ( + frange))
+			kmax = i;
+		if (_freq[i] <= 2 * ( - frange))
+			kmin = i;
+	}
 	std::complex<double> *fft_in = new std::complex<double>[x1_size];
 	std::complex<double> *fft_out = new std::complex<double>[x1_size];
 
