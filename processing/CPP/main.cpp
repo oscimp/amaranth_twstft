@@ -36,7 +36,7 @@ const std::complex<double> tlo = std::complex<double>(0,-1) * (double)2.0f * M_P
 class GoRanging {
  public:
 	GoRanging(double fs, const std::string & filename,
-		  const std::string & prn_file, int remote, float foffset);
+		  const std::string & prn_file, int remote, float foffset, int N);
 	~GoRanging();
 
 	void compute();
@@ -72,6 +72,7 @@ class GoRanging {
 	std::vector < std::vector < std::complex <double >>>_xvalx, _xvalxm1, _xvalxp1;
 	std::string _filename;
 	int _remote;
+	int _N;
 	FILE *_fd;
 	/* fft */
 	std::vector<std::complex<double>*> _chan_dx_array;
@@ -90,8 +91,8 @@ class GoRanging {
 };
 
 GoRanging::GoRanging(double fs, const std::string & filename,
-			 const std::string & prn_file, int remote, float foffset):_fs(fs),
-	_fcode_len(0), _ifft_size(0), _nb_chan(remote==0?2:1), _foffset(foffset),
+			 const std::string & prn_file, int remote, float foffset, int N):_fs(fs),
+	_fcode_len(0), _ifft_size(0), _nb_chan(remote==0?2:1), _foffset(foffset), _N(N),
 	_filename(filename), _remote(remote), _must_stop(false)
 {
 	_fd = fopen(filename.c_str(), "r");
@@ -165,18 +166,14 @@ GoRanging::GoRanging(double fs, const std::string & filename,
 					FFTW_BACKWARD, FFTW_ESTIMATE);
 	}
 
-/*
-	_freq = linspace(-fs / 2, fs / 2, _fcode_len);
+	_freq = linspace(-fs / 2 / _N, fs / 2 / _N, _fcode_len);
 	double frange = 8000;
-*/
 	_temps.resize(_fcode_len);
 	for (size_t i = 0; i < _fcode_len; i++) {
-/*
 		if (_freq[i] < 2 * (_foffset + frange))
 			kmax = i;
 		if (_freq[i] <= 2 * (_foffset - frange))
 			kmin = i;
-*/
 		_temps[i] = i / fs;
 	}
 
@@ -392,7 +389,7 @@ void GoRanging::df(double fs, size_t N, int remote, double foffset)
 			dx2.real((double)data[2]);
 			dx2.imag((double)data[2 + 1]);
 			_mean2 += dx2;
-			x2.push_back(dx2*tlo_foffset_t);
+			x2.push_back(dx2*tlo_foffset_t); // center wanted signal on 0 Hz
 		}
 		t+=(double)N/fs;
 	}
@@ -418,7 +415,11 @@ void GoRanging::df(double fs, size_t N, int remote, double foffset)
 	memcpy(&out[0], &fft_out[x1_size/2], sizeof(std::complex<double>) * x1_size / 2);
 	memcpy(&out[x1_size/2], &fft_out[0], sizeof(std::complex<double>) * x1_size / 2);
 
-	int pos = arg_max(out);
+// tmp = dx_fft[k].argmax()+k[0]
+	std::vector < std::complex <double >>subvector1;
+	std::copy(out.begin() + kmin, out.begin() + kmax,
+			  std::back_inserter(subvector1));
+	int pos = arg_max(subvector1) + kmin;	// [~,df1(p)]=max(d22(k));df1(p)=df1(p)+k(1)-1;df1(p)=freq(df1(p))/2;offset1=df1(p);
 	_foffset1 = _freq[pos] / 2. + _foffset;
 	printf("df1=%.3f\n",_foffset1);
 
@@ -765,7 +766,7 @@ template < typename T, typename A >
 int main(int argc, char **argv)
 {
 	double fs=5e6;
-	int N=100;
+	int N=25;  // 5 MS/s decimated by 25 = 200 kS/s = FFT from -100 kHz to +100 kHz.
 	int remote = 0;
 	double foffset=0.;
 	printf("%s data.bin code.bin [remote=0] [foffset=0.]\n", argv[0]);
@@ -789,7 +790,7 @@ int main(int argc, char **argv)
 	std::regex e ("([^ ]*)(.+bin)");   // matches words beginning by "bin"
 	matname += std::regex_replace(fullpath,e,"$1C.mat");
 
-	GoRanging ranging(fs, filename, argv[2], remote, foffset);
+	GoRanging ranging(fs, filename, argv[2], remote, foffset, N);
 	ranging.df(fs, N, remote, foffset);
 	ranging.compute();
 
