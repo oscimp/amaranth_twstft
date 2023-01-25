@@ -791,9 +791,9 @@ int main(int argc, char **argv)
 
 	GoRanging ranging(fs, filename, argv[2], remote, foffset);
 	ranging.df(fs, N, remote, foffset);
-	//ranging.compute();
+	ranging.compute();
 
-	//ranging.save(matname);
+	ranging.save(matname);
 
 	return EXIT_SUCCESS;
 }
