@@ -161,13 +161,24 @@ class Synchronizer(Elaboratable):
         ]
 
         invert_prn = Signal()
+        cnt_inv    = Signal()
         if self._invert_first_code:
+            cnt_code = Signal(8, reset=255) # code updated at each PPS
+            cnt_idx  = Signal(4, reset=8)   # index to send LSB first code bits
+            cnt_idx_rdy = ~cnt_idx[3]       # cnt idx MSB low during count
             with m.If(self.rise_pps | ~self.global_enable):
                 m.d.sync += invert_prn.eq(1)
+                with m.If(self.global_enable):
+                    m.d.sync += cnt_code.eq(cnt_code + 1),
             with m.Elif(self._cnt.overflow):
-                m.d.sync += invert_prn.eq(0)
+                m.d.sync += [
+                    invert_prn.eq(0),
+                    cnt_idx.eq(Mux(invert_prn, 0, cnt_idx + cnt_idx_rdy)),
+                ]
             with m.Else():
                 m.d.sync += invert_prn.eq(invert_prn)
+
+            m.d.comb += cnt_inv.eq((cnt_code >> cnt_idx[0:3]) & cnt_idx_rdy)
         else:
             m.d.comb += invert_prn.eq(0)
 
@@ -187,8 +198,8 @@ class Synchronizer(Elaboratable):
         ]
         with m.If(~self.shifting):
             m.d.sync += [
-                old_output.eq(prn.output ^ invert_prn),
-                old_output2.eq(prn.output2 ^ invert_prn)
+                old_output.eq(prn.output ^ (invert_prn | cnt_inv)),
+                old_output2.eq(prn.output2 ^ (invert_prn | cnt_inv))
             ]
 
         return m
