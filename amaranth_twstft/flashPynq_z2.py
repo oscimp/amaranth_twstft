@@ -155,7 +155,6 @@ class TWSTFT_top(Elaboratable):
     
         clock_freq = 1e9/mmc_out_period
         platform.add_clock_constraint(clk_input_buf, base_clk_freq)
-        platform.add_clock_constraint(mmcm_clk_out, clock_freq)
         print(f"clock freq {clock_freq} mmc out period {mmc_out_period}")
             
         m.d.comb += [
