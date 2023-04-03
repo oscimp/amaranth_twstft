@@ -14,5 +14,4 @@ The input and output signals are available on the 40-pin Raspberry Pi compatible
 
 ## Signal processing using GNU Radio
 
-<img src="demopynqz2.png">
-
+<img src="demopynqz2.jpg">
