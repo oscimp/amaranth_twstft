@@ -16,3 +16,13 @@ for the identification of GEO satellite orbit correction.
 At 14 GHz, the Doppler shift is, similar to RADAR where the wave frequency is both shifted when
 incoming and outgoing $$df=2f_0\frac{v}{c}$$ Since each top chart is the relative motion $dt/t$ of the
 satellite $v/c$, then the Doppler shift is $$df=2f_0\frac{dt}{t}\simeq 2\times 14\cdot 10^9\times 5\cdot 10^{-9}=140\mbox{~Hz}$$
+
+Repeating the same analysis for LTFB leads to consistent results:
+
+<img src="loopback_both.png">
+
+<img src="ranging_both.png">
+
+<img src="oneway_both.png">
+
+
