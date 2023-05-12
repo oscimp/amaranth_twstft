@@ -36,7 +36,7 @@ deb=8;
 dur=160;
 dirlistanalyseOP=dir('OP/remo*mat.gz')
 dirlistanalyseLTFB=dir('LTFB/remo*mat.gz')
-for dirnumanalyse=14:25 % 1:length(dirlistanalyseOP)
+for dirnumanalyse=1:length(dirlistanalyseOP)
   eval(['load OP/',dirlistanalyseOP(dirnumanalyse).name])
   k=find(indice1>100000);
   if (isempty(k)==0) indice1(k)=indice1(k)-200000;end
