@@ -46,7 +46,7 @@ class PWMStatic(Elaboratable):
         self.reset    = Signal()
         self.enable   = Signal()
         self.output   = Signal(reset_less=True)
-        self.counter  = Signal(range(max_val),
+        self.counter  = Signal(range(max_val+1),
                                reset=max_val if wait_first_reset else 0,
                                name="pwmCounter")
         self._duty_val = duty_val
