@@ -74,7 +74,7 @@ class PynqZ2Platform(XilinxPlatform):
         Connector("AR_J1", 0, "U10 T5  V11 W11 Y12 Y11"),
         # XADC TODO
         # Raspberry Pi
-        Connector("RPI", 0, "- - W18 - W19 - V6 Y18 - Y19 U7 C20 V7 - U8 W6 - U18 V8 - V10 U19 W10 F19 - F20 Y16 Y17 Y6 - Y7 B20 W8 - Y8 B19 W9 A20 - Y9"), 
+        Connector("RPI", 0, "- - W18 - W19 - V6 Y18 - Y19 U7 C20 V7 - U8 W6 - U18 V8 - V10 U19 W10 F19 - F20 Y16 Y17 Y6 - Y7 B20 W8 - Y8 B19 W9 A20 - Y9"),
     ]
 
     def toolchain_program(self, products, name, **kwargs):
