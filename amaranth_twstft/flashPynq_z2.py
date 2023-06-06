@@ -8,6 +8,9 @@ from amaranth_twstft.Mixer import *
 from amaranth_twstft.pynq_z2 import *
 
 import argparse
+import os
+import subprocess
+import sys
 
 #default number of different taps to choose among when dynamically selecting the taps for the LFSR
 nb_taps_auto = 32
@@ -105,7 +108,6 @@ class TWSTFT_top(Elaboratable):
         clean_carrier = platform.request("switch", 0) # M20
         switch_mode   = platform.request("switch", 1) # M19
         
-        
         platform_clk = new_clk.clk_in
         base_clk_freq    = 10000000
         mmcm_clk_out     = Signal()
@@ -168,7 +170,7 @@ class TWSTFT_top(Elaboratable):
             pins.clk_out.eq(mixer.dixmega),
             pins.PPS_out.eq(mixer.pps_out),
             pins.PPS_out2.eq(mixer.the_pps_we_love),
-            pins.output.eq(mixer.output),
+            pins.output.eq(mixer.mod_out),
         ]
         return m
 
@@ -195,7 +197,24 @@ if __name__ == "__main__":
     parser.add_argument("--no-build",     help="sources generate only", action="store_true")
     parser.add_argument("--no-load",      help="don't load bitstream", action="store_true")
     parser.add_argument("--build-dir",    default="build", help="build directory")
+    parser.add_argument("--conv-to-bin",  help="convert .bit file to .bit.bin", action="store_true")
     args = parser.parse_args()
+
+    if args.conv_to_bin:
+        build_dir=args.build_dir
+        name = "top"
+        input_bit  = build_dir + "/" + name + ".bit"
+        output_bit = input_bit + ".bin"
+        if exists(output_bit):
+            os.remove(output_bit)
+        with open(name + ".bif", "w") as fd:
+            fd.write("all:\n")
+            fd.write("{\n")
+            fd.write(f"\t{input_bit}\n")
+            fd.write("}\n")
+        subprocess.check_call(["bootgen", "-w", "-image", name + ".bif", "-arch", "zynq", "-process_bitstream", "bin"])
+        os.remove(name + ".bif")
+        sys.exit(0)
 
     if args.taps :
         t = args.taps
@@ -230,3 +249,4 @@ if __name__ == "__main__":
     # if no build nothing produces -> force
     if args.no_build:
         gateware.execute_local(args.build_dir, run_script=False)
+
