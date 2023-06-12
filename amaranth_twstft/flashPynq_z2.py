@@ -98,7 +98,7 @@ class TWSTFT_top(Elaboratable):
                     Subsignal('PPS_out',  Pins('36', conn=connrpi, dir='o')), # RPI-36
                     Subsignal('PPS_out2', Pins('40', conn=connrpi, dir='o')), # RPI-40
 
-                    Attrs(IOSTANDARD="LVCMOS33")
+                    Attrs(IOSTANDARD="LVCMOS33", PULLDOWN="TRUE")
                 )
             ])
         
