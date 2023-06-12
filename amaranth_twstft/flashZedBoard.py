@@ -8,6 +8,9 @@ from amaranth_twstft.Mixer import *
 from amaranth_twstft.zedboard import *
 
 import argparse
+import os
+import subprocess
+import sys
 
 #default number of different taps to choose among when dynamically selecting the taps for the LFSR
 nb_taps_auto = 32
@@ -73,16 +76,47 @@ class TWSTFT_top(Elaboratable):
 
         m.domains.sync = ClockDomain()
         
-        conna = ("pmoda",0)
-        platform.add_resources([Resource('external_clk', 0,
-                    Subsignal('A4_i', Pins('4',conn=conna, dir='i')),
+        #parametrizing the platforms outputs
+        if (type(platform).__name__ == "ZedBoardPlatform"):
+            conna = ("pmoda",0)
+            connb = ("pmodb",0)
+            connc = ("pmodc",0)
+            connd = ("pmodd",0)
+
+            platform.add_resources([
+                Resource('external_clk', 0,
+                    Subsignal('clk_in', Pins('4',conn=conna, dir='i')),
                     Attrs(IOSTANDARD="LVCMOS33")
+                ),
+                Resource('pins', 0,
+                    Subsignal('clk_out',   Pins('2', conn = connb, dir='o')),
+                    Subsignal('output',    Pins('4', conn = connd, dir='o')),
+                    Subsignal('enable',    Pins('1', conn = connc, dir='i')),
+                    Subsignal('PPS_in',    Pins('4', conn = connc, dir='i')),
+                    Subsignal('PPS_out',   Pins('3', conn = connb, dir='o')),
+                    Subsignal('PPS_out2',  Pins('1', conn = connb, dir='o')),
+
+                    Subsignal('mixer_o',   Pins('7', conn = connb, dir='o')),
+                    Subsignal('mixer2_o',  Pins('8', conn = connb, dir='o')),
+
+                    Subsignal('C2_i',      Pins('2', conn = connc, dir='i')),
+
+                    Subsignal('D1_o',      Pins('1', conn = connd, dir='o')),
+                    Subsignal('inv_prn_o', Pins('2', conn = connd, dir='o')), # invert_prn
+                    Attrs(IOSTANDARD="LVCMOS33", PULLDOWN="TRUE")
                 )
             ])
+
         
         new_clk = platform.request('external_clk',0)
-        
-        platform_clk = new_clk.A4_i
+
+        pins = platform.request('pins',0)
+
+        #allowing to switch between BPSK and QPSK
+        clean_carrier = platform.request("switch", 1) # M20
+        switch_mode   = platform.request("switch", 0) # F22
+
+        platform_clk = new_clk.clk_in
         base_clk_freq    = 10000000
         mmcm_clk_out     = Signal()
         mmcm_locked      = Signal()
@@ -130,61 +164,25 @@ class TWSTFT_top(Elaboratable):
         m.d.comb += ResetSignal("sync").eq(~mmcm_locked)
     
         clock_freq = 1e9/mmc_out_period
+        platform.add_clock_constraint(clk_input_buf, base_clk_freq)
         print(f"clock freq {clock_freq} mmc out period {mmc_out_period}")
             
-        #parametrizing the platforms outputs
-        if (type(platform).__name__ == "ZedBoardPlatform"):
-            connd = ("pmodd",0)
-            connb = ("pmodb",0)
-            connc = ("pmodc",0)
-            
-            platform.add_resources([
-                Resource('pins', 0,
-                    Subsignal('B1_o', Pins('1',  conn = connb, dir='o')),
-                    Subsignal('B2_o', Pins('2',  conn = connb, dir='o')),
-                    Subsignal('B3_o', Pins('3',  conn = connb, dir='o')),
-                    Subsignal('B4_o', Pins('4',  conn = connb, dir='o')),
-                    Subsignal('B5_o', Pins('7',  conn = connb, dir='o')),
-                    Subsignal('B6_o', Pins('8',  conn = connb, dir='o')),
-                    Subsignal('B7_o', Pins('9',  conn = connb, dir='o')),
-                    Subsignal('B8_o', Pins('10', conn = connb, dir='o')),
-                    
-                    Subsignal('C1_i', Pins('1', conn = connc, dir='i')),
-                    Subsignal('C2_i', Pins('2', conn = connc, dir='i')),
-                    Subsignal('C4_i', Pins('4', conn = connc, dir='i')),
-                    
-                    Subsignal('D4_o', Pins('4', conn = connd, dir='o')),
-                    Subsignal('D1_o', Pins('1', conn = connd, dir='o')),
-                    Subsignal('D2_o', Pins('2', conn = connd, dir='o')), # invert_prn
-                    Attrs(IOSTANDARD="LVCMOS33")
-                )
-            ])
-        
-        pins = platform.request('pins',0)
-        
-        #allowing to switch between BPSK and QPSK
-        switch_mode = platform.request("switch", 0) #F22
-        
         m.d.comb += [
-            mixer.pps_in.eq(pins.C4_i),
+            mixer.pps_in.eq(pins.PPS_in),
             mixer.switch_mode.eq(switch_mode),
-            mixer.global_enable.eq(pins.C1_i),
-            mixer.output_carrier.eq(pins.C2_i),
+            mixer.global_enable.eq(pins.enable),
+            mixer.output_carrier.eq(clean_carrier),
         ]
 
-        m.d.sync += pins.D4_o.eq(mixer.mod_out)
-
-        if 1==1 : #debug ?
-            m.d.sync+=[
-                pins.B1_o.eq(mixer.the_pps_we_love),
-                pins.B2_o.eq(mixer.dixmega),
-                pins.B3_o.eq(mixer.pps_out),
-                pins.B5_o.eq(mixer.output),
-                pins.B6_o.eq(mixer.output2),
-                pins.D2_o.eq(mixer.invert_prn_o),
-                #pins.B4_o.eq(mixer.ref_clk),
-                #pins.C1_o.eq(mmcm_locked),
-            ]
+        m.d.sync+=[
+            pins.clk_out.eq(mixer.dixmega),
+            pins.PPS_out.eq(mixer.pps_out),
+            pins.PPS_out2.eq(mixer.the_pps_we_love),
+            pins.output.eq(mixer.mod_out),
+            pins.mixer_o.eq(mixer.output),
+            pins.mixer2_o.eq(mixer.output2),
+            pins.inv_prn_o.eq(mixer.invert_prn_o),
+        ]
         return m
 
 #flasher le programme sur la carte SD manuellement :
@@ -210,7 +208,24 @@ if __name__ == "__main__":
     parser.add_argument("--no-build",     help="sources generate only", action="store_true")
     parser.add_argument("--no-load",      help="don't load bitstream", action="store_true")
     parser.add_argument("--build-dir",    default="build", help="build directory")
+    parser.add_argument("--conv-to-bin",  help="convert .bit file to .bit.bin", action="store_true")
     args = parser.parse_args()
+
+    if args.conv_to_bin:
+        build_dir=args.build_dir
+        name = "top"
+        input_bit  = build_dir + "/" + name + ".bit"
+        output_bit = input_bit + ".bin"
+        if exists(output_bit):
+            os.remove(output_bit)
+        with open(name + ".bif", "w") as fd:
+            fd.write("all:\n")
+            fd.write("{\n")
+            fd.write(f"\t{input_bit}\n")
+            fd.write("}\n")
+        subprocess.check_call(["bootgen", "-w", "-image", name + ".bif", "-arch", "zynq", "-process_bitstream", "bin"])
+        os.remove(name + ".bif")
+        sys.exit(0)
 
     if args.taps :
         t = args.taps
