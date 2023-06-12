@@ -74,7 +74,7 @@ class PynqZ2Platform(XilinxPlatform):
         Connector("AR_J1", 0, "U10 T5  V11 W11 Y12 Y11"),
         # XADC TODO
         # Raspberry Pi
-        Connector("RPI", 0, "- - W18 - W19 - V6 Y18 - Y19 U7 C20 V7 - U8 W6 - U18 V8 - V10 U19 W10 F19 - F20 Y16 Y17 Y6 - Y7 B20 W8 - Y8 B19 W9 A20 - Y9"),
+        Connector("RPI", 0, "- - W18 - W19 - Y18 V6 - Y19 U7 C20 V7 - U8 W6 - U18 V8 - V10 U19 W10 F19 - F20 Y16 Y17 Y6 - Y7 B20 W8 - Y8 B19 W9 A20 - Y9"),
     ]
 
     def toolchain_program(self, products, name, **kwargs):
@@ -84,14 +84,14 @@ class PynqZ2Platform(XilinxPlatform):
             print(os.getcwd())
             print(name)
             subprocess.check_call([tool, "-b", "pynq_z2", '--freq', '30e6', '-m', bitstream_filename])
-            if exists(bitstream_filename + ".bin"): 
-            	os.remove(bitstream_filename + ".bin")
-            with open(name+".bif", "w") as fd:
-                fd.write("all:\n")
-                fd.write("{\n")
-                fd.write(f"\t{bitstream_filename}\n")
-                fd.write("}\n")
-            subprocess.check_call(["bootgen", "-w", "-image", name + ".bif", "-arch", "zynq", "-process_bitstream", "bin"])
-            os.remove(name+".bif")
+            #if exists(bitstream_filename + ".bin"):
+            #	os.remove(bitstream_filename + ".bin")
+            #with open(name+".bif", "w") as fd:
+            #    fd.write("all:\n")
+            #    fd.write("{\n")
+            #    fd.write(f"\t{bitstream_filename}\n")
+            #    fd.write("}\n")
+            #subprocess.check_call(["bootgen", "-w", "-image", name + ".bif", "-arch", "zynq", "-process_bitstream", "bin"])
+            #os.remove(name+".bif")
     
 
