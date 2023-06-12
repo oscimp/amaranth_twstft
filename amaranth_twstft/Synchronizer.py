@@ -180,7 +180,10 @@ class Synchronizer(Elaboratable):
 
             m.d.comb += cnt_inv.eq((cnt_code >> cnt_idx[0:3]) & cnt_idx_rdy)
         else:
-            m.d.comb += invert_prn.eq(0)
+            m.d.comb += [
+                invert_prn.eq(0),
+                cnt_inv.eq(0)
+            ]
 
         #outputing the signals I and Q
         # and updating them only when the LFSR isn't shifting
