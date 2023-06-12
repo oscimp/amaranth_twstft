@@ -9,6 +9,7 @@ from amaranth_twstft.zedboard import *
 
 import argparse
 import os
+import importlib
 import subprocess
 import sys
 
@@ -106,7 +107,39 @@ class TWSTFT_top(Elaboratable):
                     Attrs(IOSTANDARD="LVCMOS33", PULLDOWN="TRUE")
                 )
             ])
+        elif type(platform).__name__ == "CmodA7_35Platform":
+            connect = ("gpio",0)
+            platform.add_resources([
+                Resource('external_clk', 0,
+                    Subsignal('clk_in', Pins('46',conn=connect, dir='i')),
+                    Attrs(IOSTANDARD="LVCMOS33")
+                ),
+                Resource('pins', 0,
+                    Subsignal('output',    Pins('31', conn = connect, dir='o')),
+                    Subsignal('enable',    Pins('36', conn = connect, dir='i')),
+                    Subsignal('PPS_in',    Pins('42', conn = connect, dir='i')),
 
+                    # debug
+                    Subsignal('clk_out',   Pins('1',  conn = connect, dir='o')),
+                    Subsignal('PPS_out',   Pins('3',  conn = connect, dir='o')),
+                    Subsignal('PPS_out2',  Pins('5',  conn = connect, dir='o')),
+                    Subsignal('mixer_o',   Pins('7',  conn = connect, dir='o')),
+                    Subsignal('mixer2_o',  Pins('9',  conn = connect, dir='o')),
+                    Subsignal('inv_prn_o', Pins('11', conn = connect, dir='o')), # invert_prn
+
+                    Attrs(IOSTANDARD="LVCMOS33")
+                ),
+                # switch mode
+                Resource('switch', 0, Pins('23',  conn = connect, dir='i'),
+                    Attrs(IOSTANDARD="LVCMOS33")),
+                # clean carrier
+                Resource('switch', 1, Pins('19',  conn = connect, dir='i'),
+                    Attrs(IOSTANDARD="LVCMOS33")),
+
+            ])
+        else:
+            print("Error: unknown target platform")
+            raise Error()
         
         new_clk = platform.request('external_clk',0)
 
@@ -185,6 +218,27 @@ class TWSTFT_top(Elaboratable):
         ]
         return m
 
+def platform_get(platform_name):
+    plt_name_l = platform_name.lower()
+    if plt_name_l.startswith("zedboard"):
+        target = "amaranth_twstft.zedboard:ZedBoardPlatform"
+    elif plt_name_l.startswith("cmoda7"):
+        target = "amaranth_boards.cmod_a7:CmodA7_35Platform"
+    elif plt_name_l.startswith("pynq"):
+        target = "amaranth_twstft.pynq_z2:PynqZ2Platform"
+
+    tgt = target.split(':')
+    if len(tgt) != 2:
+        print("wrong platform name must be zedboard, cmoda7, pynqz2")
+        return None
+    (module, name) = tgt
+    platform_module = importlib.import_module(module)
+
+    # Once we have the relevant module, extract our class from it.
+    platform_class = getattr(platform_module, name)
+    return platform_class
+
+
 #flasher le programme sur la carte SD manuellement :
 #- brancher la carte microsd dans l'ordi avec l'adaptateur
 #- flasher le programme en question
@@ -196,6 +250,7 @@ class TWSTFT_top(Elaboratable):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--platform",     default="zedboard", help="Target Platform (pynq, cmoda7, zedboard(default)", type=str)
     parser.add_argument("--bitlen",       default=22,help="number of bits of the LFSR", type=int)
     parser.add_argument("--noiselen",     default=2.5e6,  help="length of the PRN sequence", type=float)
     parser.add_argument("--no-reload",    help="stop generation after noiselen bits", action="store_true")
@@ -252,7 +307,14 @@ if __name__ == "__main__":
         print("taps : "+ str(t))
         print("First code xoring: " + ("Enabled" if invert_first_code else "Disabled"))
 
-    gateware = ZedBoardPlatform().build(
+    platform = platform_get(args.platform)
+    if platform is None:
+        print("error: undifined/unknown platform")
+        sys.exit(1)
+
+    print(platform)
+
+    gateware = platform().build(
         TWSTFT_top(args.bitlen, int(args.noiselen), reload=not args.no_reload,
                    taps=t, seed=args.seed,
                    freqout=args.modfreq, invert_first_code=invert_first_code),
