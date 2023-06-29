@@ -6,6 +6,7 @@ from amaranth_boards.resources import *
 from amaranth_twstft.Synchronizer import *
 from amaranth_twstft.Prescaler import *
 from amaranth_twstft.pwmStatic import *
+from amaranth_twstft.uart_wrapper import *
 
 
 
@@ -35,6 +36,9 @@ class Mixer(Elaboratable):
     seed : positive integer
         initial state of the LFSR (1 by default)
     
+    uart_pads: resources
+        UART pads (if None uart is disabled, enable otherwise)
+
     Attributes
     ----------
     carrier : Signal()
@@ -54,14 +58,15 @@ class Mixer(Elaboratable):
     _noise_len : integer
         the number of PRN bits to generate before the end of 
         the next automatic reset of the LFSR state 
-    
+
     _bit_len : positive integer
         number of bits of the LFSR
     
     """
 
     def __init__(self, bit_len, noise_len, reload=True, lock_pps_gen=True, taps = 0, seed = 0x1,
-                 freqin = 280e6, freqout=2500000, invert_first_code=False):
+                 freqin = 280e6, freqout=2500000, invert_first_code=False,
+                 uart_pads=None):
     
         self.carrier0       = Signal()
         self.carrier90      = Signal()
@@ -81,6 +86,7 @@ class Mixer(Elaboratable):
         # ctrl
         self.global_enable = Signal()
         self.switch_mode   = Signal()
+        self._uart_pads    = uart_pads
 
         self._seed = seed
         self._noise_len = noise_len
@@ -108,27 +114,42 @@ class Mixer(Elaboratable):
         
         #setting noise duration
         assert self._noise_len > 1
+
+        if self._uart_pads is not None:
+            use_uart = True
+            m.submodules.uart = uart = UARTWrapper(self.clock_freq, self._uart_pads)
+        else:
+            use_uart = False
         
         #setting dynamic usage of taps
         if self.dynamic_taps :
-            m.submodules.prn_gen = prn_gen = Synchronizer(self.clock_freq, 
-                                                            self._freqout,
-                                                            self._bit_len, 
-                                                            noise_len=self._noise_len, 
-                                                            reload=self._reload,
-                                                            seed = self._seed,
-                                                            invert_first_code=self._invert_first_code)
+            prn_gen = Synchronizer(self.clock_freq,
+                                   self._freqout,
+                                   self._bit_len,
+                                   noise_len=self._noise_len,
+                                   reload=self._reload,
+                                   seed = self._seed,
+                                   invert_first_code=self._invert_first_code,
+                                   use_uart=use_uart)
             m.d.comb += prn_gen.tsel.eq(self.tsel)
         else :
-            m.submodules.prn_gen = prn_gen = Synchronizer(self.clock_freq, 
-                                                            self._freqout,
-                                                            self._bit_len, 
-                                                            noise_len=self._noise_len, 
-                                                            reload=self._reload,
-                                                            taps =self.taps, 
-                                                            seed = self._seed,
-                                                            invert_first_code=self._invert_first_code)
-                
+            prn_gen = Synchronizer(self.clock_freq,
+                                   self._freqout,
+                                   self._bit_len,
+                                   noise_len=self._noise_len,
+                                   reload=self._reload,
+                                   taps =self.taps,
+                                   seed = self._seed,
+                                   invert_first_code=self._invert_first_code,
+                                   use_uart=use_uart)
+        m.submodules.prn_gen = prn_gen
+
+        if use_uart:
+            m.d.comb += [
+                prn_gen.date_en.eq(uart.date_en),
+                prn_gen.date_val.eq(uart.date_val),
+                uart.rise_pps.eq(prn_gen.rise_pps),
+            ]
                 
         carrier_selector = Signal()
         m.d.sync += carrier_selector.eq(~carrier_selector) #alternating the carrier to modulate

@@ -79,7 +79,7 @@ class Synchronizer(Elaboratable):
     """
 
     def __init__(self, freqin, freqout, bit_len, noise_len, reload=True, taps=0,
-                 seed = 0x1, invert_first_code=False):
+                 seed = 0x1, invert_first_code=False, use_uart=False):
         self.pps = Signal(name="sync_pps_input")
         self.output = Signal(name="sync_output")
         self.output2 = Signal(name="sync_output2")
@@ -87,6 +87,11 @@ class Synchronizer(Elaboratable):
         self.mode = Signal()
         self.global_enable = Signal()
         self.invert_prn_o = Signal()
+
+        self._use_uart = use_uart
+        if use_uart:
+            self.date_en = Signal()
+            self.date_val = Signal(range(60))
 
         if taps == 0:
             self.dynamic_taps = True
@@ -163,13 +168,14 @@ class Synchronizer(Elaboratable):
         invert_prn = Signal()
         cnt_inv    = Signal()
         if self._invert_first_code:
-            cnt_code = Signal(8, reset=255) # code updated at each PPS
-            cnt_idx  = Signal(4, reset=8)   # index to send LSB first code bits
-            cnt_idx_rdy = ~cnt_idx[3]       # cnt idx MSB low during count
+            if self._use_uart:
+                cnt_code = Signal(8, reset=60)
+            else:
+                cnt_code = Signal(8, reset=255) # code updated at each PPS
+            cnt_idx  = Signal(4, reset=8)       # index to send LSB first code bits
+            cnt_idx_rdy = ~cnt_idx[3]           # cnt idx MSB low during count
             with m.If(self.rise_pps | ~self.global_enable):
                 m.d.sync += invert_prn.eq(1)
-                with m.If(self.global_enable):
-                    m.d.sync += cnt_code.eq(cnt_code + 1),
             with m.Elif(self._cnt.overflow):
                 m.d.sync += [
                     invert_prn.eq(0),
@@ -179,6 +185,38 @@ class Synchronizer(Elaboratable):
                 m.d.sync += invert_prn.eq(invert_prn)
 
             m.d.comb += cnt_inv.eq((cnt_code >> cnt_idx[0:3]) & cnt_idx_rdy)
+
+            # UART used
+            if self._use_uart:
+                enable_cnt = Signal() # set 1 to when uart receive second and set to 0
+                                      # when not enable
+                cnt_code_next = Signal(range(60))
+                m.d.comb += cnt_code_next.eq(Mux(cnt_code == 59, 0, cnt_code + enable_cnt))
+
+                # disable counter incr when not enable
+                # enable counter incr when PC updated second
+                with m.If(~self.global_enable):
+                    m.d.sync += enable_cnt.eq(0)
+                with m.Elif(self.date_en):
+                    m.d.sync += enable_cnt.eq(1)
+
+                # force counter to 60 when global enable is unset
+                with m.If(~self.global_enable):
+                    m.d.sync += cnt_code.eq(60)
+                # force counter to PC value
+                with m.Elif(self.date_en):
+                    m.d.sync += cnt_code.eq(self.date_val)
+                # PPS rising edge + data received + not first sequence
+                with m.Elif(self.rise_pps & enable_cnt):
+                    m.d.sync += cnt_code.eq(cnt_code_next)
+
+
+            else: # unused UART
+                with m.If(~self.global_enable):
+                    m.d.sync += cnt_code.eq(0)
+                with m.Elif(self.rise_pps):
+                    m.d.sync += cnt_code.eq(cnt_code + 1)
+
         else:
             m.d.comb += [
                 invert_prn.eq(0),
