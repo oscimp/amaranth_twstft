@@ -114,6 +114,28 @@ class TWSTFT_top(Elaboratable):
                     Attrs(IOSTANDARD="LVCMOS33", PULLDOWN="TRUE")
                 )
             ])
+        elif (type(platform).__name__ == "PynqZ2Platform"):
+            connrpi = ("RPI",0)
+            platform.add_resources([
+                Resource('external_clk', 0,
+                    Subsignal('clk_in', Pins('11', conn=connrpi, dir='i')), # RPI-11
+                    Attrs(IOSTANDARD="LVCMOS33")
+                ),
+                Resource('pins', 0,
+                    Subsignal('output',    Pins('3',  conn=connrpi, dir='o')), # RPI-3
+                    Subsignal('enable',    Pins('8',  conn=connrpi, dir='i')), # RPI-22
+                    Subsignal('PPS_in',    Pins('32', conn=connrpi, dir='i')), # RPI-32
+
+                    # debug
+                    Subsignal('clk_out',   Pins('15', conn=connrpi, dir='o')), # RPI-15
+                    Subsignal('PPS_out',   Pins('36', conn=connrpi, dir='o')), # RPI-36
+                    Subsignal('PPS_out2',  Pins('40', conn=connrpi, dir='o')), # RPI-40
+                    Subsignal('mixer_o',   Pins('28', conn=connrpi, dir='o')), # RPI-28
+                    Subsignal('mixer2_o',  Pins('26', conn=connrpi, dir='o')), # RPI-26
+                    Subsignal('inv_prn_o', Pins('24', conn=connrpi, dir='o')), # invert_prn
+                    Attrs(IOSTANDARD="LVCMOS33", PULLDOWN="TRUE")
+                )
+            ])
         elif type(platform).__name__ == "CmodA7_35Platform":
             connect = ("gpio",0)
             platform.add_resources([
