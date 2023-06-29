@@ -23,7 +23,7 @@ class ZedBoardPlatform(XilinxPlatform):
 
         *SwitchResources(
             pins="F22 G22 H22 F21 H19 H18 H17 M15",
-            attrs=Attrs(IOSTANDARD="LVCMOS18")),
+            attrs=Attrs(IOSTANDARD="LVCMOS18", PULLDOWN="TRUE")),
 
         *ButtonResources(
             pins="P16 R16 N15 R18 T18",
