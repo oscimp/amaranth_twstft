@@ -58,10 +58,8 @@ class PWMStatic(Elaboratable):
         reload = self.counter >= self._max_val -1
 
         cnt_next = Signal(range(self._max_val), reset_less=True)
-        m.d.comb += [
-            cnt_next.eq(Mux(reload, 0, self.counter + 1)),
-            self.output.eq((self.counter < self._duty_val-1))
-        ]
+        m.d.comb += cnt_next.eq(Mux(reload, 0, self.counter + 1))
+        m.d.sync += self.output.eq((cnt_next < self._duty_val-1))
 
         with m.If(~self.enable):
             m.d.sync += self.counter.eq(self.counter.reset)

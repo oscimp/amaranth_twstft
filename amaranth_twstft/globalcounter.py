@@ -66,8 +66,10 @@ class GlobalCounter(Elaboratable):
         cnt_next = Signal(range(self._max_val), reset_less=True)
         m.d.comb += [
             cnt_next.eq(Mux(reload, 0, self.counter + 1)),
-            self.overflow.eq(reload & self.tick),
-            self.output.eq((self.counter < self._max_val))
+        ]
+        m.d.sync += [
+            self.overflow.eq(cnt_next == self._max_val -1& self.tick),
+            self.output.eq((cnt_next < self._max_val))
         ]
 
         with m.If(~self.enable):
