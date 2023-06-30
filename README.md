@@ -14,37 +14,42 @@ You may find additonal tutorials about the use of Amaranth in [this playlist](ht
  and their associated slides [here](./EuGRD_tutorial/slides_nath) 
 In this documentation, explanations behind the amaranth implementation of TWSTFT and the Amaranth source code associated are given :
 
-0. [Installation guide for amaranth and cie](Doc/0_Installation.md):
+0. [Installation guide for amaranth and cie](Doc/00_Installation.md):
 if you never programmed on FPGA boards before, this may be useful for becoming familiar with the opensource toolchain used in this project.
 
-1. [PRN generation](Doc/1_PRN.md):
+1. [Amaranth TWSTFT usage](Doc/01_usage.md):
+How to synthese code for an FPGA with parameters configurations.
+
+2. [PRN generation](Doc/02_PRN.md):
 Pseudo Random Noise (PRN) generation for spreading the spectrum as needed for accurate timing and differentiating the emitters (CDMA)
 
-2. [Synchronizing PRN with a 1-PPS signal](Doc/2_Sync_PRN_1PPS.md):
+3. [Synchronizing PRN with a 1-PPS signal](Doc/03_Sync_PRN_1PPS.md):
 making the noise repeat exactly every second to create our 1 Pulse Per Second (1-PPS) signal
 
-3. [Carrier signal generation](Doc/3_Carrier_Generation.md):
+4. [Carrier signal generation](Doc/04_Carrier_Generation.md):
 creating the electromagnetic signal that will carry the information (intermediate frequency to be upconverted for a satellite link)
 
-4. [Mixing Signals](Doc/4_Mixing_Signals.md):
+5. [Mixing Signals](Doc/05_Mixing_Signals.md):
 mixing the carrier with our 1-PPS to share the frequency information. This is
 the point where an actual physical signal is generated: this documentation
 includes the pinout for connecting the input 20 MHz reference clock, input
 1-PPS and getting the modulated output 70 MHz.
 
-5. [Next level, QPSK modulation](Doc/5_another_modulation.md):
+6. [Next level, QPSK modulation](Doc/06_another_modulation.md):
 stepping up the PSK modulation to transmit twice as much information
 
-6. [Demodulating the N-PSK modulated signal using GNU Radio](Doc/6_Demodulation.md):
+7. [Demodulating the N-PSK modulated signal using GNU Radio](Doc/07_Demodulation.md):
 steps needed to demodulate the phase-modulated signal using GNU Radio or GNU/Octave
 
-7. [Merging the Amaranth generated Verilog code with the Ettus Research
-B210 software](Doc/7_B210.md)
-
 8. [Merging the Amaranth generated Verilog code with the Ettus Research
-X310 software](Doc/8_X310.md)
+B210 software](Doc/08_B210.md)
 
-9. [Quick description of the current version](Doc/AboutTheCurrentVersion.md)
+9. [Merging the Amaranth generated Verilog code with the Ettus Research
+X310 software](Doc/09_X310.md)
+
+10. [Acquistion and signal processing with GNUradio](Doc/10_signalProcessing.md)
+
+11. [Quick description of the current version](Doc/AboutTheCurrentVersion.md)
 
 <img src="figures/220525ranging.svg">
 

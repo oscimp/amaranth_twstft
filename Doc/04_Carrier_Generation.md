@@ -1,6 +1,6 @@
 # Generating our carrier signal
 Back to the [README](../README.md)
-Previous step : [Synchronizing ](2_Sync_PRN_1PPS.md)
+Previous step : [Synchronizing ](03_Sync_PRN_1PPS.md)
 
 The idea now is to create our Radio Frequency signal. It should then have a good enough frequency to fit our emmission conditions.
 In the rest of this chapter, we will focus on how to recreate a 70 MHz signal ([70 MHz seems to be a standard intermediate frequency](https://roks-tv.com/l-70mhz-downconverter-unit) for
@@ -173,4 +173,4 @@ base_clk_freq = 20000000 #20 MHz signal
 
 
 
-Next step : [Mixing this signal with the 1-PPS Signal](4_Mixing_Signals.md) 
+Next step : [Mixing this signal with the 1-PPS Signal](05_Mixing_Signals.md) 

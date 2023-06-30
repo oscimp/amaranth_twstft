@@ -1,6 +1,6 @@
 # Synchronizing a 1-PPS Signal with our PRN
 Back to the [README](../README.md)
-Previous step : [Generating a PRN](1_PRN.md)
+Previous step : [Generating a PRN](02_PRN.md)
 
 Now that we know how to generate a pseudo-random noise, let's talk about how to use it to transfer our time and frequency information!
 
@@ -285,4 +285,4 @@ class Synchronizer(Elaboratable):
 
 And here we are ! By now, our synchronization should be operational.
 
-Next step: [Carrier signal generation](3_Carrier_Generation.md)
+Next step: [Carrier signal generation](04_Carrier_Generation.md)

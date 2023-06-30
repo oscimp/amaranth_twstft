@@ -109,4 +109,4 @@ of the 70 MHz carrier.
 
 <img src="../figures/pinout_zedboard.png">
 
-Next step : [Pseudo-Random Noise generation](1_PRN.md)
+Next step : [Usage](01_usage.md)

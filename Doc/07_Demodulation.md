@@ -1,6 +1,6 @@
 # Demodulating the N-PSK modulated signal
 Back to the [README](../README.md) 
-Previous step: [QPSK modulation ](5_another_modulation.md)
+Previous step: [QPSK modulation ](06_another_modulation.md)
 
 Phase modulation is the most efficient modulation scheme [1] but also the most 
 complex to demodulate since an exact copy of the transmitted carrier must be

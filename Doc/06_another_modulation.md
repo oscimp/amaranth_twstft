@@ -1,6 +1,6 @@
 # Generating our carrier signal
 Back to the [README](../README.md)
-Previous step: [mixing signals](4_Mixing_Signals.md)
+Previous step: [mixing signals](05_Mixing_Signals.md)
 
 We now have a very fine FPGA device producing a 70MHz carrier BPSK modulated for carrying the signal. What about doubling the amount of data transmitted with exactly the same bandwidth occupation?
 We saw that having a zero and pi phase shift could allow us to represent binary information. But what about other phases? Instead of limitting ourself to only two values, why not using four? That would result in a {0, pi/2, pi, 3*pi/2} set of possible shifts.
@@ -12,4 +12,4 @@ So was born I/Q modulation.
 By modulating these signals separatly and summing the results, we obtain a new form of signal which we can phase shift with one of the {0, pi/2, pi, 3*pi/2} set of possible shifts. 
 See it as a sum of a sine and cosine functions with the same frequency and same amplitude (70MHz in our case). In the end, we obtain another sinusoid with the same frequency. We will only need to separatly phase-shift one or another or both signals with the usual 0 or pi phase-shift to produce the 4 different states we intend to recreate !
 
-Next step: [Demodulation](6_Demodulation.md) 
+Next step: [Demodulation](07_Demodulation.md) 

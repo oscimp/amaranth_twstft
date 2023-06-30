@@ -1,6 +1,6 @@
 # Mixing our Carrier Signal with the 1-PPS Signal
 Back to the [README](../README.md)
-Previous step : [Generating the appropriate clock signal](3_Carrier_Generation.md)
+Previous step : [Generating the appropriate clock signal](04_Carrier_Generation.md)
 
 Good news : We are almost done with our BPSK emission !
 
@@ -68,4 +68,4 @@ to provide the 0-3.3V square output needed to clock the FPGA.
 
 <img src="../figures/pinoutpmod.png">
 
-If you intend going further, you may want to see how to implement [QPSK modulation](./5_another_modulation.md).
+If you intend going further, you may want to see how to implement [QPSK modulation](./06_another_modulation.md).

@@ -1,6 +1,6 @@
 # Pseudo-Random Noise Generation
 Back to the [README](../README.md)
-Previous step : [Installation of Amaranth and cie](0_Installation.md)
+Previous step : [Usage](01_usage.md)
 
 It's no surprise that the use electromagnetic waves is required if we want to use satellite communication. however, the nature of the information we share makes it not so easy to transmit. We want to share a frequency information. Which is basically just a signal that's repeated over and over again. But the fact that this information is being repeated AND carried by a periodic signal is complicating the task. It's as if we were to diferenciate a sinusoid to another one with a 2pi phase shift. In such case, how to make the difference between our 1-PPS signal and the same signal a few milliseconds later ?
 
@@ -183,4 +183,4 @@ def m_seq_taps(bit_len, limit = 1):
 
 And to go a little further, this python script also contains a small amount of functions that manage `.pickle` files to save and re-use taps that have already been found.
 
-And that's it ! Next step : [Synchronizing PRN with a 1-PPS signal](2_Sync_PRN_1PPS.md)
+And that's it ! Next step : [Synchronizing PRN with a 1-PPS signal](03_Sync_PRN_1PPS.md)
