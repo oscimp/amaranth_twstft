@@ -62,7 +62,7 @@ Optional options:
 
 for example:
 ```
-./flashZedBoard.py --platform cmoda7 --bitlen 17 --noiselen 100000 -t 0x09 -p
+./amaranth_twstft/flashZedBoard.py --platform cmoda7 --bitlen 17 --noiselen 100000 -t 09 -p
 ```
 
 ## Pin functions
