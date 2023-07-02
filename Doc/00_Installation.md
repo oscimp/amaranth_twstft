@@ -28,7 +28,11 @@ Link to boost installation guide [here](https://www.boost.org/doc/libs/1_79_0/mo
 A package manager to install easily new python packages: [check this out](https://www.activestate.com/resources/quick-reads/how-to-install-and-use-pip3/) !
 
 ### Yosys :
-Yosys converts Verilog code into something an FPGA board understands. Although Verilog code will not be written, it can be interesting to know what lies under the carpet when writing python/amaranth code... Amaranth helps converting python code into Verilog, which is a widely used language for describing integrated electronic circuits. The following commands to be executed in a terminal will install the software:
+Yosys converts Verilog code into something an FPGA board understands. Although Verilog code will not be written, it can be interesting to know what lies under the carpet when writing python/amaranth code... Amaranth helps converting python code into Verilog, which is a widely used language for describing integrated electronic circuits. 
+
+The following packages will be needed on Debian/GNU Linux for compiling: ``clang tcl8.3-dev libreadline-dev bison flex`` in addition to the usual build tools. (``buid-essential``).
+
+The following commands to be executed in a terminal will install the software:
 
 ```bash
 git clone https://github.com/YosysHQ/yosys.git
@@ -69,11 +73,11 @@ There are two git repositories to clone : one for the programming tools, and one
 ```bash
 git clone https://github.com/amaranth-lang/amaranth
 cd amaranth
-pip3 install --user -e .
+pip3 install --user -e . --break-system-packages
 
 git clone https://github.com/amaranth-lang/amaranth-boards
 cd amaranth-boards
-pip3 install --user -e .
+pip3 install --user -e . --break-system-packages
 ```
 
 And finally... 
@@ -81,7 +85,9 @@ And finally...
 ### amaranth twstft
 
 ```bash
-pip3 install --user -e .
+git clone https://github.com/oscimp/amaranth_twstft
+cd amaranth_twstft
+pip3 install --user -e . --break-system-packages
 ```
 
 ## And now?
@@ -101,7 +107,7 @@ The ``amaranth_twstft/flashZedBoard.py`` script should help you configure, synth
 ```
 for a 22-bit long shift register, 2.5 MS long code
 
-The pinout for testing the seupt is shown below, with the 2 dB attenuator on the 1-PPS
+The pinout for testing the setup is shown below, with the 2 dB attenuator on the 1-PPS
 inserted to reduce the TTL-level (0-5 V) signal to something like 0-3.3 V compatible
 with the FPGA. The ENAble signal is raised to Vcc to run the pseudo-random sequence generated
 on the radiofrequency output with BPSK or QPSK (depending on the switch status) modulation
