@@ -78,6 +78,10 @@ pip3 install --user -e . --break-system-packages
 git clone https://github.com/amaranth-lang/amaranth-boards
 cd amaranth-boards
 pip3 install --user -e . --break-system-packages
+
+git clone https://github.com/amaranth-lang/amaranth-stdio
+cd amaranth-stdio
+pip3 install --user -e . --break-system-packages
 ```
 
 And finally... 
