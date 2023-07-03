@@ -20,7 +20,7 @@ setup(
     description="Using Amaranth to implement TWSTFT Signal generation",
     license="GPL",
     setup_requires=["setuptools_scm"],
-    install_requires=["amaranth"],
+    install_requires=["amaranth", "amaranth-boards", "amaranth-stdio"],
     packages=find_packages(),
     project_urls={
         "Source Code": "https://github.com/oscimp/amaranth_twstft",
