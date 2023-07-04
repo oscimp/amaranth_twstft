@@ -5,12 +5,12 @@ Previous step : [Installation of Amaranth and cie](00_Installation.md)
 *flashZedBoard* common script
 
 ```
-
 usage: flashZedBoard.py [-h] [--platform PLATFORM] [--bitlen BITLEN]
                         [--noiselen NOISELEN] [--no-reload] [-s SEED]
-                        [-t TAPS] [-m MODFREQ] [--invert-first-code] [-p] [-v]
-                        [--no-build] [--no-load] [--build-dir BUILD_DIR]
-                        [--conv-to-bin]
+                        [-t TAPS] [-m MODFREQ] [--invert-first-code]
+                        [--no-invert-first-code] [--no-uart] [-p] [-v]
+                        [--no-build] [--no-load] [--flash]
+                        [--build-dir BUILD_DIR] [--conv-to-bin] [--debug]
 
 options:
   -h, --help            show this help message and exit
@@ -26,16 +26,24 @@ options:
   -m MODFREQ, --modfreq MODFREQ
                         frequency of the PSK modulation (Herz) (default
                         :2.5e6)
-  --invert-first-code   invert (xor) the first code after PPS rise
+  --invert-first-code   deprecated: default behaviour. Use --no-invert-first-
+                        code to disable xoring + counter
+  --no-invert-first-code
+                        disable invert (xor) the first code after PPS rise and
+                        8bits counter
+  --no-uart             disable uart request for PC second sent during
+                        sequence 1 -> 9 (cmoda7 only
   -p, --print           creates a binary file containing the PRN sequence that
                         should be generated
   -v, --verbose         prints all the parameters used for this instance of
                         the program
   --no-build            sources generate only
   --no-load             don't load bitstream
+  --flash               write bitstream into SPI flash (cmoda7 only)
   --build-dir BUILD_DIR
                         build directory
   --conv-to-bin         convert .bit file to .bit.bin
+  --debug               enable test signals
 ```
 
 ## bitstream generation
@@ -52,18 +60,32 @@ Where:
   (if this argument is not provided,
   the first taps according to `BITLEN` is used) (default: None, 9: LTFB, 15:
   SYRTE)
-- `invert-first-code` invert the first code (start bit) and according to a
-  internal counter apply a xor with all bits (LSB first).
 
 Optional options:
 - `--no-build` limit to amaranth -> *verilog* convert
 - `--no-load` bypass load step after bitstream 
 
-
 for example:
 ```
-./amaranth_twstft/flashZedBoard.py --platform cmoda7 --bitlen 17 --noiselen 100000 -t 09 -p
+./amaranth_twstft/flashZedBoard.py --platform cmoda7 --bitlen 17 --noiselen 100000 -t 9 -p
 ```
+
+**Note**: by default a numeric message (9bits) is sent once by second: the first
+sequence is inverted, 8 next sequences are xored with a 8 bits internal counter
+(LSB). This counter is free running, set to 0 after *enable* is set, incremented at each
+PPS rising edge for *zynq* based boards and for *cmoda7* when `--no-uart` is passed to
+*flashZedboard.py*. For cmoda7, for default behaviour: counter is set to 60,
+never incremented until PC answer to the date request (once per second).
+Communication is done using second FTDI interface, UART mode, 9600 8n1 (see
+[this script](../amaranth_twstft/host_req_date.py) as an example).
+
+To completely disable this coounter and the xor, `--no-invert-first-code` must
+be used.
+
+**cmoda7 only**: by default when `--no-load` is not passed to the script,
+bitstream is loaded to volatile memory (configuration is lost after a power
+cycle). But it's possible to write bitstream into non-volatile memory (SPI
+Flash) by using `--flash`.
 
 ## Pin functions
 
