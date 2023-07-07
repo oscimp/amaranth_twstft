@@ -66,7 +66,7 @@ class Mixer(Elaboratable):
 
     def __init__(self, bit_len, noise_len, reload=True, lock_pps_gen=True, taps = 0, seed = 0x1,
                  freqin = 280e6, freqout=2500000, invert_first_code=False,
-                 uart_pads=None):
+                 uart_pads=None, debug=False):
     
         self.carrier0       = Signal()
         self.carrier90      = Signal()
@@ -77,11 +77,13 @@ class Mixer(Elaboratable):
         self.output_carrier = Signal()
         
         # debug
-        self.pps_out         = Signal()
-        self.the_pps_we_love = Signal()
-        self.dixmega         = Signal()
-        self.ref_clk         = Signal()
-        self.invert_prn_o    = Signal()
+        self._debug          = debug
+        if debug:
+            self.pps_out         = Signal()
+            self.the_pps_we_love = Signal()
+            self.dixmega         = Signal()
+            self.ref_clk         = Signal()
+            self.invert_prn_o    = Signal()
 
         # ctrl
         self.global_enable = Signal()
@@ -158,7 +160,6 @@ class Mixer(Elaboratable):
             self.output2.eq(prn_gen.output2),
             prn_gen.global_enable.eq(self.global_enable),
             prn_gen.pps.eq(self.pps_in),
-            self.invert_prn_o.eq(prn_gen.invert_prn_o),
         ]
 
         # put to 1 if you want to start generating on the next pps rising edge
@@ -191,7 +192,7 @@ class Mixer(Elaboratable):
                 m.d.sync += [
                     self.mod_out.eq(self.modulatedI),
                 ]
-        if 1==1 : #debug ?
+        if self._debug: #debug ?
         
             m.submodules.vingtmega = presc20MHz = Prescaler(self.clock_freq,20000000)
             m.submodules.highstate200ns = hs200ns = PWMStatic(56000000, int(280e6), wait_first_reset=self._lock_pps_gen)
@@ -207,6 +208,7 @@ class Mixer(Elaboratable):
                 presc20MHz.enable.eq(1),
                 hs200ns.enable.eq(1),
                 the_pps_we_love.eq(hs200ns.output),
+                self.invert_prn_o.eq(prn_gen.invert_prn_o),
             ]
             with m.If(presc20MHz.output):
                 m.d.sync += dixmega.eq(~dixmega)

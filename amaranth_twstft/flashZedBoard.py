@@ -202,7 +202,7 @@ class TWSTFT_top(Elaboratable):
             mmc_out_div = 2.25
         mmc_out_period = 1e9 / (base_clk_freq * vco_mult / mmc_out_div)
                 
-        m.submodules.mmcm = Instance("MMCME2_BASE",
+        m.submodules.mmcm = Instance("MMCME2_ADV",
             p_BANDWIDTH          = "OPTIMIZED",
             p_CLKFBOUT_MULT_F    = vco_mult, 
             p_CLKFBOUT_PHASE     = 0.0,
@@ -212,13 +212,23 @@ class TWSTFT_top(Elaboratable):
             p_CLKOUT0_DIVIDE_F   = mmc_out_div,
             p_CLKOUT0_DUTY_CYCLE = 0.5,
             p_CLKOUT0_PHASE      = 0.0,
+
+            p_SS_EN              = "FALSE",
             
+            i_DADDR                = Const(0, 7),
+            i_DEN                  = 0,
+            i_DI                   = Const(0, 16),
+            i_DWE                  = 0,
+
+            i_PSEN                 = 0,
     
             i_PWRDWN               = 0,
             i_RST                  = 0,
+            i_CLKINSEL             = 1,
             i_CLKFBIN              = mmcm_feedback,
             o_CLKFBOUT             = mmcm_feedback,
             i_CLKIN1               = clk_input_buf,
+            i_CLKIN2               = Const(0),
             o_CLKOUT0              = mmcm_clk_out,
             o_LOCKED               = mmcm_locked,
         )
@@ -237,7 +247,9 @@ class TWSTFT_top(Elaboratable):
                            self._lock_pps_gen, self._taps, self._seed,
                            clock_freq,
                            self._freqout,
-                           self._invert_first_code, uart_pads)
+                           self._invert_first_code,
+                           uart_pads = uart_pads,
+                           debug     = self._debug)
         m.submodules.mixer = mixer = self.mixer
 
         m.d.comb += [
@@ -319,6 +331,7 @@ if __name__ == "__main__":
     parser.add_argument("--build-dir",    default="build", help="build directory")
     parser.add_argument("--conv-to-bin",  help="convert .bit file to .bit.bin", action="store_true")
     parser.add_argument("--debug",        help="enable test signals", action="store_true")
+    parser.add_argument("--toolchain",    default="Vivado", help="toolchain to use (Vivado or Symbiflow) (cmoda7 only) (default: Vivado)")
     args = parser.parse_args()
 
     if args.invert_first_code:
@@ -357,6 +370,11 @@ if __name__ == "__main__":
         invert_first_code = False
         print(f"First code invertion disabled: noiselen ({args.noiselen}) >= modfreq ({args.modfreq})")
 
+    if not args.platform == "cmoda7" and args.toolchain == "Symbiflow":
+        print("Error: zynq based boards are untested with Symbiflow toolchain")
+        print("\tSymbiflow may only used with cmoda7 board")
+        sys.exit(1)
+
     if args.verbose:
         print("bit length of the LFSR : "+str(args.bitlen))
         print("number of bits generated per pps signal received : "+ str(args.noiselen))
@@ -374,7 +392,7 @@ if __name__ == "__main__":
 
     print(platform)
 
-    gateware = platform().build(
+    gateware = platform(toolchain=args.toolchain).build(
         TWSTFT_top(args.bitlen, int(args.noiselen), reload=not args.no_reload,
                    taps=t, seed=args.seed,
                    freqout=args.modfreq, invert_first_code=invert_first_code,

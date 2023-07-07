@@ -44,6 +44,9 @@ options:
                         build directory
   --conv-to-bin         convert .bit file to .bit.bin
   --debug               enable test signals
+  --toolchain TOOLCHAIN
+                        toolchain to use (Vivado or Symbiflow) (cmoda7 only) (default: Vivado)
+
 ```
 
 ## bitstream generation
@@ -86,6 +89,9 @@ be used.
 bitstream is loaded to volatile memory (configuration is lost after a power
 cycle). But it's possible to write bitstream into non-volatile memory (SPI
 Flash) by using `--flash`.
+
+**cmoda7 only**: by default *Vivado* is used to produces the bitstream, but it's
+also possible to use the *f4pga* Open-Source toolchain.
 
 ## Pin functions
 
