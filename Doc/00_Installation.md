@@ -65,6 +65,11 @@ make -j$(nproc)
 sudo make install
 ```
 
+### *f4pga* (Optional / cmoda7 only)
+
+The *f4pga* toolchain may used instead of *Vivado*.
+The install procedure is described in [this guide](https://f4pga-examples.readthedocs.io/en/latest/getting.html#getting)
+
 ### Amaranth :
 
 The python package that we are going to use and abuse to work on our FPGA boards and implement.
