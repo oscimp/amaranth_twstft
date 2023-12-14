@@ -115,7 +115,7 @@ also possible to use the *f4pga* Open-Source toolchain.
 
 <img src="../figures/pinout_zedboard.png">
 
-### CMOD A7
+### CMOD A7 (PCB available <a href="https://github.com/oscimp/amaranth_twstft/tree/main/pcb/cmodA7_twtft">here</a>)
 
 <img src="../figures/cmodA7_twtft.png">
 
