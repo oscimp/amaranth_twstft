@@ -97,7 +97,7 @@ also possible to use the *f4pga* Open-Source toolchain.
 
 /!\ Clean carrier is output irrelevant of the ``enable`` signal: make sure to pull the clean_carrier debug signal to low if not used, DO NOT leave floating or a strong 70 MHz carrier will be emitted when Enable is low.
 
-| function              | dir | zedboard | pynq     | cmoda7 |
+| function              | dir | <a href="https://digilent.com/reference/programmable-logic/zedboard/start">ZedBoard</a> | <a href="https://global.discourse-cdn.com/business5/uploads/pynq1/original/2X/5/5b969c46185b0799d848915df3762fce368bf55d.png">Pynq Z2</a>  | <a href="https://digilent.com/reference/programmable-logic/cmod-a7/reference-manual">cmoda7</a> |
 |-----------------------|-----|----------|----------|--------|
 | 10MHz in              | in  | PMOD_A4  | RPI-11   | GPIO46 |
 | PPS in                | in  | PMOD_C4  | RPI-32   | GPIO42 |
