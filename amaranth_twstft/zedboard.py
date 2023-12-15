@@ -4,7 +4,8 @@ import os
 import subprocess
 from os.path import exists
 from amaranth.build import *
-from amaranth.vendor.xilinx import *
+# from amaranth.vendor.xilinx import *
+from amaranth.vendor import *
 from amaranth_boards.resources import *
 
 __all__ = ["ZedBoardPlatform"]

@@ -159,11 +159,17 @@ class TWSTFT_top(Elaboratable):
                     Attrs(IOSTANDARD="LVCMOS33")
                 ),
                 # switch mode
-                Resource('switch', 0, Pins('23',  conn = connect, dir='i'),
-                    Attrs(IOSTANDARD="LVCMOS33")),
-                # clean carrier
-                Resource('switch', 1, Pins('19',  conn = connect, dir='i'),
-                    Attrs(IOSTANDARD="LVCMOS33")),
+#                Resource('switch', 0, Pins('23',  conn = connect, dir='i'),
+#                   Attrs(IOSTANDARD="LVCMOS33")),
+#              # clean carrier
+#                Resource('switch', 1, Pins('19',  conn = connect, dir='i'),
+#                   Attrs(IOSTANDARD="LVCMOS33")),
+                Resource('switch', 0,
+                    Subsignal('mode',    Pins('23', conn = connect, dir='i')), # JMF
+                    Subsignal('carrier', Pins('19', conn = connect, dir='i')), # JMF
+
+                    Attrs(IOSTANDARD="LVCMOS33")
+                ),
 
             ])
 
@@ -177,8 +183,9 @@ class TWSTFT_top(Elaboratable):
         pins = platform.request('pins',0)
 
         #allowing to switch between BPSK and QPSK
-        clean_carrier = platform.request("switch", 1) # M20
-        switch_mode   = platform.request("switch", 0) # F22
+        #clean_carrier = platform.request('switch', 1) # M20
+        #switch_mode   = platform.request('switch', 0) # F22
+        switch  = platform.request('switch', 0) # F22  # JMF
 
         new_clk = platform.request('external_clk',0)
 
@@ -254,9 +261,11 @@ class TWSTFT_top(Elaboratable):
 
         m.d.comb += [
             mixer.pps_in.eq(pins.PPS_in),
-            mixer.switch_mode.eq(switch_mode),
+#            mixer.switch_mode.eq(switch_mode),
+            mixer.switch_mode.eq(switch.mode),       # JMF
             mixer.global_enable.eq(pins.enable),
-            mixer.output_carrier.eq(clean_carrier),
+#            mixer.output_carrier.eq(clean_carrier),
+            mixer.output_carrier.eq(switch.carrier), # JMF
         ]
 
         m.d.sync+=[
