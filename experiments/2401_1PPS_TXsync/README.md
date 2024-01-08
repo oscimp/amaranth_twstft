@@ -20,7 +20,7 @@ the emission. Recording lasts 5.5 minutes to stop after the end of the emission.
 
 <img src="all.png">
 
-Top: Two-Way transfer resulting from the fine analysis of the correlation
+<a href="go.m">Top</a>: Two-Way transfer resulting from the fine analysis of the correlation
 peak of the difference of (transmitted-loopback) signals. Middle: standard
 deviation on each transmitted signal record after removing the parabolic trend.
 Bottom: velocity of the satellite as slope of the transmitted signal received
@@ -28,12 +28,12 @@ on the other side of the link.
 
 <img src="rangingall.png">
 
-Ranging results from Besancon as coarse time delay between the transmitted signal 
-and the loopback.
+<a href="goranging.m">Ranging</a> results from Besancon as coarse time delay between the 
+transmitted signal and the loopback.
 
 For comparison, the ranging measurement from Paris (OP) during 2023
 as recorded at https://webtai.bipm.org/ftp/pub/tai/data/2023/time_transfer/twstft/op/
-with a result consistent with the chard displayed above.
+with a result consistent with the chart displayed above.
 
 <img src="opranging.png">
 
