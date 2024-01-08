@@ -1,0 +1,5 @@
+3 1-23/2 * * * /home/time/workarea/twstft-tools/scripts/operational/acquire.sh
+# 25 1-23/2 * * * /home/time/workarea/twstft-tools/scripts/operational/acquire.sh
+45 1-23/2 * * * /home/time/workarea/twstft-tools/scripts/operational/acquire.sh
+01 0-23/2 * * * /home/time/workarea/twstft-tools/scripts/operational/process.sh
+
