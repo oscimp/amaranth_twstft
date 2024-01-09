@@ -18,7 +18,7 @@ minute 46 to 51 (5-minute long records). At the previous minute, the X310
 SDR recording is started so as to collect data ~5 seconds (+/-2 s) prior to
 the emission. Recording lasts 5.5 minutes to stop after the end of the emission.
 
-<img src="all.png">
+<img src="all.svg">
 
 <a href="go.m">Top</a>: Two-Way transfer resulting from the fine analysis of the correlation
 peak of the difference of (transmitted-loopback) signals. Middle: standard
