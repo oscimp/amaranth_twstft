@@ -26,17 +26,13 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#define Ninterp 2 // keep power of two for FFT to remain power of 2
 //
 #define PI 3.141592653589793
-#define MAXBUF 5
+#define MAXBUF 1
 #define USRP 310
 //
-#if USRP == 310
-//const int sps = 200000000; // NI USRP X310
-const int sps =  5000000; // NI USRP X310
-#elif USRP == 210
-const int sps =  5000000; // NI USRP N210
-#endif
+const int sps =  5000000*Ninterp; // NI USRP X310
 const int nch_max = 120;    // maximum receiver channels
 //
 typedef struct _timetag
@@ -176,12 +172,10 @@ void MAI_out(int, double *, double *); // JMF MAI = Multiple Access Interference
 int main(int argc, char *argv[])
 {
   // check input arguments
-  if (argc!=1 && argc != 2 && argc != 3 && argc != 9)
+  if (argc!=1 && argc != 2 && argc != 3)
   {
     printf("usage:\n");
-    printf("rx50 out_path param_file\n");
-    printf("or\n");
-    printf("rx50 out_path param_file yyyy MM dd hh mm ss\n");
+    printf("%s out_path param_file\n",argv[0]);
     return 1;
   }
   // variables
@@ -216,6 +210,8 @@ int main(int argc, char *argv[])
      sprintf(datafilename,"./data.bin");
   printf("%s\n",datafilename);
 
+  if (argc > 2)
+     sprintf(paramfile,"%s",argv[2]);
   if ((fparam = fopen(paramfile, "r")) == NULL)
   {
     printf("no such parameter file : %s\n", paramfile);
@@ -470,15 +466,15 @@ int main(int argc, char *argv[])
   do
   {
 #if USRP == 310
-    datares=fread(dev_samples, sizeof(short), sps*4, fd); // JMFfile: *2 for reference and measurement
+    datares=fread(dev_samples, sizeof(short), sps*4/Ninterp, fd); // JMFfile: *2 for reference and measurement
 #elif USRP == 210
-    datares=fread(dev_samples, sizeof(char), sps*4, fd);  // JMFfile
+    datares=fread(dev_samples, sizeof(char), sps*4/Ninterp, fd);  // JMFfile
 #endif
     printf("read %d samples\n",datares);
     // Get samples from buffer
     // Compute received signal power of each sampler channel
 #if USRP == 310
-    short2double(si.sps, si.dec, dev_samples, dev_smp_A, dev_smp_B); // NI USRP X310 JMF dev_samp_X complex
+    short2double(si.sps, si.dec, dev_samples, dev_smp_A, dev_smp_B); // NI USRP X310 dev_samp_X complex + outputs Ninterp times input items
 #elif USRP == 210
     char2double(si.sps, si.dec, dev_samples, dev_smp_A, dev_smp_B); // NI USRP N210
 #endif
@@ -836,7 +832,7 @@ printf("phases: %d %lf\n",i,ci[i].res_phi[p]);
     }
     // 2018-11-19 print out
     //End: DSP
-  } while (datares==sps*4);
+  } while (datares==sps*4/Ninterp);
   // End: infinite measurement
   return 0;
 }
@@ -877,7 +873,7 @@ int SDRcode(channel_info *c)
   char *tmp;
   tmp=(char*)malloc(sizeof(char)*c->clen);
   if (c->cid >= 100) // SDR JMF
-  { sprintf(codefilename,"%d.bin",c->cid-100);
+  { sprintf(codefilename,"%d.bin",c->cid-100); // assume LTFB code in file 0.bin and OP in file 1.bin
     fd=fopen(codefilename,"rb"); // JMFfile
     if (fd==NULL) {printf("Code filename error %s\n",codefilename);exit(-1);}
     datares=fread(tmp, sizeof(char), c->clen, fd);
@@ -918,13 +914,52 @@ void char2double(int nobs, int dec, char *smp, double *smpA, double *smpB)
 void short2double(int nobs, int dec, short *smp, std::complex<double> *smpA, std::complex<double> *smpB)
 {
   int i;
-  for (i=0;i < nobs; i++)
+  fftw_plan plan1, plan2;
+  
+  std::complex<double> *tmpA, *tmpB;
+  tmpA=(std::complex<double>*)malloc(sizeof(std::complex<double>) * nobs);
+  tmpB=(std::complex<double>*)malloc(sizeof(std::complex<double>) * nobs);
+
+  for (i=0;i<nobs;i++) {tmpA[i].real(0.);tmpA[i].imag(0.); tmpB[i].real(0.);tmpB[i].imag(0.);}
+  for (i=0;i < nobs/Ninterp; i++)
   {
-    smpA[i].real( (double)smp[4 * i * dec] / 32768.0);
-    smpA[i].imag( (double)smp[4 * i * dec + 1] / 32768.0);
-    smpB[i].real( (double)smp[4 * i * dec + 2] / 32768.0);
-    smpB[i].imag( (double)smp[4 * i * dec + 3] / 32768.0);
+    tmpA[i].real( (double)smp[4 * i * dec] / 32768.0);
+    tmpA[i].imag( (double)smp[4 * i * dec + 1] / 32768.0);
+    tmpB[i].real( (double)smp[4 * i * dec + 2] / 32768.0);
+    tmpB[i].imag( (double)smp[4 * i * dec + 3] / 32768.0);
   }
+
+// interpolate A
+  plan1 = fftw_plan_dft_1d(nobs/Ninterp, reinterpret_cast<fftw_complex*>(tmpA),reinterpret_cast<fftw_complex*>(tmpA),
+                                      FFTW_FORWARD, FFTW_ESTIMATE);
+  fftw_execute(plan1);
+  for (i=0;i< nobs/Ninterp/2;i++) 
+     {tmpA[nobs-i-1].real(real(tmpA[nobs/Ninterp-i-1])/(float)(nobs/Ninterp));
+      tmpA[nobs-i-1].imag(imag(tmpA[nobs/Ninterp-i-1])/(float)(nobs/Ninterp));
+      tmpA[nobs/Ninterp-i-1].real(0.);
+      tmpA[nobs/Ninterp-i-1].imag(0.);
+     }
+  plan2 = fftw_plan_dft_1d(nobs, reinterpret_cast<fftw_complex*>(tmpA),reinterpret_cast<fftw_complex*>(tmpA),
+                                      FFTW_BACKWARD, FFTW_ESTIMATE);
+  fftw_execute(plan2);
+// finished for A, now interpolate B
+  plan1 = fftw_plan_dft_1d(nobs/Ninterp, reinterpret_cast<fftw_complex*>(tmpB),reinterpret_cast<fftw_complex*>(tmpB),
+                                      FFTW_FORWARD, FFTW_ESTIMATE);
+  fftw_execute(plan1);
+  for (i=0;i< nobs/Ninterp/2;i++) 
+     {tmpB[nobs-i-1].real(real(tmpB[nobs/Ninterp-i-1])/(float)(nobs/Ninterp));
+      tmpB[nobs-i-1].imag(imag(tmpB[nobs/Ninterp-i-1])/(float)(nobs/Ninterp));
+      tmpB[nobs/Ninterp-i-1].real(0.);
+      tmpB[nobs/Ninterp-i-1].imag(0.);
+     }
+  plan2 = fftw_plan_dft_1d(nobs, reinterpret_cast<fftw_complex*>(tmpB),reinterpret_cast<fftw_complex*>(tmpB),
+                                      FFTW_BACKWARD, FFTW_ESTIMATE);
+  fftw_execute(plan2);
+  for (i=0;i < nobs; i++) { smpA[i].real(real(tmpA[i])/(float)nobs); smpB[i].real(real(tmpB[i])/(float)nobs);
+                            smpA[i].imag(imag(tmpA[i])/(float)nobs); smpB[i].imag(imag(tmpB[i])/(float)nobs);
+                          }
+  free(tmpA);
+  free(tmpB);
 }
 
 void PRN_sampling(int nobs, int *code, std::complex<double> *prn, int rc, double fs, int clen, double delay)
