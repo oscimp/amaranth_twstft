@@ -26,4 +26,4 @@ were included, and the standard deviation on the time delay within each run dram
 above results. Adding attenuators does include an additional delay unrelated to their geometrical length
 and must be accounted for early in the final setup design.
 
-<img src=derive_adc.png">
+<img src="derive_adc.png">
