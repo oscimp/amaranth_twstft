@@ -23,4 +23,7 @@ any saturation with signals in the +/-0.6 normalized value range, it was observe
 attenuators on the loopback channel did not significantly decrese the amplitude until more than 12 dB
 were included, and the standard deviation on the time delay within each run dramatically decreased whe
 12 dB or even 21 dB attenuators were included with respect to the experimental setup used to achieve the
-above results.
+above results. Adding attenuators does include an additional delay unrelated to their geometrical length
+and must be accounted for early in the final setup design.
+
+<img src=derive_adc.png">
