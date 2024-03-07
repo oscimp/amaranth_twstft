@@ -27,3 +27,12 @@ above results. Adding attenuators does include an additional delay unrelated to 
 and must be accounted for early in the final setup design.
 
 <img src="derive_ADC.png">
+
+Furthermore, it is observed (left) that the X310 compression point is around 6 dBm, 
+while the loopback and downlink amplification exhibited far too much gain, leading to
+non-linear behaviour of the ADC. The degradation on the timing capability is shown
+(right), leading to the removal of 18 dB gain on the loopback and 40 dB on the
+downlink in prevision of the next experiment schedule.
+
+<img src="X310power.png">
+<img src="std_vs_power.png">
