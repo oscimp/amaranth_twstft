@@ -1,0 +1,8 @@
+#!/bin/sh
+if [ ! -e /sys/class/gpio/gpio26 ]; then         
+  echo "26" >  /sys/class/gpio/export            
+  echo "out" >  /sys/class/gpio/gpio26/direction 
+  echo "1" >  /sys/class/gpio/gpio26/value       
+fi
+echo "out" > /sys/class/gpio/gpio26/direction
+echo "1" > /sys/class/gpio/gpio26/value

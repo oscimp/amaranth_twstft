@@ -1,11 +1,13 @@
 #!/bin/bash
-pid=`ps aux | grep acq5min | grep -v grep | cut -d\  -f2`; if [[ -n "$pid" ]]; then echo "killed $pid";kill -9 $pid;fi
-sleep 40
-ladate=`date +%s`
+pid=`ps aux | grep zmq | grep -v grep | cut -d\  -f2` 
+if [[ -n "$pid" ]]; then 
+	echo "killed ZMQ $pid" >> $HOME/2403/killed
+	kill -9 $pid
+fi
+sleep 55
 echo "Start"
-nice -n -20 /usr/bin/python3 /home/jmfriedt/2401/acq5min.py > /data/$ladate.log 2>&1 &
-sleep 15  # attend que la X310 se lance
-ladatedeb=`date +%s`
+ladate=`date +%s`
+nice -n -20 /usr/bin/python3 $HOME/2403/acq5min.py > /data/$ladate.log 2>&1 &
 echo "Waiting"
 wait
 echo "Finished"

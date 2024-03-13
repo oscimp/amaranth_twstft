@@ -31,13 +31,14 @@ class zmq_rx_short(gr.top_block):
         # Variables
         ##################################################
         self.samp_rate = samp_rate = 5e6
+        self.duration_in_s = duration_in_s = 5*60
 
         ##################################################
         # Blocks
         ##################################################
 
         self.zeromq_sub_source_0 = zeromq.sub_source(gr.sizeof_short, 1, 'tcp://127.0.0.1:5555', 100, False, (-1), '', False)
-        self.blocks_head_0 = blocks.head(gr.sizeof_short*1, (int(samp_rate*5*2*2)))
+        self.blocks_head_0 = blocks.head(gr.sizeof_short*1, (int(samp_rate*duration_in_s*2*2)))
         self.blocks_file_sink_0_0 = blocks.file_sink(gr.sizeof_short*1, '/data/test.bin', False)
         self.blocks_file_sink_0_0.set_unbuffered(False)
 
@@ -54,7 +55,14 @@ class zmq_rx_short(gr.top_block):
 
     def set_samp_rate(self, samp_rate):
         self.samp_rate = samp_rate
-        self.blocks_head_0.set_length((int(self.samp_rate*5*2*2)))
+        self.blocks_head_0.set_length((int(self.samp_rate*self.duration_in_s*2*2)))
+
+    def get_duration_in_s(self):
+        return self.duration_in_s
+
+    def set_duration_in_s(self, duration_in_s):
+        self.duration_in_s = duration_in_s
+        self.blocks_head_0.set_length((int(self.samp_rate*self.duration_in_s*2*2)))
 
 
 

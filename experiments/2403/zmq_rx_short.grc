@@ -33,6 +33,18 @@ options:
     state: enabled
 
 blocks:
+- name: duration_in_s
+  id: variable
+  parameters:
+    comment: ''
+    value: 5*60
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [288, 8.0]
+    rotation: 0
+    state: true
 - name: samp_rate
   id: variable
   parameters:
@@ -42,25 +54,9 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [184, 12]
+    coordinate: [192, 8.0]
     rotation: 0
     state: enabled
-- name: blocks_complex_to_real_0
-  id: blocks_complex_to_real
-  parameters:
-    affinity: ''
-    alias: ''
-    comment: ''
-    maxoutbuf: '0'
-    minoutbuf: '0'
-    vlen: '1'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [672, 64.0]
-    rotation: 0
-    state: disabled
 - name: blocks_deinterleave_0
   id: blocks_deinterleave
   parameters:
@@ -77,7 +73,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [448, 184.0]
+    coordinate: [448, 224.0]
     rotation: 0
     state: disabled
 - name: blocks_file_sink_0_0
@@ -86,7 +82,9 @@ blocks:
     affinity: ''
     alias: ''
     append: 'False'
-    comment: ''
+    comment: 'x2 complex
+
+      x2 two channels'
     file: /data/test.bin
     type: short
     unbuffered: 'False'
@@ -106,7 +104,7 @@ blocks:
     comment: ''
     maxoutbuf: '0'
     minoutbuf: '0'
-    num_items: int(samp_rate*5*2*2)
+    num_items: int(samp_rate*duration_in_s*2*2)
     type: short
     vlen: '1'
   states:
@@ -131,7 +129,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [272, 184.0]
+    coordinate: [272, 224.0]
     rotation: 0
     state: disabled
 - name: qtgui_freq_sink_x_0
@@ -212,13 +210,12 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [600, 176.0]
+    coordinate: [656, 216.0]
     rotation: 0
     state: disabled
-- name: qtgui_histogram_sink_x_0
-  id: qtgui_histogram_sink_x
+- name: qtgui_time_sink_x_0
+  id: qtgui_time_sink_x
   parameters:
-    accum: 'True'
     affinity: ''
     alias: ''
     alpha1: '1.0'
@@ -231,32 +228,33 @@ blocks:
     alpha7: '1.0'
     alpha8: '1.0'
     alpha9: '1.0'
-    autoscale: 'True'
+    autoscale: 'False'
     axislabels: 'True'
-    bins: '32765'
-    color1: '"blue"'
-    color10: '"dark blue"'
-    color2: '"red"'
-    color3: '"green"'
-    color4: '"black"'
-    color5: '"cyan"'
-    color6: '"magenta"'
-    color7: '"yellow"'
-    color8: '"dark red"'
-    color9: '"dark green"'
+    color1: blue
+    color10: dark blue
+    color2: red
+    color3: green
+    color4: black
+    color5: cyan
+    color6: magenta
+    color7: yellow
+    color8: dark red
+    color9: dark green
     comment: ''
+    ctrlpanel: 'False'
+    entags: 'True'
     grid: 'False'
     gui_hint: ''
-    label1: ''
-    label10: ''
-    label2: ''
-    label3: ''
-    label4: ''
-    label5: ''
-    label6: ''
-    label7: ''
-    label8: ''
-    label9: ''
+    label1: Signal 1
+    label10: Signal 10
+    label2: Signal 2
+    label3: Signal 3
+    label4: Signal 4
+    label5: Signal 5
+    label6: Signal 6
+    label7: Signal 7
+    label8: Signal 8
+    label9: Signal 9
     legend: 'True'
     marker1: '-1'
     marker10: '-1'
@@ -270,7 +268,9 @@ blocks:
     marker9: '-1'
     name: '""'
     nconnections: '1'
-    size: '10240'
+    size: '1024'
+    srate: samp_rate
+    stemplot: 'False'
     style1: '1'
     style10: '1'
     style2: '1'
@@ -281,7 +281,13 @@ blocks:
     style7: '1'
     style8: '1'
     style9: '1'
-    type: float
+    tr_chan: '0'
+    tr_delay: '0'
+    tr_level: '0.0'
+    tr_mode: qtgui.TRIG_MODE_FREE
+    tr_slope: qtgui.TRIG_SLOPE_POS
+    tr_tag: '""'
+    type: complex
     update_time: '0.10'
     width1: '1'
     width10: '1'
@@ -293,13 +299,15 @@ blocks:
     width7: '1'
     width8: '1'
     width9: '1'
-    xmax: '1'
-    xmin: '-1'
+    ylabel: Amplitude
+    ymax: '1'
+    ymin: '-1'
+    yunit: '""'
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [888, 24.0]
+    coordinate: [648, 128.0]
     rotation: 0
     state: disabled
 - name: zeromq_sub_source_0
@@ -327,9 +335,8 @@ blocks:
     state: true
 
 connections:
-- [blocks_complex_to_real_0, '0', qtgui_histogram_sink_x_0, '0']
-- [blocks_deinterleave_0, '0', blocks_complex_to_real_0, '0']
 - [blocks_deinterleave_0, '0', qtgui_freq_sink_x_0, '0']
+- [blocks_deinterleave_0, '0', qtgui_time_sink_x_0, '0']
 - [blocks_deinterleave_0, '1', qtgui_freq_sink_x_0, '1']
 - [blocks_head_0, '0', blocks_file_sink_0_0, '0']
 - [blocks_interleaved_short_to_complex_0, '0', blocks_deinterleave_0, '0']
