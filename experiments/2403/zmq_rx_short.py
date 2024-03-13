@@ -31,7 +31,7 @@ class zmq_rx_short(gr.top_block):
         # Variables
         ##################################################
         self.samp_rate = samp_rate = 5e6
-        self.duration_in_s = duration_in_s = 5*60
+        self.duration_in_s = duration_in_s = 3600
 
         ##################################################
         # Blocks

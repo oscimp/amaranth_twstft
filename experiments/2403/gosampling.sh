@@ -7,7 +7,7 @@ fi
 sleep 55
 echo "Start"
 ladate=`date +%s`
-nice -n -20 /usr/bin/python3 $HOME/2403/acq5min.py > /data/$ladate.log 2>&1 &
+nice -n -20 /usr/bin/python3 $HOME/2403/zmq_rx_short.py > /data/$ladate.log 2>&1 &
 echo "Waiting"
 wait
 echo "Finished"

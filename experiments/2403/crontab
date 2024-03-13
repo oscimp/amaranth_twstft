@@ -1,5 +1,6 @@
-1  1-23/2 * * *  /home/jmfriedt/2403/gotest.sh 
-43 1-23/2 * * *  /home/jmfriedt/2403/gotest.sh 
-# 3  1-23/2 * * *  /home/jmfriedt/2403/gosampling.sh 
+# 1  1-23/2 * * *  /home/jmfriedt/2403/gotest.sh 
+# 43 1-23/2 * * *  /home/jmfriedt/2403/gotest.sh 
+0  1-23/2 * * *  /home/jmfriedt/2403/gosampling.sh 
+# 3  1-23/2 * * *  /home/jmfriedt/2403/gosampling.sh 
 # 45 1-23/2 * * *  /home/jmfriedt/2403/gosampling.sh 
 # 53 1-23/2 * * *  /home/jmfriedt/2403/goprocess.sh 
