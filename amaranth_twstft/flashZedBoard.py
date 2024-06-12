@@ -197,7 +197,7 @@ class TWSTFT_top(Elaboratable):
     
         clk_input_buf    = Signal()
         m.submodules += Instance("BUFG",
-            i_I  = platform_clk,
+            i_I  = platform_clk.i,
             o_O  = clk_input_buf,
         )
         
@@ -260,16 +260,16 @@ class TWSTFT_top(Elaboratable):
         m.submodules.mixer = mixer = self.mixer
 
         m.d.comb += [
-            mixer.pps_in.eq(pins.PPS_in),
-#            mixer.switch_mode.eq(switch_mode),
-            mixer.switch_mode.eq(switch.mode),       # JMF
-            mixer.global_enable.eq(pins.enable),
-#            mixer.output_carrier.eq(clean_carrier),
-            mixer.output_carrier.eq(switch.carrier), # JMF
+            mixer.pps_in.eq(pins.PPS_in.i),
+#           mixer.switch_mode.eq(switch_mode),
+            mixer.switch_mode.eq(switch.mode.i),       # JMF
+            mixer.global_enable.eq(pins.enable.i),
+#           mixer.output_carrier.eq(clean_carrier),
+            mixer.output_carrier.eq(switch.carrier.i), # JMF
         ]
 
         m.d.sync+=[
-            pins.output.eq(mixer.mod_out),
+            pins.output.o.eq(mixer.mod_out), # JMF 240612
         ]
 
         if self._debug:
