@@ -159,18 +159,11 @@ class TWSTFT_top(Elaboratable):
                     Attrs(IOSTANDARD="LVCMOS33")
                 ),
                 # switch mode
-#                Resource('switch', 0, Pins('23',  conn = connect, dir='i'),
-#                   Attrs(IOSTANDARD="LVCMOS33")),
-#              # clean carrier
-#                Resource('switch', 1, Pins('19',  conn = connect, dir='i'),
-#                   Attrs(IOSTANDARD="LVCMOS33")),
-                Resource('switch', 0,
-                    Subsignal('mode',    Pins('23', conn = connect, dir='i')), # JMF
-                    Subsignal('carrier', Pins('19', conn = connect, dir='i')), # JMF
-
-                    Attrs(IOSTANDARD="LVCMOS33")
-                ),
-
+                Resource('switch', 0, Pins('23',  conn = connect, dir='i'),
+                   Attrs(IOSTANDARD="LVCMOS33")),
+               # clean carrier
+                Resource('switch', 1, Pins('19',  conn = connect, dir='i'),
+                   Attrs(IOSTANDARD="LVCMOS33")),
             ])
 
             # when first code + counter and use_uart request UART pads
@@ -183,9 +176,8 @@ class TWSTFT_top(Elaboratable):
         pins = platform.request('pins',0)
 
         #allowing to switch between BPSK and QPSK
-        #clean_carrier = platform.request('switch', 1) # M20
-        #switch_mode   = platform.request('switch', 0) # F22
-        switch  = platform.request('switch', 0) # F22  # JMF
+        clean_carrier = platform.request('switch', 1) # M20
+        switch_mode   = platform.request('switch', 0) # F22
 
         new_clk = platform.request('external_clk',0)
 
@@ -261,11 +253,9 @@ class TWSTFT_top(Elaboratable):
 
         m.d.comb += [
             mixer.pps_in.eq(pins.PPS_in.i),
-#           mixer.switch_mode.eq(switch_mode),
-            mixer.switch_mode.eq(switch.mode.i),       # JMF
+            mixer.switch_mode.eq(switch_mode.i),
             mixer.global_enable.eq(pins.enable.i),
-#           mixer.output_carrier.eq(clean_carrier),
-            mixer.output_carrier.eq(switch.carrier.i), # JMF
+            mixer.output_carrier.eq(clean_carrier.i),
         ]
 
         m.d.sync+=[
@@ -274,12 +264,12 @@ class TWSTFT_top(Elaboratable):
 
         if self._debug:
             m.d.sync += [
-                pins.clk_out.eq(mixer.dixmega),
-                pins.PPS_out.eq(mixer.pps_out),
-                pins.PPS_out2.eq(mixer.the_pps_we_love),
-                pins.mixer_o.eq(mixer.output),
-                pins.mixer2_o.eq(mixer.output2),
-                pins.inv_prn_o.eq(mixer.invert_prn_o),
+                pins.clk_out.o.eq(mixer.dixmega),
+                pins.PPS_out.o.eq(mixer.pps_out),   # test
+                pins.PPS_out2.o.eq(mixer.the_pps_we_love),
+                pins.mixer_o.o.eq(mixer.output),
+                pins.mixer2_o.o.eq(mixer.output2),
+                pins.inv_prn_o.o.eq(mixer.invert_prn_o),
             ]
         return m
 
