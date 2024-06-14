@@ -6,3 +6,9 @@ clock (synchronous process) and 1 PPS generated from the internal counter
 
 Make sure to synthesize with the ``--debug`` option to output 1 PPS debug
 signals.
+
+<img src="1PPS_1PPS2_persistance.png">
+
+<img src="1PPS_1PPS2.png">
+
+<img src="setup.jpg">
