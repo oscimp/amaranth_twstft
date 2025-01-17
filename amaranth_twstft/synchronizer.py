@@ -5,8 +5,6 @@ from amaranth.sim import Simulator, SimulatorContext, TriggerCombination
 from mixer import Mode
 from oscillator import Oscillator
 from prn import PrnGenerator, nextstate
-from serialize import SerialToParallel
-
 
 class Synchronizer(Component):
     pps: In(1)
