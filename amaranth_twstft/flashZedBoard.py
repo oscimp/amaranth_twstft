@@ -3,9 +3,11 @@
 from amaranth import *
 from amaranth.build import *
 from amaranth_boards.resources import *
-from amaranth_twstft.Mixer import *
 
-from amaranth_twstft.zedboard import *
+from mixer import Mode
+from main import TwstftMain
+from prn import write_prn_seq, taps_autofill
+from zedboard import *
 
 import argparse
 import os
@@ -242,6 +244,20 @@ class TWSTFT_top(Elaboratable):
         platform.add_clock_constraint(clk_input_buf, base_clk_freq)
         print(f"clock freq {clock_freq} mmc out period {mmc_out_period}")
 
+        m.submodules.main = main = TwstftMain(
+                int(clock_freq),
+                int(70e6),
+                int(self._freqout),
+                bit_len=self._bit_len,
+                mode=Mode.QPSK,
+                taps=self._taps,
+                code_len=self._noise_len,
+                seed=self._seed)
+
+        m.d.comb += main.pps.eq(pins.PPS_in.i)
+        m.d.sync += pins.output.o.eq(main.antena_out)
+
+        """
         self.mixer = Mixer(self._bit_len, self._noise_len, self._reload,
                            self._lock_pps_gen, self._taps, self._seed,
                            clock_freq,
@@ -271,6 +287,7 @@ class TWSTFT_top(Elaboratable):
                 pins.mixer2_o.o.eq(mixer.output2),
                 pins.inv_prn_o.o.eq(mixer.invert_prn_o),
             ]
+        """
         return m
 
 def platform_get(platform_name):

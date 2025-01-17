@@ -2,7 +2,7 @@
 
 from amaranth import *
 from amaranth_stdio.serial import AsyncSerial
-from amaranth_twstft.timer import Timer
+from timer import Timer
 
 
 class UARTWrapper(Elaboratable):
