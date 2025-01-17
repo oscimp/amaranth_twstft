@@ -23,9 +23,6 @@ class Mixer(Component):
             with m.Case(Mode.BPSK):
                 m.d.comb += self.out.eq(self.carrier ^ self.data[0])
             with m.Case(Mode.QPSK):
-                mod = self.carrier ^ self.data[0]
-                mod90 = self.carrier90 ^ self.data[1]
-                #m.d.comb += self.out.eq(mod & mod90)
                 carrier_axis = Signal()
                 with m.If(self.data[1]):
                     m.d.comb += carrier_axis.eq(self.carrier90)

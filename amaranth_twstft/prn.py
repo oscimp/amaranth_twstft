@@ -39,19 +39,19 @@ def m_seq_codes(bit_len, limit = 10):
     generate a m-sequence of (bit_len) bits values"""
     codes = []
     first = 0x1
-    
+
     codes_to_test = [2*i +1 for i in range(ceil(pow(2,bit_len)/2))]
     print(f"Finding at most {limit} taps for a {bit_len} bits msequence... This may take a while...") 
     for code in codes_to_test:
         test = first
-        
+
         for j in range((pow(2,bit_len)-2)) : 
             test = nextstate(test, code, bit_len)
-            
+
             if (test == first or test == 0):
                 break
-            
-            
+
+
         if (test != first and test !=0):
             print(f"{code} is a m-sequence generator taps")
             codes.append(code)
@@ -69,7 +69,7 @@ def write_prn_seq( bitlen, code, seed=1, seqlen = 2500000):
             f.write((v%2).to_bytes(1,byteorder='big'))
             v = nextstate(v,code,bitlen)
         f.close()
-        
+
     with open(f"prn{code}qpsk{bitlen}bits.bin","wb") as f:
         v = seed
         print("writing QPSK sequence")
@@ -82,7 +82,7 @@ def write_prn_seq( bitlen, code, seed=1, seqlen = 2500000):
             v = nextstate(v,code,bitlen)
         f.close()
     print(f"see ./prn{code}(bpsk|qpsk){bitlen}bits.bin")
-    
+
 def taps_autofill(bit_len, nbtaps,save_file=pickle_file):
     global taps_dict
     if (bit_len in taps_dict and nbtaps <= len(taps_dict[bit_len])) :
@@ -144,6 +144,10 @@ def get_taps(bit_len,save_file=pickle_file):
 nb_taps_auto = 32
 
 class PrnGenerator(Component):
+    """
+        A LFSR with same-tick-action shift and reset.
+        The taps and the seed can be modified at runtime.
+    """
     def __init__(self, bit_len, taps=None, seed=None):
         assert bit_len > 1
         super().__init__({

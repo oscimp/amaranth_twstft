@@ -5,10 +5,13 @@ from amaranth.sim import Simulator, SimulatorContext
 import inspect
 
 class Oscillator(Component):
+    """
+        An oscillator with same-tick-action reset.
+    """
     reset: In(1)
     out: Out(1)
     out90: Out(1)
-    phase_begin: Out(1)
+    phase_end: Out(1)
 
     def __init__(self, f_clock: int, f_out: int):
         assert f_clock % (f_out*4) == 0, f"Quadruple oscillator's freq e{f_out} * 4 = {f_out*4} Hz) has to divide the clock's freq ({f_clock} Hz)"
@@ -20,19 +23,19 @@ class Oscillator(Component):
 
         counter = Signal(range(self._tick_per_period))
 
-        with m.If(counter == self._tick_per_period - 1):
+        m.d.comb += self.phase_end.eq(counter == self._tick_per_period - 1)
+        with m.If(self.phase_end):
             m.d.sync += counter.eq(0)
         with m.Else():
             m.d.sync += counter.eq(counter + 1)
 
-        m.d.comb += self.phase_begin.eq(counter == 0)
         m.d.comb += self.out.eq(counter < self._tick_per_period//2)
         m.d.comb += self.out90.eq((counter >= self._tick_per_period//4) &
                                   (counter < self._tick_per_period*3 //4))
 
         with m.If(self.reset):
             m.d.sync += counter.eq(1)
-            m.d.comb += self.phase_begin.eq(True)
+            m.d.comb += self.phase_end.eq(False)
             m.d.comb += self.out.eq(True)
             m.d.comb += self.out90.eq(False)
 
@@ -49,17 +52,13 @@ class OscilatorTest(Simulator):
 
     async def test_oscill(self, ctx: SimulatorContext):
         ctx.set(self.dut.reset, True)
-        assert ctx.get(self.dut.phase_begin) == True
         for _ in range(self.period//2):
             assert ctx.get(self.dut.out) == True
             await ctx.tick()
             ctx.set(self.dut.reset, False)
-            assert ctx.get(self.dut.phase_begin) == False
         for _ in range(self.period//2):
-            assert ctx.get(self.dut.phase_begin) == False
             assert ctx.get(self.dut.out) == False
             await ctx.tick()
-        assert ctx.get(self.dut.phase_begin) == True
 
         for _ in range(self.period//4):
             await ctx.tick()
