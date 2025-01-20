@@ -60,7 +60,10 @@ class TWSTFT_top(Elaboratable):
     
     """
 
-    def __init__(self, bit_len, noise_len, reload=True, lock_pps_gen=True, taps = 0, seed = 0x1, freqout=2500000,
+    def __init__(self, bit_len, noise_len, reload=True, lock_pps_gen=True,
+                 taps_a = 0, seed_a = 0x1, 
+                 taps_b = 0, seed_b = 0x1, 
+                 freqout=2500000,
                  invert_first_code=False, use_uart=True, debug=False):
     
         self.pps_out = Signal()
@@ -73,8 +76,9 @@ class TWSTFT_top(Elaboratable):
         self._noise_len         = noise_len
         self._reload            = reload
         self._lock_pps_gen      = lock_pps_gen
-        self._taps              = taps
-        self._seed              = seed
+        self.taps_a             = taps_a
+        self.taps_b             = taps_b
+        #self._seed              = seed
         self._invert_first_code = invert_first_code
         self._use_uart          = use_uart
         self._debug             = debug
@@ -250,44 +254,13 @@ class TWSTFT_top(Elaboratable):
                 int(self._freqout),
                 bit_len=self._bit_len,
                 mode=Mode.QPSK,
-                taps=self._taps,
-                code_len=self._noise_len,
-                seed=self._seed)
+                taps_a=self.taps_a,
+                taps_b=self.taps_b,
+                code_len=self._noise_len)
 
         m.d.comb += main.pps.eq(pins.PPS_in.i)
         m.d.sync += pins.output.o.eq(main.antena_out)
 
-        """
-        self.mixer = Mixer(self._bit_len, self._noise_len, self._reload,
-                           self._lock_pps_gen, self._taps, self._seed,
-                           clock_freq,
-                           self._freqout,
-                           self._invert_first_code,
-                           uart_pads = uart_pads,
-                           debug     = self._debug)
-        m.submodules.mixer = mixer = self.mixer
-
-        m.d.comb += [
-            mixer.pps_in.eq(pins.PPS_in.i),
-            mixer.switch_mode.eq(switch_mode.i),
-            mixer.global_enable.eq(pins.enable.i),
-            mixer.output_carrier.eq(clean_carrier.i),
-        ]
-
-        m.d.sync+=[
-            pins.output.o.eq(mixer.mod_out), # JMF 240612
-        ]
-
-        if self._debug:
-            m.d.sync += [
-                pins.clk_out.o.eq(mixer.dixmega),
-                pins.PPS_out.o.eq(mixer.pps_out),   # test
-                pins.PPS_out2.o.eq(mixer.the_pps_we_love),
-                pins.mixer_o.o.eq(mixer.output),
-                pins.mixer2_o.o.eq(mixer.output2),
-                pins.inv_prn_o.o.eq(mixer.invert_prn_o),
-            ]
-        """
         return m
 
 def platform_get(platform_name):
@@ -333,8 +306,8 @@ if __name__ == "__main__":
     parser.add_argument("--bitlen",       default=17,help="number of bits of the LFSR", type=int)
     parser.add_argument("--noiselen",     default=100000,  help="length of the PRN sequence", type=float)
     parser.add_argument("--no-reload",    help="stop generation after noiselen bits", action="store_true")
-    parser.add_argument("-s","--seed",    default=1, help="initial value of the LFSR (default 1)", type=int)
-    parser.add_argument("-t","--taps",    help="taps positions for the LFSR (if not defined, allows to dynamically define taps (currently not supported so default taps will be the smallest msequence generator taps))", type=int)
+    parser.add_argument("-ta","--taps-a",    help="taps positions for the LFSR (if not defined, allows to dynamically define taps (currently not supported so default taps will be the smallest msequence generator taps))", type=int)
+    parser.add_argument("-tb","--taps-b",    help="taps positions for the LFSR (if not defined, allows to dynamically define taps (currently not supported so default taps will be the smallest msequence generator taps))", type=int)
     parser.add_argument("-m","--modfreq", default=int(2.5e6), help="frequency of the PSK modulation (Herz) (default :2.5e6)", type=int)
     parser.add_argument("--invert-first-code",    help="deprecated: default behaviour. Use --no-invert-first-code to disable xoring + counter", action="store_true")
     parser.add_argument("--no-invert-first-code", help="disable invert (xor) the first code after PPS rise and 8bits counter", action="store_true")
@@ -369,17 +342,20 @@ if __name__ == "__main__":
         os.remove(name + ".bif")
         sys.exit(0)
 
-    if args.taps :
-        t = args.taps
+    if args.taps_a :
+        ta = args.taps_a
+        tb = args.taps_b
     else:
         try:
-            t = get_taps(args.bitlen)[0]
+            ta = get_taps(args.bitlen)[0]
+            tb = get_taps(args.bitlen)[1]
         except:
             taps_autofill(args.bitlen,32)
-            t = get_taps(args.bitlen)[0]
+            ta = get_taps(args.bitlen)[0]
+            tb = get_taps(args.bitlen)[1]
 
     if args.print :
-        write_prn_seq(args.bitlen, t, args.seed, seqlen=int(args.noiselen))
+        write_prn_seq(args.bitlen, ta, tb, seqlen=int(args.noiselen))
 
     invert_first_code = not args.no_invert_first_code
     if invert_first_code and int(args.noiselen) >= int(args.modfreq):
@@ -410,7 +386,7 @@ if __name__ == "__main__":
 
     gateware = platform(toolchain=args.toolchain).build(
         TWSTFT_top(args.bitlen, int(args.noiselen), reload=not args.no_reload,
-                   taps=t, seed=args.seed,
+                   taps_a=ta, taps_b=tb,
                    freqout=args.modfreq, invert_first_code=invert_first_code,
                    use_uart=not args.no_uart, debug=args.debug),
         do_program=not (args.no_load or flash_bitstream), do_build=not args.no_build, build_dir=args.build_dir)

@@ -60,28 +60,19 @@ def m_seq_codes(bit_len, limit = 10):
                 break
     return codes
 
-def write_prn_seq( bitlen, code, seed=1, seqlen = 2500000):
+def write_prn_seq( bitlen, taps_a, taps_b=0, seed_a=1, seed_b=1, seqlen = 2500000):
     """creates files with the PRN sequences associ  ated to the parameters"""
-    with open(f"prn{code}bpsk{bitlen}bits.bin","wb") as f:
-        v = seed
-        print("writing BPSK sequence")
-        for i in range(seqlen):
-            f.write((v%2).to_bytes(1,byteorder='big'))
-            v = nextstate(v,code,bitlen)
-        f.close()
-
-    with open(f"prn{code}qpsk{bitlen}bits.bin","wb") as f:
-        v = seed
+    with open(f"prn{taps_a}.{taps_b}qpsk{bitlen}bits.bin","wb") as f:
+        a = seed_a
+        b = seed_b
         print("writing QPSK sequence")
         for i in range(seqlen):
-            a = v & 1
-            b = (v & 2) >> 1
-            f.write(a.to_bytes(1,byteorder='big'))
-            f.write(b.to_bytes(1,byteorder='big'))
-            v = nextstate(v,code,bitlen)
-            v = nextstate(v,code,bitlen)
+            f.write((a%2).to_bytes(1,byteorder='big'))
+            f.write((b%2).to_bytes(1,byteorder='big'))
+            a = nextstate(a, taps_a, bitlen)
+            b = nextstate(b, taps_b, bitlen)
         f.close()
-    print(f"see ./prn{code}(bpsk|qpsk){bitlen}bits.bin")
+    print(f"see ./prn{taps_a}.{taps_b}qpsk{bitlen}bits.bin")
 
 def taps_autofill(bit_len, nbtaps,save_file=pickle_file):
     global taps_dict
@@ -148,7 +139,7 @@ class PrnGenerator(Component):
         A LFSR with same-tick-action shift and reset.
         The taps and the seed can be modified at runtime.
     """
-    def __init__(self, bit_len, taps=None, seed=None):
+    def __init__(self, bit_len, taps=None, seed=1):
         assert bit_len > 1
         super().__init__({
             "reset": In(1),

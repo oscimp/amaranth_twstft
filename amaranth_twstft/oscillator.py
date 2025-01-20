@@ -52,13 +52,14 @@ class OscilatorTest(Simulator):
 
     async def test_oscill(self, ctx: SimulatorContext):
         ctx.set(self.dut.reset, True)
-        for _ in range(self.period//2):
-            assert ctx.get(self.dut.out) == True
-            await ctx.tick()
-            ctx.set(self.dut.reset, False)
-        for _ in range(self.period//2):
-            assert ctx.get(self.dut.out) == False
-            await ctx.tick()
+        for _ in range(5):
+            for _ in range(self.period//2):
+                assert ctx.get(self.dut.out) == True
+                await ctx.tick()
+                ctx.set(self.dut.reset, False)
+            for _ in range(self.period//2):
+                assert ctx.get(self.dut.out) == False
+                await ctx.tick()
 
         for _ in range(self.period//4):
             await ctx.tick()

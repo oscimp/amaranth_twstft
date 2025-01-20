@@ -68,7 +68,11 @@ class Synchronizer(Component):
             with m.Else():
                 m.d.sync += periods_counter.eq(periods_counter + 1)
 
+        #debug_data = Signal.like(self.data)
+
         with m.If(self.pps):
+            #m.d.sync += debug_data.eq(debug_data + 1)
+
             m.d.sync += periods_counter.eq(0)
             m.d.sync += symbols_counter.eq(0)
             m.d.sync += self.prn_a.reset.eq(True)
@@ -76,6 +80,7 @@ class Synchronizer(Component):
             m.d.sync += self.oscil.reset.eq(True)
             m.d.sync += first_code.eq(True)
 
+        #m.d.comb += self.data.eq(debug_data)
 
         return m
 
