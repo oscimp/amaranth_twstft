@@ -1,6 +1,9 @@
 from amaranth import Module, Shape, Signal
 from amaranth.lib.wiring import Component, In, Out
+from amaranth.sim import Simulator, SimulatorContext
+from amaranth_boards.resources import *
 
+from uart_wrapper import UARTWrapper
 from synchronizer import Synchronizer 
 from mixer import Mixer, Mode
 from oscillator import Oscillator
@@ -10,6 +13,7 @@ from prn import PrnGenerator
 
 class TwstftMain(Component):
     pps: In(1)
+    uart_out: Out(1)
     antena_out: Out(1)
 
     def __init__(
@@ -24,6 +28,7 @@ class TwstftMain(Component):
             seed_a=1,
             taps_b=3,
             seed_b=1,
+            uart=None,
             ):
         super().__init__()
         self.f_clock = f_clock
@@ -38,6 +43,7 @@ class TwstftMain(Component):
         self.seed_a = seed_a
         self.taps_b = taps_b
         self.seed_b = seed_b
+        self.uart = uart
 
     def elaborate(self, platform):
         m = Module()
@@ -70,6 +76,13 @@ class TwstftMain(Component):
                 oscil)
         m.submodules.mixer = mixer = Mixer()
 
+        m.submodules.uart = uart = UARTWrapper(
+                self.f_clock,
+                self.bit_len,
+                self.uart)
+        m.d.comb += uart.pps_good.eq(mpps.pps_good)
+        m.d.comb += self.uart_out.eq(uart.tx_out)
+
         # Connexions
 
         m.d.comb += mpps.pps_in.eq(self.pps)
@@ -90,3 +103,27 @@ class TwstftMain(Component):
         m.d.comb += self.antena_out.eq(mixer.out)
 
         return m
+
+if __name__ == '__main__':
+    dut = TwstftMain(
+            2800000,
+            70000,
+            2500,
+            uart=None)
+    sim = Simulator(dut)
+    sim.add_clock(1/2800000)
+
+    async def process(ctx: SimulatorContext):
+        i = 0
+        while True:
+            await ctx.tick()
+            if i == 10:
+                ctx.set(dut.pps, True)
+            elif i == 100:
+                ctx.set(dut.pps, False)
+            i = (i + 1) % 2800000
+
+    sim.add_process(process)
+
+    with sim.write_vcd('global_sim.vcd'):
+        sim.run_until(4)

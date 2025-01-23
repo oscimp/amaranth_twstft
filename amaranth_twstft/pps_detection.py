@@ -6,6 +6,9 @@ class PPSDetector(Component):
     pps_in: In(1)
     pps: Out(1)
     
+    # flags
+    pps_good: Out(1)
+
     def elaborate(self, plateform):
         m = Module()
 
@@ -22,5 +25,7 @@ class PPSDetector(Component):
 
         ## the rest of the module is for error/unexpected behavior detection
         # unexpected pps signals and late pps signals
+
+        m.d.comb += self.pps_good.eq(self.pps)
 
         return m

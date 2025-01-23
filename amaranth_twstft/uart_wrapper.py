@@ -1,118 +1,92 @@
 #!/usr/bin/env python3
 
+from enum import Enum
 from amaranth import *
+from amaranth.lib.wiring import Component, In, Out
 from amaranth_stdio.serial import AsyncSerial
-from timer import Timer
 
+class SerialInCommands(Enum):
+    SET_INVERT_FIRST_CODE = 0
+    UNSET_INVERT_FIRST_CODE = 1
+    SET_TAPS_A = 2
+    SET_TAPS_B = 3
 
-class UARTWrapper(Elaboratable):
-    """A synchronizable version of the n-bits PRN Generator to use along the 1-PPS Signal
+class SerialOutCodes(Enum):
+    NOTHING = 0
+    PPS_GOOD = 1
+    PPS_EARLY = 2
+    PPS_LATE = 3
 
-    Parameters
-    ----------
-    bit_len : greater than 1 integer
-        the number of bits of our LFSR
-    
-    taps : less than 2^(bit_len)-1 positive integer
-        the taps to apply to our LFSR
-        if set to zero, we consider the taps as dynamically 
-        chosen by the signal `tsel` (see below attributes)
+class UARTWrapper(Component):
+    # flags
+    pps_good: In(1)
+    pps_early: In(1)
+    pps_late: In(1)
 
-    seed : less than 2^(bit_len)-1 non-zero positive integer
-        the initial state of the LFSR
-        (1 by default)
+    tx_out: Out(1)
 
-
-    Attributes
-    ----------
-    output : Signal()
-        the output of the LFSR
-        
-    reg : Signal(bit_len)
-        the LFSR used to compute the prn
-
-    enable : Signal()
-        the enable signal of the PRN Generator 
-        keeps the LFSR in its initial state as long as the signal is set to 0
-
-    next : Signal()
-        shifts the LFSR on every rising clock edge as long as it is set to 1
-
-    tsel : Signal(x)
-        x corresponds to the number of bits required to 
-        count up to the number of taps stored.
-        (5 by default as there are at most 32 different taps stored 
-        (change it by resetting the value of nb_taps_auto))
-        Its value corresponds to the address of the taps stored in memory
-        when driven from outside the module, allows to change dynamically 
-        the taps used on our LFSR. 
-        This can only be used when the `taps` parameter is 0
-
-    _dynamic_tsel : Boolean
-        true when taps are defined dynamically
-
-    _mem : Memory()
-        the place where dynamically used taps are stored
-        Only exists when the `taps` parameter is 0
-
-    _taps : Signal(20)
-        signal used as taps for the LFSR
-    """
-    
-    def __init__(self, clk_freq, uart_pads=None):
-        #check for a few assertions before working
-        assert uart_pads is not None
-
-        # input signal
-        self.rise_pps = Signal(reset_less=True) # used to start request
-        # output signals
-        self.date_en  = Signal()
-        self.date_val = Signal(range(60))
-
-        self._uart_pads = uart_pads
-        self._clk_freq  = clk_freq
+    def __init__(self, clk_freq, bitlen, pins):
+        super().__init__()
+        self.clk_freq = clk_freq
+        self.bitlen = bitlen
+        self.pins = pins
 
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.timer = timer = Timer(int(self._clk_freq/2))
-
-        uart = AsyncSerial(divisor=int(self._clk_freq // 115200),
-                           pins=self._uart_pads)
-        m.submodules.uart = uart
+        m.submodules.uart = uart = AsyncSerial(
+                divisor=int(self.clk_freq // 115200),
+                data_bits=8,
+                pins=self.pins)
 
         rdy_old   = Signal()
         m.d.sync += rdy_old.eq(uart.rx.rdy)
         uart_rdy  = (~rdy_old & uart.rx.rdy)
 
-        m.d.comb += [
-            uart.tx.ack.eq(0),
-            uart.rx.ack.eq(0)
-        ]
-
         m.d.sync += [
-            self.date_en.eq(0),
-            timer.enable.eq(0),
+            uart.rx.ack.eq(False),
         ]
+        m.d.comb += self.tx_out.eq(uart.tx.o)
 
-        with m.FSM(reset="WAIT_PPS") as fsm:
-            with m.State("WAIT_PPS"):
-                with m.If(self.rise_pps):
+        pps_good_flag = Signal()
+        with m.If(self.pps_good):
+            m.d.sync += pps_good_flag.eq(True)
+        pps_late_flag = Signal()
+        with m.If(self.pps_late):
+            m.d.sync += pps_late_flag.eq(True)
+        pps_early_flag = Signal()
+        with m.If(self.pps_early):
+            m.d.sync += pps_early_flag.eq(True)
+
+        with m.FSM(reset="WAITING"):
+            with m.State("WAITING"):
+                with m.If(uart.tx.rdy):
+                    with m.If(pps_good_flag):
+                        m.d.comb += [
+                            uart.tx.ack.eq(True),
+                            uart.tx.data.eq(SerialOutCodes.PPS_GOOD),
+                        ]
+                        m.d.sync += pps_good_flag.eq(False)
+                        m.next = "SET_TX_TO_ZERO"
+                    with m.If(pps_late_flag):
+                        m.d.comb += [
+                            uart.tx.ack.eq(True),
+                            uart.tx.data.eq(SerialOutCodes.PPS_LATE),
+                        ]
+                        m.d.sync += pps_late_flag.eq(False)
+                        m.next = "SET_TX_TO_ZERO"
+                    with m.If(pps_early_flag):
+                        m.d.comb += [
+                            uart.tx.ack.eq(True),
+                            uart.tx.data.eq(SerialOutCodes.PPS_EARLY),
+                        ]
+                        m.d.sync += pps_early_flag.eq(False)
+                        m.next = "SET_TX_TO_ZERO"
+            with m.State("SET_TX_TO_ZERO"):
+                with m.If(uart.tx.rdy):
                     m.d.comb += [
-                        uart.tx.ack.eq(1),
-                        uart.tx.data.eq(self.date_val),
+                        uart.tx.ack.eq(True),
+                        uart.tx.data.eq(SerialOutCodes.NOTHING),
                     ]
-                    m.d.sync += timer.enable.eq(1)
-                    m.next = "WAIT_PC"
-            with m.State("WAIT_PC"):
-                m.d.comb += uart.rx.ack.eq(1)
-                #m.d.sync += timer.enable.eq(1)
-                with m.If(uart_rdy):
-                    m.d.sync += [
-                        self.date_val.eq(uart.rx.data),
-                        self.date_en.eq(1),
-                    ]
-                    m.next = "WAIT_PPS"
-                with m.Elif(timer.fire):
-                    m.next = "WAIT_PPS"
+                    m.next = "WAITING"
         return m

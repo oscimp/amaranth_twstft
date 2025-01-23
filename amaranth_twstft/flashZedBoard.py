@@ -256,7 +256,8 @@ class TWSTFT_top(Elaboratable):
                 mode=Mode.QPSK,
                 taps_a=self.taps_a,
                 taps_b=self.taps_b,
-                code_len=self._noise_len)
+                code_len=self._noise_len,
+                uart=uart_pads)
 
         m.d.comb += main.pps.eq(pins.PPS_in.i)
         m.d.sync += pins.output.o.eq(main.antena_out)
