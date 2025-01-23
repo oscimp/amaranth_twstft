@@ -11,7 +11,7 @@ from datetime import datetime
 
 from uart_wrapper import SerialOutCodes
 
-DEFAULT_BAUD=200
+DEFAULT_BAUD=115200
 
 def arg_parser():
     parser = argparse.ArgumentParser()
@@ -20,6 +20,7 @@ def arg_parser():
     parser.add_argument('-l', '--bitlen', type=int)
     parser.add_argument('-m', '--monitor', action='store_true')
     parser.add_argument('--list', action='store_true')
+    parser.add_argument('-p', '--pps', action='store_true')
     inv = parser.add_mutually_exclusive_group()
     inv.add_argument('-i', '--invert-first-code', action='store_true')
     inv.add_argument('-I', '--no-invert-first-code', action='store_true')
@@ -57,7 +58,12 @@ def main():
                 case SerialOutCodes.NOTHING:
                     pass
                 case SerialOutCodes.PPS_GOOD:
-                    print("PPS")
+                    if args.pps:
+                        print("PPS")
+                case SerialOutCodes.PPS_EARLY:
+                    print("PPS EARLY")
+                case SerialOutCodes.PPS_LATE:
+                    print("PPS LATE")
                 case _:
                     print(f"Error : unhandled code {code}")
 

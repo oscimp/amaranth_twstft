@@ -10,6 +10,9 @@ class SerialInCommands(Enum):
     UNSET_INVERT_FIRST_CODE = 1
     SET_TAPS_A = 2
     SET_TAPS_B = 3
+    MODE_CARRIER = 4
+    MODE_BPSK = 5
+    MODE_QPSK = 6
 
 class SerialOutCodes(Enum):
     NOTHING = 0
@@ -22,8 +25,6 @@ class UARTWrapper(Component):
     pps_good: In(1)
     pps_early: In(1)
     pps_late: In(1)
-
-    tx_out: Out(1)
 
     def __init__(self, clk_freq, bitlen, pins):
         super().__init__()
@@ -38,15 +39,6 @@ class UARTWrapper(Component):
                 divisor=int(self.clk_freq // 115200),
                 data_bits=8,
                 pins=self.pins)
-
-        rdy_old   = Signal()
-        m.d.sync += rdy_old.eq(uart.rx.rdy)
-        uart_rdy  = (~rdy_old & uart.rx.rdy)
-
-        m.d.sync += [
-            uart.rx.ack.eq(False),
-        ]
-        m.d.comb += self.tx_out.eq(uart.tx.o)
 
         pps_good_flag = Signal()
         with m.If(self.pps_good):

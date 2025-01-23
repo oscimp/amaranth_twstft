@@ -13,7 +13,6 @@ from prn import PrnGenerator
 
 class TwstftMain(Component):
     pps: In(1)
-    uart_out: Out(1)
     antena_out: Out(1)
 
     def __init__(
@@ -63,7 +62,7 @@ class TwstftMain(Component):
         #m.d.comb += seed_b.eq(self.seed_b)
 
         # Modules
-        m.submodules.pps = mpps = PPSDetector()
+        m.submodules.pps = mpps = PPSDetector(self.f_clock)
         print(self.taps_a, self.taps_b)
         m.submodules.prn_a = prn_a = PrnGenerator(self.bit_len, taps=self.taps_a)
         m.submodules.prn_b = prn_b = PrnGenerator(self.bit_len, taps=self.taps_b)
@@ -81,7 +80,8 @@ class TwstftMain(Component):
                 self.bit_len,
                 self.uart)
         m.d.comb += uart.pps_good.eq(mpps.pps_good)
-        m.d.comb += self.uart_out.eq(uart.tx_out)
+        m.d.comb += uart.pps_late.eq(mpps.pps_late)
+        m.d.comb += uart.pps_early.eq(mpps.pps_early)
 
         # Connexions
 
