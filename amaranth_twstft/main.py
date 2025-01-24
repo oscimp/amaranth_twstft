@@ -36,7 +36,6 @@ class TwstftMain(Component):
         assert f_clock % f_carrier == 0
         assert f_carrier % f_code == 0
         self.code_len = code_len
-        self.mode = mode
         self.bit_len = bit_len
         self.taps_a = taps_a
         self.seed_a = seed_a
@@ -48,14 +47,11 @@ class TwstftMain(Component):
         m = Module()
 
         # Config
-        mode = Signal(Shape.cast(Mode))
-
         #taps_a = Signal(self.bit_len)
         #seed_a = Signal(self.bit_len)
         #taps_b = Signal(self.bit_len)
         #seed_b = Signal(self.bit_len)
 
-        m.d.comb += mode.eq(self.mode)
         #m.d.comb += taps_a.eq(self.taps_a)
         #m.d.comb += seed_a.eq(self.seed_a)
         #m.d.comb += taps_b.eq(self.taps_b)
@@ -79,13 +75,15 @@ class TwstftMain(Component):
                 self.f_clock,
                 self.bit_len,
                 self.uart)
-        m.d.comb += uart.pps_good.eq(mpps.pps_good)
-        m.d.comb += uart.pps_late.eq(mpps.pps_late)
-        m.d.comb += uart.pps_early.eq(mpps.pps_early)
+
 
         # Connexions
 
         m.d.comb += mpps.pps_in.eq(self.pps)
+
+        m.d.comb += uart.pps_good.eq(mpps.pps_good)
+        m.d.comb += uart.pps_late.eq(mpps.pps_late)
+        m.d.comb += uart.pps_early.eq(mpps.pps_early)
 
         m.d.comb += synchronizer.pps.eq(mpps.pps)
         m.d.comb += synchronizer.invert_first_code.eq(False)
@@ -98,7 +96,7 @@ class TwstftMain(Component):
         m.d.comb += mixer.carrier.eq(oscil.out)
         m.d.comb += mixer.carrier90.eq(oscil.out90)
         m.d.comb += mixer.data.eq(synchronizer.data)
-        m.d.comb += mixer.mode.eq(mode)
+        m.d.comb += mixer.mode.eq(uart.mode)
 
         m.d.comb += self.antena_out.eq(mixer.out)
 

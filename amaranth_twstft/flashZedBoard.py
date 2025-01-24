@@ -78,7 +78,6 @@ class TWSTFT_top(Elaboratable):
         self._lock_pps_gen      = lock_pps_gen
         self.taps_a             = taps_a
         self.taps_b             = taps_b
-        #self._seed              = seed
         self._invert_first_code = invert_first_code
         self._use_uart          = use_uart
         self._debug             = debug
@@ -253,7 +252,6 @@ class TWSTFT_top(Elaboratable):
                 int(70e6),
                 int(self._freqout),
                 bit_len=self._bit_len,
-                mode=Mode.QPSK,
                 taps_a=self.taps_a,
                 taps_b=self.taps_b,
                 code_len=self._noise_len,

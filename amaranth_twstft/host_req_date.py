@@ -3,13 +3,15 @@
 import argparse
 import atexit
 import serial
+from serial.serialposix import Serial
 import serial.tools.list_ports
 import struct
 import time
 
 from datetime import datetime
 
-from uart_wrapper import SerialOutCodes
+from mixer import Mode
+from uart_wrapper import SerialInCommands, SerialOutCodes
 
 DEFAULT_BAUD=115200
 
@@ -26,6 +28,7 @@ def arg_parser():
     inv.add_argument('-I', '--no-invert-first-code', action='store_true')
     parser.add_argument('-ta', '--taps-a', type=int)
     parser.add_argument('-tb', '--taps-b', type=int)
+    parser.add_argument('-M', '--mode', choices=Mode._member_names_)
     return parser
 
 def main():
@@ -41,8 +44,18 @@ def main():
         else:
             parser.error("--device must be specified unless --list is")
 
-    s = serial.Serial(args.device, args.baudrate, bytesize=8)
+    s = serial.Serial(args.device, args.baudrate, bytesize=8, parity=serial.PARITY_EVEN)
     atexit.register(s.close)
+
+    if args.mode:
+        match Mode[args.mode]:
+            case Mode.CARRIER:
+                s.write(SerialInCommands.MODE_CARRIER.value.to_bytes())
+            case Mode.BPSK:
+                s.write(SerialInCommands.MODE_BPSK.value.to_bytes())
+            case Mode.QPSK:
+                s.write(SerialInCommands.MODE_QPSK.value.to_bytes())
+        s.flush()
 
     if args.monitor:
         while True:
@@ -64,6 +77,14 @@ def main():
                     print("PPS EARLY")
                 case SerialOutCodes.PPS_LATE:
                     print("PPS LATE")
+                case SerialOutCodes.SERIAL_RX_OVERFLOW_ERROR:
+                    print("SERIAL OVERFLOW")
+                case SerialOutCodes.SERIAL_RX_FRAME_ERROR:
+                    print("SERIAL FRAME ERROR")
+                case SerialOutCodes.SERIAL_RX_PARITY_ERROR:
+                    print("SERIAL PARITY ERROR")
+                case SerialOutCodes.UNKNOWN_COMMAND_ERROR:
+                    print("UNKNOWN COMMAND ERROR")
                 case _:
                     print(f"Error : unhandled code {code}")
 
