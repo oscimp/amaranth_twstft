@@ -252,8 +252,6 @@ class TWSTFT_top(Elaboratable):
                 int(70e6),
                 int(self._freqout),
                 bit_len=self._bit_len,
-                taps_a=self.taps_a,
-                taps_b=self.taps_b,
                 code_len=self._noise_len,
                 uart=uart_pads)
 

@@ -37,31 +37,15 @@ class TwstftMain(Component):
         assert f_carrier % f_code == 0
         self.code_len = code_len
         self.bit_len = bit_len
-        self.taps_a = taps_a
-        self.seed_a = seed_a
-        self.taps_b = taps_b
-        self.seed_b = seed_b
         self.uart = uart
 
     def elaborate(self, platform):
         m = Module()
 
-        # Config
-        #taps_a = Signal(self.bit_len)
-        #seed_a = Signal(self.bit_len)
-        #taps_b = Signal(self.bit_len)
-        #seed_b = Signal(self.bit_len)
-
-        #m.d.comb += taps_a.eq(self.taps_a)
-        #m.d.comb += seed_a.eq(self.seed_a)
-        #m.d.comb += taps_b.eq(self.taps_b)
-        #m.d.comb += seed_b.eq(self.seed_b)
-
         # Modules
         m.submodules.pps = mpps = PPSDetector(self.f_clock)
-        print(self.taps_a, self.taps_b)
-        m.submodules.prn_a = prn_a = PrnGenerator(self.bit_len, taps=self.taps_a)
-        m.submodules.prn_b = prn_b = PrnGenerator(self.bit_len, taps=self.taps_b)
+        m.submodules.prn_a = prn_a = PrnGenerator(self.bit_len)
+        m.submodules.prn_b = prn_b = PrnGenerator(self.bit_len)
         m.submodules.oscil = oscil = Oscillator(self.f_clock, self.f_carrier)
         m.submodules.synchronizer = synchronizer = Synchronizer(
                 prn_a,
@@ -88,10 +72,8 @@ class TwstftMain(Component):
         m.d.comb += synchronizer.pps.eq(mpps.pps)
         m.d.comb += synchronizer.invert_first_code.eq(False)
 
-        #m.d.comb += prn_a.taps.eq(taps_a)
-        #m.d.comb += prn_a.seed.eq(seed_a)
-        #m.d.comb += prn_b.taps.eq(taps_b)
-        #m.d.comb += prn_b.seed.eq(seed_b)
+        m.d.comb += prn_a.taps.eq(uart.taps_a)
+        m.d.comb += prn_b.taps.eq(uart.taps_b)
 
         m.d.comb += mixer.carrier.eq(oscil.out)
         m.d.comb += mixer.carrier90.eq(oscil.out90)

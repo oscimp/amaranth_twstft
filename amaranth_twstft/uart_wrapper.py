@@ -27,25 +27,28 @@ class SerialOutCodes(Enum):
     UNKNOWN_COMMAND_ERROR = 7
 
 class UARTWrapper(Component):
-    mode: Out(Shape.cast(Mode))
-
-    # flags
-    pps_good: In(1)
-    pps_early: In(1)
-    pps_late: In(1)
-
     def __init__(self, clk_freq, bitlen, pins):
-        super().__init__()
+        super().__init__({
+            # Modifiable config
+            'mode': Out(Shape.cast(Mode)),
+            'taps_a': Out(bitlen),
+            'taps_b': Out(bitlen),
+
+            # flags
+            'pps_good': In(1),
+            'pps_early': In(1),
+            'pps_late': In(1),
+            })
         self.clk_freq = clk_freq
-        self.bitlen = bitlen
         self.pins = pins
 
     def elaborate(self, platform):
         m = Module()
 
+        data_bits = 8
         m.submodules.uart = uart = AsyncSerial(
                 divisor=int(self.clk_freq // 115200),
-                data_bits=8,
+                data_bits=data_bits,
                 parity=Parity.EVEN,
                 pins=self.pins)
 
@@ -60,7 +63,7 @@ class UARTWrapper(Component):
         with m.If(self.pps_early):
             m.d.sync += pps_early_flag.eq(True)
 
-        # internal flags
+        # raise internal flags
         unknown_command_flag = Signal()
         rx_overflow_flag = Signal()
         with m.If(uart.rx.err.overflow):
@@ -73,6 +76,33 @@ class UARTWrapper(Component):
             m.d.sync += rx_parity_flag.eq(True)
 
         with m.FSM(reset="WAITING"):
+            def recv_in_reg(state: str, reg: Signal, next_state:str='WAITING'):
+                """
+                this function create all FSM states necessary
+                to recieve an integer (in big endian),
+                fitting in the register `reg`,
+                by recieving `len(reg)//data_bits` packets of `data_bits` bits.
+                To start recieving, the FSM should be set to `state`,
+                and once enough packets have been recieved,
+                the FSM goes to `next_state`: 'WAITING' by default.
+                The extra bits of the last packets are discarded.
+
+                Warning : There is no timeout implemented yet and if not enouth packets are sent,
+                          the FSM will be locked indefinitly.
+                """
+                for i in range(0, len(reg), data_bits):
+                    name = state if i == 0 else f'__{state}__{i}'
+                    name_next = (f'__{state}__{i+data_bits}'
+                                 if i < len(reg) - data_bits else
+                                 'WAITING')
+                    with m.State(name):
+                        m.d.comb += uart.rx.ack.eq(True)
+                        with m.If(uart.rx.rdy):
+                            m.d.sync += reg[i:i+data_bits].eq(uart.rx.data)
+                            m.next = name_next
+
+            recv_in_reg("SET_TAPS_A", self.taps_a)
+            recv_in_reg("SET_TAPS_B", self.taps_b)
             with m.State("WAITING"):
                 m.d.comb += uart.rx.ack.eq(True)
                 with m.If(uart.rx.rdy):
@@ -83,10 +113,19 @@ class UARTWrapper(Component):
                             m.d.sync += self.mode.eq(Mode.BPSK)
                         with m.Case(SerialInCommands.MODE_QPSK):
                             m.d.sync += self.mode.eq(Mode.QPSK)
+                        with m.Case(SerialInCommands.SET_TAPS_A):
+                            m.next = "SET_TAPS_A"
+                        with m.Case(SerialInCommands.SET_TAPS_B):
+                            m.next = "SET_TAPS_B"
                         with m.Default():
                             m.d.sync += unknown_command_flag.eq(True)
                 with m.Elif(uart.tx.rdy):
                     def if_flag_send(flag: Signal, code: int, reset: bool = True, is_elif=False):
+                        """
+                        This helper function create the logic to send `code` if `flag` is up.
+                        If `reset` is True, the `flag` is lowered, so `code` is only sent once.
+                        If `flag` is lowered elsewhere, you want `reset` to be False.
+                        """
                         with m.Elif(flag) if is_elif else m.If(flag):
                             m.d.comb += [
                                 uart.tx.ack.eq(True),
@@ -112,4 +151,5 @@ class UARTWrapper(Component):
                         uart.tx.data.eq(SerialOutCodes.NOTHING),
                     ]
                     m.next = "WAITING"
+
         return m

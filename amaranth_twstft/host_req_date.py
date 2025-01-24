@@ -2,6 +2,7 @@
 
 import argparse
 import atexit
+from math import ceil
 import serial
 from serial.serialposix import Serial
 import serial.tools.list_ports
@@ -57,6 +58,21 @@ def main():
                 s.write(SerialInCommands.MODE_QPSK.value.to_bytes())
         s.flush()
 
+    if args.taps_a:
+        if not args.bitlen:
+            parser.error("--bitlen must be specified when setting taps")
+        s.write(struct.pack(
+            '<bq',
+            SerialInCommands.SET_TAPS_A.value,
+            args.taps_a)[0:1+ceil(args.bitlen/s.bytesize)])
+    if args.taps_b:
+        if not args.bitlen:
+            parser.error("--bitlen must be specified when setting taps")
+        s.write(struct.pack(
+            '<bq',
+            SerialInCommands.SET_TAPS_B.value,
+            args.taps_b)[0:1+ceil(args.bitlen/s.bytesize)])
+
     if args.monitor:
         while True:
             code = s.read(1)[0]
@@ -65,8 +81,6 @@ def main():
             except ValueError:
                 print(f"Error : unknown code {code}")
                 continue
-            finally:
-                s.reset_input_buffer()
             match code:
                 case SerialOutCodes.NOTHING:
                     pass
