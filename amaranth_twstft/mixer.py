@@ -6,31 +6,40 @@ from amaranth.lib.wiring import Component, In, Out
 from oscillator import Oscillator
 
 class Mode(Enum):
-    CARRIER = 0
-    BPSK = 1
-    QPSK = 2
+    OFF = 0
+    CARRIER = 1
+    BPSK = 2
+    QPSK = 3
 
 class Mixer(Component):
     carrier: In(1)
     carrier90: In(1)
     data: In(2)
+    time_code_data: In(1)
     mode: In(Shape.cast(Mode))
+    
     out: Out(1)
+
     def elaborate(self, plateform):
         m = Module()
 
+        out = Signal()
+
         with m.Switch(self.mode):
             with m.Case(Mode.CARRIER):
-                m.d.comb += self.out.eq(self.carrier)
+                m.d.comb += out.eq(self.carrier)
             with m.Case(Mode.BPSK):
-                m.d.comb += self.out.eq(self.carrier ^ self.data[0])
+                m.d.comb += out.eq(self.carrier ^ self.data[0])
             with m.Case(Mode.QPSK):
                 carrier_axis = Signal()
                 with m.If(self.data[0] ^ self.data[1]):
                     m.d.comb += carrier_axis.eq(self.carrier)
                 with m.Else():
                     m.d.comb += carrier_axis.eq(self.carrier90)
-                m.d.comb += self.out.eq(self.data[0] ^ carrier_axis)
+                m.d.comb += out.eq(self.data[0] ^ carrier_axis)
+
+        with m.If(self.mode != Mode.OFF):
+            m.d.comb += self.out.eq(out ^ self.time_code_data)
 
         return m
 

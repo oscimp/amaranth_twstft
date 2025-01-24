@@ -5,16 +5,20 @@ from amaranth import *
 from amaranth.lib.wiring import Component, In, Out
 from amaranth_stdio.serial import AsyncSerial, Parity
 
+from time_coder import TimeCoderMode, TIMECODE_SIZE
 from mixer import Mode
 
 class SerialInCommands(Enum):
-    SET_INVERT_FIRST_CODE = 0
-    UNSET_INVERT_FIRST_CODE = 1
+    TIMECODER_OFF = 0
+    TIMECODER_INVERT_FIRST_CODE = 1
     SET_TAPS_A = 2
     SET_TAPS_B = 3
     MODE_CARRIER = 4
     MODE_BPSK = 5
     MODE_QPSK = 6
+    MODE_OFF = 7
+    SET_TIME = 8
+    TIMECODER_TIMECODE = 9
 
 class SerialOutCodes(Enum):
     NOTHING = 0
@@ -31,8 +35,13 @@ class UARTWrapper(Component):
         super().__init__({
             # Modifiable config
             'mode': Out(Shape.cast(Mode)),
+            'timecoder_mode': Out(Shape.cast(TimeCoderMode)),
             'taps_a': Out(bitlen),
             'taps_b': Out(bitlen),
+
+            # set time
+            'set_time': Out(1),
+            'time': Out(TIMECODE_SIZE),
 
             # flags
             'pps_good': In(1),
@@ -103,6 +112,7 @@ class UARTWrapper(Component):
 
             recv_in_reg("SET_TAPS_A", self.taps_a)
             recv_in_reg("SET_TAPS_B", self.taps_b)
+            recv_in_reg("SET_TIME", self.time, next_state="SET_TIME_FINISH")
             with m.State("WAITING"):
                 m.d.comb += uart.rx.ack.eq(True)
                 with m.If(uart.rx.rdy):
@@ -113,10 +123,20 @@ class UARTWrapper(Component):
                             m.d.sync += self.mode.eq(Mode.BPSK)
                         with m.Case(SerialInCommands.MODE_QPSK):
                             m.d.sync += self.mode.eq(Mode.QPSK)
+                        with m.Case(SerialInCommands.MODE_OFF):
+                            m.d.sync += self.mode.eq(Mode.OFF)
                         with m.Case(SerialInCommands.SET_TAPS_A):
                             m.next = "SET_TAPS_A"
                         with m.Case(SerialInCommands.SET_TAPS_B):
                             m.next = "SET_TAPS_B"
+                        with m.Case(SerialInCommands.SET_TIME):
+                            m.next = "SET_TIME"
+                        with m.Case(SerialInCommands.TIMECODER_OFF):
+                            m.d.sync += self.timecoder_mode.eq(TimeCoderMode.OFF)
+                        with m.Case(SerialInCommands.TIMECODER_INVERT_FIRST_CODE):
+                            m.d.sync += self.timecoder_mode.eq(TimeCoderMode.INVERT_FIRST_CODE)
+                        with m.Case(SerialInCommands.TIMECODER_TIMECODE):
+                            m.d.sync += self.timecoder_mode.eq(TimeCoderMode.TIMECODE)
                         with m.Default():
                             m.d.sync += unknown_command_flag.eq(True)
                 with m.Elif(uart.tx.rdy):
@@ -151,5 +171,8 @@ class UARTWrapper(Component):
                         uart.tx.data.eq(SerialOutCodes.NOTHING),
                     ]
                     m.next = "WAITING"
+            with m.State("SET_TIME_FINISH"):
+                m.d.comb += self.set_time.eq(True)
+                m.next = "WAITING"
 
         return m

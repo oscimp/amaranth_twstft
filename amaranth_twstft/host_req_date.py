@@ -11,6 +11,7 @@ import time
 
 from datetime import datetime
 
+from time_coder import TimeCoderMode
 from mixer import Mode
 from uart_wrapper import SerialInCommands, SerialOutCodes
 
@@ -29,6 +30,8 @@ def arg_parser():
     inv.add_argument('-I', '--no-invert-first-code', action='store_true')
     parser.add_argument('-ta', '--taps-a', type=int)
     parser.add_argument('-tb', '--taps-b', type=int)
+    parser.add_argument('-t', '--set-time', action='store_true')
+    parser.add_argument('-T', '--time-mode', choices=TimeCoderMode._member_names_)
     parser.add_argument('-M', '--mode', choices=Mode._member_names_)
     return parser
 
@@ -58,6 +61,27 @@ def main():
                 s.write(SerialInCommands.MODE_QPSK.value.to_bytes())
         s.flush()
 
+    if args.time_mode:
+        match TimeCoderMode[args.time_mode]:
+            case TimeCoderMode.OFF:
+                s.write(SerialInCommands.TIMECODER_OFF.value.to_bytes())
+            case TimeCoderMode.INVERT_FIRST_CODE:
+                s.write(SerialInCommands.TIMECODER_INVERT_FIRST_CODE.value.to_bytes())
+            case TimeCoderMode.TIMECODE:
+                s.write(SerialInCommands.TIMECODER_TIMECODE.value.to_bytes())
+        s.flush()
+
+    set_time = False
+    if args.set_time:
+        set_time = True # We dont set time right away,
+                        # To avoid errors, the fpga's time has to be set before the pps
+                        # marking the begining of the next second.
+                        # Assuming the PPS marks the true begining of the second,
+                        # and that our computer is more or less in sync,
+                        # we first wait for a good pps to be detected by the fpga,
+                        # then half a second to account for a poorly synchronized computer,
+                        # and finaly we set the fpga's time to computer's time.
+
     if args.taps_a:
         if not args.bitlen:
             parser.error("--bitlen must be specified when setting taps")
@@ -73,7 +97,7 @@ def main():
             SerialInCommands.SET_TAPS_B.value,
             args.taps_b)[0:1+ceil(args.bitlen/s.bytesize)])
 
-    if args.monitor:
+    if args.monitor or set_time:
         while True:
             code = s.read(1)[0]
             try:
@@ -85,6 +109,18 @@ def main():
                 case SerialOutCodes.NOTHING:
                     pass
                 case SerialOutCodes.PPS_GOOD:
+                    if args.pps:
+                        print("PPS")
+                    if set_time:
+                        time.sleep(0.5) # aproximate middle of the true second
+                        s.write(struct.pack(
+                            '<bb',
+                            SerialInCommands.SET_TIME.value,
+                            int(time.time())&0xff
+                            ))
+                        set_time = False
+                        if not args.monitor:
+                            exit(0)
                     if args.pps:
                         print("PPS")
                 case SerialOutCodes.PPS_EARLY:

@@ -7,8 +7,16 @@ from oscillator import Oscillator
 from prn import PrnGenerator, nextstate
 
 class Synchronizer(Component):
+    """
+    This module synchronize all timey components:
+    - both PRN generators,
+    - the carrier oscillator,
+    - and the time coder
+    """
+
     pps: In(1)
-    invert_first_code: In(1)
+
+    next_code: Out(1)
     data: Out(2)
 
     def __init__(
@@ -33,12 +41,9 @@ class Synchronizer(Component):
         # count the symbols sent for each sequance
         symbols_counter = Signal(range(self.code_len))
 
-        first_code = Signal() # True if we are sending the first code
+        m.d.comb += self.data[0].eq(self.prn_a.state[0])
 
-        m.d.comb += self.data[0].eq(self.prn_a.state[0] ^
-                                    (first_code & self.invert_first_code))
-        m.d.comb += self.data[1].eq(self.prn_b.state[0] ^
-                                    (first_code & self.invert_first_code))
+        m.d.comb += self.data[1].eq(self.prn_b.state[0])
 
         # maintain the resets and shifts at False by default
         m.d.sync += self.prn_a.reset.eq(False)
@@ -62,7 +67,9 @@ class Synchronizer(Component):
                     # same-tick reset the LFSRs
                     m.d.sync += self.prn_a.reset.eq(True)
                     m.d.sync += self.prn_b.reset.eq(True)
-                    m.d.sync += first_code.eq(False)
+
+                    # the time-coder will be shifted next tick
+                    m.d.comb += self.next_code.eq(True)
                 with m.Else():
                     m.d.sync += symbols_counter.eq(symbols_counter + 1)
             with m.Else():
@@ -78,7 +85,7 @@ class Synchronizer(Component):
             m.d.sync += self.prn_a.reset.eq(True)
             m.d.sync += self.prn_b.reset.eq(True)
             m.d.sync += self.oscil.reset.eq(True)
-            m.d.sync += first_code.eq(True)
+            m.d.comb += self.next_code.eq(False)
 
         #m.d.comb += self.data.eq(debug_data)
 

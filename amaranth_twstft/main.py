@@ -3,6 +3,7 @@ from amaranth.lib.wiring import Component, In, Out
 from amaranth.sim import Simulator, SimulatorContext
 from amaranth_boards.resources import *
 
+from time_coder import TimeCoder
 from uart_wrapper import UARTWrapper
 from synchronizer import Synchronizer 
 from mixer import Mixer, Mode
@@ -19,9 +20,8 @@ class TwstftMain(Component):
             self,
             f_clock,
             f_carrier,
-            f_code, 
+            f_code,
             code_len=10**4,
-            mode=Mode.QPSK,
             bit_len=14,
             taps_a=43,
             seed_a=1,
@@ -60,6 +60,8 @@ class TwstftMain(Component):
                 self.bit_len,
                 self.uart)
 
+        m.submodules.time = time = TimeCoder()
+
 
         # Connexions
 
@@ -70,7 +72,12 @@ class TwstftMain(Component):
         m.d.comb += uart.pps_early.eq(mpps.pps_early)
 
         m.d.comb += synchronizer.pps.eq(mpps.pps)
-        m.d.comb += synchronizer.invert_first_code.eq(False)
+
+        m.d.comb += time.mode.eq(uart.timecoder_mode)
+        m.d.comb += time.time.eq(uart.time)
+        m.d.comb += time.set_time.eq(uart.set_time)
+        m.d.comb += time.pps.eq(mpps.pps)
+        m.d.comb += time.next_bit.eq(synchronizer.next_code)
 
         m.d.comb += prn_a.taps.eq(uart.taps_a)
         m.d.comb += prn_b.taps.eq(uart.taps_b)
@@ -78,6 +85,7 @@ class TwstftMain(Component):
         m.d.comb += mixer.carrier.eq(oscil.out)
         m.d.comb += mixer.carrier90.eq(oscil.out90)
         m.d.comb += mixer.data.eq(synchronizer.data)
+        m.d.comb += mixer.time_code_data.eq(time.data)
         m.d.comb += mixer.mode.eq(uart.mode)
 
         m.d.comb += self.antena_out.eq(mixer.out)
@@ -86,12 +94,13 @@ class TwstftMain(Component):
 
 if __name__ == '__main__':
     dut = TwstftMain(
-            2800000,
+            280000,
             70000,
             2500,
+            code_len=100,
             uart=None)
     sim = Simulator(dut)
-    sim.add_clock(1/2800000)
+    sim.add_clock(1/280000)
 
     async def process(ctx: SimulatorContext):
         i = 0
@@ -101,7 +110,7 @@ if __name__ == '__main__':
                 ctx.set(dut.pps, True)
             elif i == 100:
                 ctx.set(dut.pps, False)
-            i = (i + 1) % 2800000
+            i = (i + 1) % 280000
 
     sim.add_process(process)
 

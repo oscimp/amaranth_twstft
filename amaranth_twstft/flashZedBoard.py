@@ -6,7 +6,7 @@ from amaranth_boards.resources import *
 
 from mixer import Mode
 from main import TwstftMain
-from prn import write_prn_seq, taps_autofill
+from prn import write_prn_seq, taps_autofill, get_taps
 from zedboard import *
 
 import argparse
