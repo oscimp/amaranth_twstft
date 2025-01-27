@@ -29,6 +29,9 @@ class SerialOutCodes(Enum):
     SERIAL_RX_FRAME_ERROR = 5
     SERIAL_RX_PARITY_ERROR = 6
     UNKNOWN_COMMAND_ERROR = 7
+    CODE_UNALIGNED = 8
+    SYMBOL_UNALIGNED = 9
+    OSCIL_UNALIGNED = 10
 
 class UARTWrapper(Component):
     def __init__(self, clk_freq, bitlen, pins):
@@ -47,6 +50,9 @@ class UARTWrapper(Component):
             'pps_good': In(1),
             'pps_early': In(1),
             'pps_late': In(1),
+            'code_unaligned': In(1),
+            'symbol_unaligned': In(1),
+            'oscil_unaligned': In(1),
             })
         self.clk_freq = clk_freq
         self.pins = pins
@@ -71,6 +77,15 @@ class UARTWrapper(Component):
         pps_early_flag = Signal()
         with m.If(self.pps_early):
             m.d.sync += pps_early_flag.eq(True)
+        code_unaligned_flag = Signal()
+        with m.If(self.code_unaligned):
+            m.d.sync += code_unaligned_flag.eq(True)
+        symbol_unaligned_flag = Signal()
+        with m.If(self.symbol_unaligned):
+            m.d.sync += symbol_unaligned_flag.eq(True)
+        oscil_unaligned_flag = Signal()
+        with m.If(self.oscil_unaligned):
+            m.d.sync += oscil_unaligned_flag.eq(True)
 
         # raise internal flags
         unknown_command_flag = Signal()
@@ -161,6 +176,9 @@ class UARTWrapper(Component):
                     elif_flag_send(pps_good_flag, SerialOutCodes.PPS_GOOD)
                     elif_flag_send(pps_late_flag, SerialOutCodes.PPS_LATE)
                     elif_flag_send(pps_early_flag, SerialOutCodes.PPS_EARLY)
+                    elif_flag_send(code_unaligned_flag, SerialOutCodes.CODE_UNALIGNED)
+                    elif_flag_send(symbol_unaligned_flag, SerialOutCodes.SYMBOL_UNALIGNED)
+                    elif_flag_send(oscil_unaligned_flag, SerialOutCodes.OSCIL_UNALIGNED)
                     elif_flag_send(rx_overflow_flag, SerialOutCodes.SERIAL_RX_OVERFLOW_ERROR)
                     elif_flag_send(rx_frame_flag, SerialOutCodes.SERIAL_RX_FRAME_ERROR)
                     elif_flag_send(rx_parity_flag, SerialOutCodes.SERIAL_RX_PARITY_ERROR)

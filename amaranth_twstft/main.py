@@ -70,6 +70,9 @@ class TwstftMain(Component):
         m.d.comb += uart.pps_good.eq(mpps.pps_good)
         m.d.comb += uart.pps_late.eq(mpps.pps_late)
         m.d.comb += uart.pps_early.eq(mpps.pps_early)
+        m.d.comb += uart.code_unaligned.eq(synchronizer.code_unaligned)
+        m.d.comb += uart.symbol_unaligned.eq(synchronizer.oscil_unaligned)
+        m.d.comb += uart.oscil_unaligned.eq(synchronizer.oscil_unaligned)
 
         m.d.comb += synchronizer.pps.eq(mpps.pps)
 

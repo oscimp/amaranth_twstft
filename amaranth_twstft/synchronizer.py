@@ -19,6 +19,11 @@ class Synchronizer(Component):
     next_code: Out(1)
     data: Out(2)
 
+    # error flags:
+    code_unaligned: Out(1) # last code didn't finish in time with pps
+    symbol_unaligned: Out(1)
+    oscil_unaligned: Out(1)
+
     def __init__(
             self,
             prn_a: PrnGenerator,
@@ -79,6 +84,13 @@ class Synchronizer(Component):
 
         with m.If(self.pps):
             #m.d.sync += debug_data.eq(debug_data + 1)
+
+            with m.If(~self.oscil.phase_end):
+                m.d.comb += self.oscil_unaligned.eq(True)
+            with m.If(periods_counter != self.periods_per_symbol - 1):
+                m.d.comb += self.symbol_unaligned.eq(True)
+            with m.If(symbols_counter != self.code_len - 1):
+                m.d.comb += self.code_unaligned.eq(True)
 
             m.d.sync += periods_counter.eq(0)
             m.d.sync += symbols_counter.eq(0)

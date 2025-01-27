@@ -121,8 +121,6 @@ def main():
                         set_time = False
                         if not args.monitor:
                             exit(0)
-                    if args.pps:
-                        print("PPS")
                 case SerialOutCodes.PPS_EARLY:
                     print("PPS EARLY")
                 case SerialOutCodes.PPS_LATE:
@@ -135,6 +133,12 @@ def main():
                     print("SERIAL PARITY ERROR")
                 case SerialOutCodes.UNKNOWN_COMMAND_ERROR:
                     print("UNKNOWN COMMAND ERROR")
+                case SerialOutCodes.CODE_UNALIGNED:
+                    print("CODE UNALIGNED")
+                case SerialOutCodes.SYMBOL_UNALIGNED:
+                    print("SYMBOL UNALIGNED")
+                case SerialOutCodes.OSCIL_UNALIGNED:
+                    print("OSCIL UNALIGNED")
                 case _:
                     print(f"Error : unhandled code {code}")
 

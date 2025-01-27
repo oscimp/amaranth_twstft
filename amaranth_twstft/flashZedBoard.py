@@ -210,7 +210,7 @@ class TWSTFT_top(Elaboratable):
             p_BANDWIDTH          = "OPTIMIZED",
             p_CLKFBOUT_MULT_F    = vco_mult, 
             p_CLKFBOUT_PHASE     = 0.0,
-            p_CLKIN1_PERIOD      = int(1e9 // base_clk_freq), # 20MHz
+            p_CLKIN1_PERIOD      = int(1e9 // base_clk_freq), # 10MHz
             
             
             p_CLKOUT0_DIVIDE_F   = mmc_out_div,
