@@ -19,12 +19,6 @@ class SafeTimer(Component):
         super().__init__()
         self.n = n
         assert n > 0
-        # TODO some counters values are not suported yet
-        # this issue will be addressed soon, for now this
-        # assertion guard agains this bug
-        while n > 0:
-            assert n & (2**max_safe_size - 1) != 0
-            n >>= max_safe_size
         self.max_safe_size = max_safe_size
 
     def elaborate(self, platform):
@@ -47,11 +41,15 @@ class SafeTimer(Component):
         with m.If(self.reset):
             m.d.sync += counter.eq(self.n)
             m.d.sync += self.finished.eq(False)
+            for i, flag in enumerate(ith_chunk_underflow):
+                nchunk = self.n >> (i*self.max_safe_size)
+                nchunk &= 2**self.max_safe_size - 1
+                m.d.sync += flag.eq(nchunk == 0)
 
         return m
 
 if __name__ == '__main__':
-    n = int(1001)
+    n = int(1024)
     timer = SafeTimer(n, 3)
     sim = Simulator(timer)
     async def test_timer(ctx: SimulatorContext):
