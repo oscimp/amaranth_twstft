@@ -49,17 +49,18 @@ class SafeTimer(Component):
         return m
 
 if __name__ == '__main__':
-    n = int(1024)
+    n = int(2**12 - 1)
     timer = SafeTimer(n, 3)
     sim = Simulator(timer)
     async def test_timer(ctx: SimulatorContext):
-        ctx.set(timer.reset, True)
-        await ctx.tick()
-        ctx.set(timer.reset, False)
-        for _ in range(n):
-            assert not ctx.get(timer.finished)
+        for _ in range(5):
+            ctx.set(timer.reset, True)
             await ctx.tick()
-        assert ctx.get(timer.finished)
+            ctx.set(timer.reset, False)
+            for _ in range(n):
+                assert not ctx.get(timer.finished)
+                await ctx.tick()
+            assert ctx.get(timer.finished)
 
     sim.add_testbench(test_timer)
     sim.add_clock(1)

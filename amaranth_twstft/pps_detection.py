@@ -1,6 +1,8 @@
 from amaranth import Module, Signal
 from amaranth.lib.wiring import Component, In, Out
 
+from safe_timer import SafeTimer
+
 
 class PPSDetector(Component):
     pps_in: In(1)
@@ -32,17 +34,15 @@ class PPSDetector(Component):
         ## the rest of the module is for error/unexpected behavior detection
         # unexpected pps signals and late pps signals
 
-        counter = Signal(range(self.f_clock))
-        with m.If((counter == self.f_clock - 1) & self.pps):
+        m.submodules.timer = timer = SafeTimer(self.f_clock-1) # minus one because we need one tick to reset
+        with m.If(timer.finished & self.pps):
             m.d.comb += self.pps_good.eq(True)
-            m.d.sync += counter.eq(0)
+            m.d.comb += timer.reset.eq(True)
         with m.Elif(self.pps):
             m.d.comb += self.pps_early.eq(True)
-            m.d.sync += counter.eq(0)
-        with m.Elif(counter == self.f_clock - 1):
+            m.d.comb += timer.reset.eq(True)
+        with m.Elif(timer.finished):
             m.d.comb += self.pps_late.eq(True)
-            m.d.sync += counter.eq(0)
-        with m.Else():
-            m.d.sync += counter.eq(counter + 1)
+            m.d.comb += timer.reset.eq(True)
 
         return m
