@@ -2,6 +2,7 @@ from amaranth import Assert, Module, Shape, Signal
 from amaranth.lib.wiring import Component, In, Out
 from amaranth.sim import Simulator, SimulatorContext, TriggerCombination
 
+from safe_timer import SafeTimer
 from mixer import Mode
 from oscillator import Oscillator
 from prn import PrnGenerator, nextstate
@@ -44,7 +45,7 @@ class Synchronizer(Component):
         # count the periods completed for each symbol to send
         periods_counter = Signal(range(self.periods_per_symbol))
         # count the symbols sent for each sequance
-        symbols_counter = Signal(range(self.code_len))
+        m.submodules.symbols_counter = symbols_counter = SafeTimer(self.code_len)
 
         m.d.comb += self.data[0].eq(self.prn_a.state[0])
 
@@ -66,9 +67,9 @@ class Synchronizer(Component):
                 m.d.sync += self.prn_a.shift.eq(True)
                 m.d.sync += self.prn_b.shift.eq(True)
                 # increment symbols_counter on periods_counter overflow
-                with m.If(symbols_counter == self.code_len - 1):
+                with m.If(symbols_counter.finished):
                     # when this path is active, next tick is a new sequance
-                    m.d.sync += symbols_counter.eq(0)
+                    m.d.comb += symbols_counter.reset.eq(True)
                     # same-tick reset the LFSRs
                     m.d.sync += self.prn_a.reset.eq(True)
                     m.d.sync += self.prn_b.reset.eq(True)
@@ -76,7 +77,7 @@ class Synchronizer(Component):
                     # the time-coder will be shifted next tick
                     m.d.comb += self.next_code.eq(True)
                 with m.Else():
-                    m.d.sync += symbols_counter.eq(symbols_counter + 1)
+                    m.d.comb += symbols_counter.tick.eq(True)
             with m.Else():
                 m.d.sync += periods_counter.eq(periods_counter + 1)
 
@@ -89,11 +90,11 @@ class Synchronizer(Component):
                 m.d.comb += self.oscil_unaligned.eq(True)
             with m.If(periods_counter != self.periods_per_symbol - 1):
                 m.d.comb += self.symbol_unaligned.eq(True)
-            with m.If(symbols_counter != self.code_len - 1):
+            with m.If(~symbols_counter.finished):
                 m.d.comb += self.code_unaligned.eq(True)
 
             m.d.sync += periods_counter.eq(0)
-            m.d.sync += symbols_counter.eq(0)
+            m.d.comb += symbols_counter.reset.eq(True)
             m.d.sync += self.prn_a.reset.eq(True)
             m.d.sync += self.prn_b.reset.eq(True)
             m.d.sync += self.oscil.reset.eq(True)

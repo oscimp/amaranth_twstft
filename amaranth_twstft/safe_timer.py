@@ -13,6 +13,7 @@ class SafeTimer(Component):
     will reach 0 `n` ticks after being reset.
     """
     reset: In(1) # the counter will start once reset is down
+    tick: In(1) # the counter decrement one each clock cycle where tick is True
     finished: Out(1)
 
     def __init__(self, n: int, chunk_size:int = 8):
@@ -27,7 +28,7 @@ class SafeTimer(Component):
         counter = Signal(range(self.n))
         ith_chunk_underflow = Signal(int(len(counter)//self.chunk_size))
 
-        with m.If(~self.finished):
+        with m.If(~self.finished & self.tick):
             for i in range(len(ith_chunk_underflow) + 1):
                 with m.If(ith_chunk_underflow[:i].all()):
                     chunk = counter[i*self.chunk_size:(i+1)*self.chunk_size]
@@ -53,6 +54,7 @@ if __name__ == '__main__':
     timer = SafeTimer(n, 3)
     sim = Simulator(timer)
     async def test_timer(ctx: SimulatorContext):
+        ctx.set(timer.tick, True)
         for _ in range(5):
             ctx.set(timer.reset, True)
             await ctx.tick()

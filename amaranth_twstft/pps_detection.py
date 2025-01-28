@@ -35,6 +35,7 @@ class PPSDetector(Component):
         # unexpected pps signals and late pps signals
 
         m.submodules.timer = timer = SafeTimer(self.f_clock-1) # minus one because we need one tick to reset
+        m.d.comb += timer.tick.eq(True)
         with m.If(timer.finished & self.pps):
             m.d.comb += self.pps_good.eq(True)
             m.d.comb += timer.reset.eq(True)
