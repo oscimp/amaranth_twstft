@@ -162,7 +162,7 @@ class UARTWrapper(Component):
                         If `flag` is lowered elsewhere, you want `reset` to be False.
                         """
                         with m.Elif(flag) if is_elif else m.If(flag):
-                            m.d.comb += [
+                            m.d.sync += [
                                 uart.tx.ack.eq(True),
                                 uart.tx.data.eq(code),
                             ]
@@ -184,7 +184,7 @@ class UARTWrapper(Component):
                     elif_flag_send(rx_parity_flag, SerialOutCodes.SERIAL_RX_PARITY_ERROR)
             with m.State("SET_TX_TO_ZERO"):
                 with m.If(uart.tx.rdy):
-                    m.d.comb += [
+                    m.d.sync += [
                         uart.tx.ack.eq(True),
                         uart.tx.data.eq(SerialOutCodes.NOTHING),
                     ]

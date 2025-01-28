@@ -15,22 +15,22 @@ class SafeTimer(Component):
     reset: In(1) # the counter will start once reset is down
     finished: Out(1)
 
-    def __init__(self, n: int, max_safe_size:int = 8):
+    def __init__(self, n: int, chunk_size:int = 8):
         super().__init__()
-        self.n = n
         assert n > 0
-        self.max_safe_size = max_safe_size
+        self.n = n
+        self.chunk_size = chunk_size
 
     def elaborate(self, platform):
         m = Module()
 
         counter = Signal(range(self.n))
-        ith_chunk_underflow = Signal(int(len(counter)//self.max_safe_size))
+        ith_chunk_underflow = Signal(int(len(counter)//self.chunk_size))
 
         with m.If(~self.finished):
             for i in range(len(ith_chunk_underflow) + 1):
                 with m.If(ith_chunk_underflow[:i].all()):
-                    chunk = counter[i*self.max_safe_size:(i+1)*self.max_safe_size]
+                    chunk = counter[i*self.chunk_size:(i+1)*self.chunk_size]
                     m.d.sync += chunk.eq(chunk - 1)
                     if i < len(ith_chunk_underflow): # not the last chunk
                         m.d.sync += ith_chunk_underflow[i].eq(chunk == 1) # set underflow flag
@@ -42,8 +42,8 @@ class SafeTimer(Component):
             m.d.sync += counter.eq(self.n)
             m.d.sync += self.finished.eq(False)
             for i, flag in enumerate(ith_chunk_underflow):
-                nchunk = self.n >> (i*self.max_safe_size)
-                nchunk &= 2**self.max_safe_size - 1
+                nchunk = self.n >> (i*self.chunk_size)
+                nchunk &= 2**self.chunk_size - 1
                 m.d.sync += flag.eq(nchunk == 0)
 
         return m
