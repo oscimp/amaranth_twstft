@@ -11,7 +11,7 @@ import time
 
 from datetime import datetime
 
-from time_coder import TimeCoderMode
+from time_coder import TIMECODE_SIZE, TimeCoderMode
 from mixer import Mode
 from uart_wrapper import SerialInCommands, SerialOutCodes
 
@@ -86,14 +86,14 @@ def main():
         if not args.bitlen:
             parser.error("--bitlen must be specified when setting taps")
         s.write(struct.pack(
-            '<bq',
+            '<BQ',
             SerialInCommands.SET_TAPS_A.value,
             args.taps_a)[0:1+ceil(args.bitlen/s.bytesize)])
     if args.taps_b:
         if not args.bitlen:
             parser.error("--bitlen must be specified when setting taps")
         s.write(struct.pack(
-            '<bq',
+            '<BQ',
             SerialInCommands.SET_TAPS_B.value,
             args.taps_b)[0:1+ceil(args.bitlen/s.bytesize)])
 
@@ -114,9 +114,9 @@ def main():
                     if set_time:
                         time.sleep(0.5) # aproximate middle of the true second
                         s.write(struct.pack(
-                            '<bb',
+                            '<BB',
                             SerialInCommands.SET_TIME.value,
-                            int(time.time())&0xff
+                            int(time.time())%60
                             ))
                         set_time = False
                         if not args.monitor:

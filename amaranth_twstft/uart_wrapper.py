@@ -99,13 +99,15 @@ class UARTWrapper(Component):
         with m.If(uart.rx.err.parity):
             m.d.sync += rx_parity_flag.eq(True)
 
+        m.d.sync += uart.tx.ack.eq(False)
+
         with m.FSM(reset="WAITING"):
             def recv_in_reg(state: str, reg: Signal, next_state:str='WAITING'):
                 """
                 this function create all FSM states necessary
                 to recieve an integer (in big endian),
                 fitting in the register `reg`,
-                by recieving `len(reg)//data_bits` packets of `data_bits` bits.
+                by recieving `ceil(len(reg)//data_bits)` packets of `data_bits` bits.
                 To start recieving, the FSM should be set to `state`,
                 and once enough packets have been recieved,
                 the FSM goes to `next_state`: 'WAITING' by default.
@@ -118,7 +120,7 @@ class UARTWrapper(Component):
                     name = state if i == 0 else f'__{state}__{i}'
                     name_next = (f'__{state}__{i+data_bits}'
                                  if i < len(reg) - data_bits else
-                                 'WAITING')
+                                 next_state)
                     with m.State(name):
                         m.d.comb += uart.rx.ack.eq(True)
                         with m.If(uart.rx.rdy):
@@ -154,7 +156,7 @@ class UARTWrapper(Component):
                             m.d.sync += self.timecoder_mode.eq(TimeCoderMode.TIMECODE)
                         with m.Default():
                             m.d.sync += unknown_command_flag.eq(True)
-                with m.Elif(uart.tx.rdy):
+                with m.If(uart.tx.rdy):
                     def if_flag_send(flag: Signal, code: int, reset: bool = True, is_elif=False):
                         """
                         This helper function create the logic to send `code` if `flag` is up.

@@ -2,7 +2,7 @@ from enum import Enum
 from amaranth import Cat, Module, Shape, Signal
 from amaranth.lib.wiring import Component, In, Out
 
-TIMECODE_SIZE = 8
+TIMECODE_SIZE = 6
 
 class TimeCoderMode(Enum):
     OFF = 0
@@ -33,9 +33,14 @@ class TimeCoder(Component):
             m.d.sync += shift_time.eq(shift_time.shift_right(1))
 
         with m.If(self.pps):
-            m.d.sync += time.eq(time + 1)
+            next_time = Signal.like(time)
+            with m.If(time == 60 -1):
+                m.d.comb += next_time.eq(0)
+            with m.Else():
+                m.d.comb += next_time.eq(time + 1)
+            m.d.sync += time.eq(next_time)
             with m.If(self.mode == TimeCoderMode.TIMECODE):
-                m.d.sync += shift_time.eq(Cat(1, time + 1))
+                m.d.sync += shift_time.eq(Cat(1, next_time))
             with m.Else():
                 m.d.sync += shift_time.eq(1)
 
