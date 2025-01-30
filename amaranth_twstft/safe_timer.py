@@ -6,7 +6,7 @@ from amaranth.sim import Simulator, SimulatorContext
 
 class SafeTimer(Component):
     """
-    A timer that count down each tick until at 0
+    A timer that count down each time it's ticked until at 0
     this implementation mitigate combinatorial logic delays
     at the cost of control over the counter.
     The only property that is granted is that the counter
@@ -25,8 +25,8 @@ class SafeTimer(Component):
     def elaborate(self, platform):
         m = Module()
 
-        counter = Signal(range(self.n))
-        ith_chunk_underflow = Signal(int(len(counter)//self.chunk_size))
+        counter = Signal(range(self.n), reset_less=True)
+        ith_chunk_underflow = Signal(int(len(counter)//self.chunk_size), reset_less=True)
 
         with m.If(~self.finished & self.tick):
             for i in range(len(ith_chunk_underflow) + 1):

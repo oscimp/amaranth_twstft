@@ -155,7 +155,7 @@ class PrnGenerator(Component):
     def elaborate(self, platform):
         m = Module()
 
-        reg = Signal(self.bit_len)
+        reg = Signal(self.bit_len, reset_less=True)
 
         if self._taps is not None:
             m.d.comb += self.taps.eq(self._taps)

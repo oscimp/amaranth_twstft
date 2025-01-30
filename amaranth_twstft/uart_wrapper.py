@@ -3,8 +3,8 @@
 from enum import Enum
 from amaranth import *
 from amaranth.lib.wiring import Component, In, Out
-from amaranth_stdio.serial import AsyncSerial, Parity
 
+from serial import AsyncSerial, Parity
 from time_coder import TimeCoderMode, TIMECODE_SIZE
 from mixer import Mode
 

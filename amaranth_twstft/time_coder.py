@@ -23,8 +23,8 @@ class TimeCoder(Component):
     def elaborate(self, platform):
         m = Module()
 
-        time = Signal(TIMECODE_SIZE)
-        shift_time = Signal(TIMECODE_SIZE + 1)
+        time = Signal(TIMECODE_SIZE, reset_less=True)
+        shift_time = Signal(TIMECODE_SIZE + 1, reset_less=True)
 
         with m.If(self.mode != TimeCoderMode.OFF):
             m.d.comb += self.data.eq(shift_time[0])
