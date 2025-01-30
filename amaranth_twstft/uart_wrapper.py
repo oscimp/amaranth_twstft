@@ -4,7 +4,7 @@ from enum import Enum
 from amaranth import *
 from amaranth.lib.wiring import Component, In, Out
 
-from serial import AsyncSerial, Parity
+from amaranth_serial import AsyncSerial, Parity
 from time_coder import TimeCoderMode, TIMECODE_SIZE
 from mixer import Mode
 
