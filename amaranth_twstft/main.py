@@ -3,6 +3,7 @@ from amaranth.lib.wiring import Component, In, Out
 from amaranth.sim import Simulator, SimulatorContext
 from amaranth_boards.resources import *
 
+from calibration_output import CalibrationOutput
 from time_coder import TimeCoder
 from uart_wrapper import UARTWrapper
 from synchronizer import Synchronizer 
@@ -15,6 +16,7 @@ from prn import PrnGenerator
 class TwstftMain(Component):
     pps: In(1)
     antena_out: Out(1)
+    calib_out: Out(1)
 
     def __init__(
             self,
@@ -61,6 +63,7 @@ class TwstftMain(Component):
                 self.uart)
 
         m.submodules.time = time = TimeCoder()
+        m.submodules.calib = calib = CalibrationOutput()
 
 
         # Connexions
@@ -91,7 +94,11 @@ class TwstftMain(Component):
         m.d.comb += mixer.time_code_data.eq(time.data)
         m.d.comb += mixer.mode.eq(uart.mode)
 
+        m.d.comb += calib.mode.eq(uart.calib_mode)
+        m.d.comb += calib.pps.eq(mpps.pps)
+
         m.d.comb += self.antena_out.eq(mixer.out)
+        m.d.comb += self.calib_out.eq(calib.out)
 
         return m
 

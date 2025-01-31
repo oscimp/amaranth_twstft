@@ -13,6 +13,7 @@ import time
 
 from datetime import datetime
 
+from calibration_output import CalibrationMode
 from time_coder import TIMECODE_SIZE, TimeCoderMode
 from mixer import Mode
 from uart_wrapper import SerialInCommands, SerialOutCodes
@@ -30,8 +31,9 @@ def arg_parser():
     parser.add_argument('-ta', '--taps-a', type=int)
     parser.add_argument('-tb', '--taps-b', type=int)
     parser.add_argument('-t', '--set-time', action='store_true')
-    parser.add_argument('-T', '--time-mode', choices=TimeCoderMode._member_names_)
     parser.add_argument('-M', '--mode', choices=Mode._member_names_)
+    parser.add_argument('-T', '--time-mode', choices=TimeCoderMode._member_names_)
+    parser.add_argument('-C', '--calib-mode', choices=CalibrationMode._member_names_)
     return parser
 
 def set_mode(s: serial.Serial, mode: Mode):
@@ -52,6 +54,16 @@ def set_timecode_mode(s: serial.Serial, mode: TimeCoderMode):
             s.write(SerialInCommands.TIMECODER_INVERT_FIRST_CODE.value.to_bytes())
         case TimeCoderMode.TIMECODE:
             s.write(SerialInCommands.TIMECODER_TIMECODE.value.to_bytes())
+    s.flush()
+
+def set_calib_mode(s: serial.Serial, mode: CalibrationMode):
+    match mode:
+        case CalibrationMode.OFF:
+            s.write(SerialInCommands.CALIB_OFF.value.to_bytes())
+        case CalibrationMode.CLK:
+            s.write(SerialInCommands.CALIB_CLK.value.to_bytes())
+        case CalibrationMode.PPS:
+            s.write(SerialInCommands.CALIB_PPS.value.to_bytes())
     s.flush()
 
 def set_taps(s: serial.Serial, bitlen: int, taps_a:int = None, taps_b:int = None):
@@ -113,6 +125,9 @@ def main():
     if args.time_mode:
         set_timecode_mode(s, TimeCoderMode[args.time_mode])
 
+    if args.calib_mode:
+        set_calib_mode(s, CalibrationMode[args.calib_mode])
+
     if args.taps_a or args.taps_b:
         if not args.bitlen:
             parser.error("--bitlen must be specified when setting taps")
@@ -150,7 +165,7 @@ def main():
         handlers[SerialOutCodes.PPS_GOOD].append(set_time_handler)
 
 
-    if args.monitor or set_time:
+    if args.monitor or args.set_time:
         monitor(s, handlers)
 
 

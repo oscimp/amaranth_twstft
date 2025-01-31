@@ -2,9 +2,11 @@
 
 from enum import Enum
 from amaranth import *
+from amaranth.back.rtlil import Case
 from amaranth.lib.wiring import Component, In, Out
 
 from amaranth_serial import AsyncSerial, Parity
+from calibration_output import CalibrationMode
 from time_coder import TimeCoderMode, TIMECODE_SIZE
 from mixer import Mode
 
@@ -19,6 +21,9 @@ class SerialInCommands(Enum):
     MODE_OFF = 7
     SET_TIME = 8
     TIMECODER_TIMECODE = 9
+    CALIB_OFF = 10
+    CALIB_CLK = 11
+    CALIB_PPS = 12
 
 class SerialOutCodes(Enum):
     NOTHING = 0
@@ -39,6 +44,7 @@ class UARTWrapper(Component):
             # Modifiable config
             'mode': Out(Shape.cast(Mode)),
             'timecoder_mode': Out(Shape.cast(TimeCoderMode)),
+            'calib_mode': Out(Shape.cast(CalibrationMode)),
             'taps_a': Out(bitlen),
             'taps_b': Out(bitlen),
 
@@ -154,6 +160,12 @@ class UARTWrapper(Component):
                             m.d.sync += self.timecoder_mode.eq(TimeCoderMode.INVERT_FIRST_CODE)
                         with m.Case(SerialInCommands.TIMECODER_TIMECODE):
                             m.d.sync += self.timecoder_mode.eq(TimeCoderMode.TIMECODE)
+                        with m.Case(SerialInCommands.CALIB_OFF):
+                            m.d.sync += self.calib_mode.eq(CalibrationMode.OFF)
+                        with m.Case(SerialInCommands.CALIB_CLK):
+                            m.d.sync += self.calib_mode.eq(CalibrationMode.CLK)
+                        with m.Case(SerialInCommands.CALIB_PPS):
+                            m.d.sync += self.calib_mode.eq(CalibrationMode.PPS)
                         with m.Default():
                             m.d.sync += unknown_command_flag.eq(True)
                 with m.If(uart.tx.rdy):

@@ -150,7 +150,7 @@ class TWSTFT_top(Elaboratable):
                 ),
                 Resource('pins', 0,
                     Subsignal('output',    Pins('31', conn = connect, dir='o')),
-                    Subsignal('clk_out',    Pins('36', conn = connect, dir='o')),
+                    Subsignal('calib_out',    Pins('36', conn = connect, dir='o')),
                     Subsignal('PPS_in',    Pins('42', conn = connect, dir='i')),
 
                     Attrs(IOSTANDARD="LVCMOS33")
@@ -237,7 +237,7 @@ class TWSTFT_top(Elaboratable):
                 uart=uart_pads)
 
         m.d.comb += main.pps.eq(pins.PPS_in.i)
-        m.d.comb += pins.clk_out.o.eq(mmcm_clk_out)
+        m.d.comb += pins.calib_out.o.eq(main.calib_out)
         m.d.sync += pins.output.o.eq(main.antena_out)
 
         return m
