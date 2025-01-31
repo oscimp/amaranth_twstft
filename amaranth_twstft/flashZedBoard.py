@@ -150,39 +150,20 @@ class TWSTFT_top(Elaboratable):
                 ),
                 Resource('pins', 0,
                     Subsignal('output',    Pins('31', conn = connect, dir='o')),
-                    Subsignal('enable',    Pins('36', conn = connect, dir='i')),
+                    Subsignal('clk_out',    Pins('36', conn = connect, dir='o')),
                     Subsignal('PPS_in',    Pins('42', conn = connect, dir='i')),
-
-                    # debug
-                    Subsignal('clk_out',   Pins('1',  conn = connect, dir='o')),
-                    Subsignal('PPS_out',   Pins('3',  conn = connect, dir='o')),
-                    Subsignal('PPS_out2',  Pins('5',  conn = connect, dir='o')),
-                    Subsignal('mixer_o',   Pins('7',  conn = connect, dir='o')),
-                    Subsignal('mixer2_o',  Pins('9',  conn = connect, dir='o')),
-                    Subsignal('inv_prn_o', Pins('11', conn = connect, dir='o')), # invert_prn
 
                     Attrs(IOSTANDARD="LVCMOS33")
                 ),
-                # switch mode
-                Resource('switch', 0, Pins('23',  conn = connect, dir='i'),
-                   Attrs(IOSTANDARD="LVCMOS33")),
-               # clean carrier
-                Resource('switch', 1, Pins('19',  conn = connect, dir='i'),
-                   Attrs(IOSTANDARD="LVCMOS33")),
             ])
 
-            # when first code + counter and use_uart request UART pads
-            if self._invert_first_code and self._use_uart:
-                uart_pads = platform.request("uart")
         else:
             print("Error: unknown target platform")
             raise Error()
 
-        pins = platform.request('pins',0)
 
-        #allowing to switch between BPSK and QPSK
-        clean_carrier = platform.request('switch', 1) # M20
-        switch_mode   = platform.request('switch', 0) # F22
+        uart_pads = platform.request("uart")
+        pins = platform.request('pins',0)
 
         new_clk = platform.request('external_clk',0)
 
@@ -256,6 +237,7 @@ class TWSTFT_top(Elaboratable):
                 uart=uart_pads)
 
         m.d.comb += main.pps.eq(pins.PPS_in.i)
+        m.d.comb += pins.clk_out.o.eq(mmcm_clk_out)
         m.d.sync += pins.output.o.eq(main.antena_out)
 
         return m
