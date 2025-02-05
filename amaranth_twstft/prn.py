@@ -60,14 +60,14 @@ def m_seq_codes(bit_len, limit = 10):
                 break
     return codes
 
-def write_prn_seq(bitlen, taps_a, taps_b=None):
+def write_prn_seq(bitlen, noiselen, taps_a, taps_b=None):
     """creates files with the PRN sequences associ  ated to the parameters"""
     filename = f'prn{taps_a}{f".{taps_b}q" if taps_b else "b"}psk{bitlen}bits.bin'
     with open(filename,"wb") as f:
         a = 1
         b = 1
         print(f"writing {'Q' if taps_b else 'B'}PSK sequence")
-        for i in range(bitlen):
+        for i in range(noiselen):
             f.write((a%2).to_bytes(1,byteorder='big'))
             a = nextstate(a, taps_a, bitlen)
             if taps_b:
