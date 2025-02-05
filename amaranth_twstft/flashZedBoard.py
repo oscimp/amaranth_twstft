@@ -60,27 +60,10 @@ class TWSTFT_top(Elaboratable):
     
     """
 
-    def __init__(self, bit_len, noise_len, reload=True, lock_pps_gen=True,
-                 taps_a = 0, seed_a = 0x1, 
-                 taps_b = 0, seed_b = 0x1, 
-                 freqout=2500000,
-                 invert_first_code=False, use_uart=True, debug=False):
-    
-        self.pps_out = Signal()
-        self.the_pps_we_love = Signal()
-        self.dixmega = Signal()
-        self.ref_clk = Signal()
-
+    def __init__(self, bit_len, noise_len, freqout):
         self._freqout           = freqout
         self._bit_len           = bit_len
         self._noise_len         = noise_len
-        self._reload            = reload
-        self._lock_pps_gen      = lock_pps_gen
-        self.taps_a             = taps_a
-        self.taps_b             = taps_b
-        self._invert_first_code = invert_first_code
-        self._use_uart          = use_uart
-        self._debug             = debug
         
     def elaborate(self,platform):
         m = Module()
@@ -90,7 +73,7 @@ class TWSTFT_top(Elaboratable):
         uart_pads = None
         
         #parametrizing the platforms outputs
-        if (type(platform).__name__ == "ZedBoardPlatform"):
+        if (type(platform).__name__ == "ZedBoardPlatform"): # UNSUPORTED
             conna = ("pmoda",0)
             connb = ("pmodb",0)
             connc = ("pmodc",0)
@@ -119,7 +102,7 @@ class TWSTFT_top(Elaboratable):
                     Attrs(IOSTANDARD="LVCMOS33", PULLDOWN="TRUE")
                 )
             ])
-        elif (type(platform).__name__ == "PynqZ2Platform"):
+        elif (type(platform).__name__ == "PynqZ2Platform"): # UNSUPORTED
             connrpi = ("RPI",0)
             platform.add_resources([
                 Resource('external_clk', 0,
@@ -281,29 +264,18 @@ def flashBistream(build_dir="build"):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--platform",     default="zedboard", help="Target Platform (pynq, cmoda7, zedboard(default)", type=str)
+    parser.add_argument("--platform",     default="cmoda7", help="Target Platform (cmoda7 only for now)", type=str)
     parser.add_argument("--bitlen",       default=17,help="number of bits of the LFSR", type=int)
     parser.add_argument("--noiselen",     default=100000,  help="length of the PRN sequence", type=float)
-    parser.add_argument("--no-reload",    help="stop generation after noiselen bits", action="store_true")
-    parser.add_argument("-ta","--taps-a",    help="taps positions for the LFSR (if not defined, allows to dynamically define taps (currently not supported so default taps will be the smallest msequence generator taps))", type=int)
-    parser.add_argument("-tb","--taps-b",    help="taps positions for the LFSR (if not defined, allows to dynamically define taps (currently not supported so default taps will be the smallest msequence generator taps))", type=int)
     parser.add_argument("-m","--modfreq", default=int(2.5e6), help="frequency of the PSK modulation (Herz) (default :2.5e6)", type=int)
-    parser.add_argument("--invert-first-code",    help="deprecated: default behaviour. Use --no-invert-first-code to disable xoring + counter", action="store_true")
-    parser.add_argument("--no-invert-first-code", help="disable invert (xor) the first code after PPS rise and 8bits counter", action="store_true")
-    parser.add_argument("--no-uart",      help="disable uart request for PC second sent during sequence 1 -> 9 (cmoda7 only", action="store_true")
-    parser.add_argument("-p","--print",   help="creates a binary file containing the PRN sequence that should be generated", action="store_true")
     parser.add_argument("-v","--verbose", help="prints all the parameters used for this instance of the program", action="store_true")
     parser.add_argument("--no-build",     help="sources generate only", action="store_true")
     parser.add_argument("--no-load",      help="don't load bitstream", action="store_true")
     parser.add_argument("--flash",        help="write bitstream into SPI flash (cmoda7 only)", action="store_true")
     parser.add_argument("--build-dir",    default="build", help="build directory")
     parser.add_argument("--conv-to-bin",  help="convert .bit file to .bit.bin", action="store_true")
-    parser.add_argument("--debug",        help="enable test signals", action="store_true")
     parser.add_argument("--toolchain",    default="Vivado", help="toolchain to use (Vivado or Symbiflow) (cmoda7 only) (default: Vivado)")
     args = parser.parse_args()
-
-    if args.invert_first_code:
-        print("--invert-first-code is deprecated (default behaviour)")
 
     if args.conv_to_bin:
         build_dir=args.build_dir
@@ -320,26 +292,6 @@ if __name__ == "__main__":
         subprocess.check_call(["bootgen", "-w", "-image", name + ".bif", "-arch", "zynq", "-process_bitstream", "bin"])
         os.remove(name + ".bif")
         sys.exit(0)
-
-    if args.taps_a :
-        ta = args.taps_a
-        tb = args.taps_b
-    else:
-        try:
-            ta = get_taps(args.bitlen)[0]
-            tb = get_taps(args.bitlen)[1]
-        except:
-            taps_autofill(args.bitlen,32)
-            ta = get_taps(args.bitlen)[0]
-            tb = get_taps(args.bitlen)[1]
-
-    if args.print :
-        write_prn_seq(args.bitlen, ta, tb, seqlen=int(args.noiselen))
-
-    invert_first_code = not args.no_invert_first_code
-    if invert_first_code and int(args.noiselen) >= int(args.modfreq):
-        invert_first_code = False
-        print(f"First code invertion disabled: noiselen ({args.noiselen}) >= modfreq ({args.modfreq})")
 
     if not args.platform == "cmoda7" and args.toolchain == "Symbiflow":
         print("Error: zynq based boards are untested with Symbiflow toolchain")
@@ -364,10 +316,7 @@ if __name__ == "__main__":
     print(platform)
 
     gateware = platform(toolchain=args.toolchain).build(
-        TWSTFT_top(args.bitlen, int(args.noiselen), reload=not args.no_reload,
-                   taps_a=ta, taps_b=tb,
-                   freqout=args.modfreq, invert_first_code=invert_first_code,
-                   use_uart=not args.no_uart, debug=args.debug),
+        TWSTFT_top(args.bitlen, int(args.noiselen), freqout=args.modfreq),
         do_program=not (args.no_load or flash_bitstream), do_build=not args.no_build, build_dir=args.build_dir)
     if flash_bitstream:
         flashBistream(args.build_dir)

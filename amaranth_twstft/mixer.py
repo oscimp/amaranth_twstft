@@ -40,6 +40,8 @@ class Mixer(Component):
 
         with m.If(self.mode != Mode.OFF):
             m.d.comb += self.out.eq(out ^ self.time_code_data)
+        with m.Else():
+            m.d.comb += self.out.eq(0)
 
         return m
 

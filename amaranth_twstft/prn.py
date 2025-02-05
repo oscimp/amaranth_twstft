@@ -60,19 +60,21 @@ def m_seq_codes(bit_len, limit = 10):
                 break
     return codes
 
-def write_prn_seq( bitlen, taps_a, taps_b=0, seed_a=1, seed_b=1, seqlen = 2500000):
+def write_prn_seq(bitlen, taps_a, taps_b=None):
     """creates files with the PRN sequences associ  ated to the parameters"""
-    with open(f"prn{taps_a}.{taps_b}qpsk{bitlen}bits.bin","wb") as f:
-        a = seed_a
-        b = seed_b
-        print("writing QPSK sequence")
-        for i in range(seqlen):
+    filename = f'prn{taps_a}{f".{taps_b}q" if taps_b else "b"}psk{bitlen}bits.bin'
+    with open(filename,"wb") as f:
+        a = 1
+        b = 1
+        print(f"writing {'Q' if taps_b else 'B'}PSK sequence")
+        for i in range(bitlen):
             f.write((a%2).to_bytes(1,byteorder='big'))
-            f.write((b%2).to_bytes(1,byteorder='big'))
             a = nextstate(a, taps_a, bitlen)
-            b = nextstate(b, taps_b, bitlen)
+            if taps_b:
+                f.write((b%2).to_bytes(1,byteorder='big'))
+                b = nextstate(b, taps_b, bitlen)
         f.close()
-    print(f"see ./prn{taps_a}.{taps_b}qpsk{bitlen}bits.bin")
+    print(f"see f{filename}")
 
 def taps_autofill(bit_len, nbtaps,save_file=pickle_file):
     global taps_dict
