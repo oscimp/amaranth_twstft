@@ -106,7 +106,7 @@ Options are fully compatible, and can be passed in one command :
 ```
 Will set the LFSR taps on the FPGA to 9 and 15, and save both 100000 bits PRN interlaced in a 200K file (1 bit per byte).
 
-**Note:** setting LFSR's taps to zero disable it. At reset, both taps are set to zero.
+**Note**: setting LFSR's taps to zero disable it. At reset, both taps are set to zero.
 
 ### Enable and configure antenna output
 
@@ -136,7 +136,7 @@ Where `MODE` can be:
  - `INVERT_FIRST_CODE` at each PPS, the phase of the first PRN is flipped, allowing time comparison between clocks with more than a PRN's length in offset, as long as the offset is less than half a second.
  - `TIMECODE` at each PPS, the phase of the first PRN is flipped, and the phases of the 6 following PRNs encode the seconds of the minute from 0 to 59. Allowing time comparison between clocks with as much as 30 seconds offset.
 
- **Note**: At reset, timecode is disabled.
+**Note**: At reset, timecode is disabled.
 
 When using `TIMECODE`, to set the FPGA's seconds counter, use `--set-time` to set the FPGA's time to computer's time.
 
@@ -188,9 +188,9 @@ Results with antenna output emitting a BPSK modulated signal:
 
 For the CMOD A7 board, we find that a 12ns delay between the rising edges at a 1V threshold, is safe.
 
-**Note :** the calibration pin has a notch filter set at 70MHz in order to cancel cross-wire interference from the antenna.
+**Note**: the calibration pin has a notch filter set at 70MHz in order to cancel cross-wire interference from the antenna.
 
-**Note :** when setting up a TWSTFT station with a CMOD-a7 board, it is not necessary to replicate these acquisitions.
+**Note**: when setting up a TWSTFT station with a CMOD A7 board, it is not necessary to replicate these acquisitions.
 Only to ensure that the measured delay between the rising edges at a 1V threshold is in the green span of the above diagrams.
 When we will support other FPGA boards, we will add the safe spans for each of them.
 
