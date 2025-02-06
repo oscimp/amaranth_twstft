@@ -181,7 +181,7 @@ Results with antena output off:
 <img src='../experiments/250103_PPS_calibration/safe_span_for_pps_2.png'>
 
 Results with antena output emiting a clean carrier:
-<img src='../experiments/250103_PPS_calibration/safe_span_for_pps_carrier.png.png'>
+<img src='../experiments/250103_PPS_calibration/safe_span_for_pps_carrier.png'>
 
 Results with antena output emiting a BPSK modulated signal:
 <img src='../experiments/250103_PPS_calibration/safe_span_for_pps_bpsk.png'>
