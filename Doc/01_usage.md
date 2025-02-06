@@ -1,4 +1,4 @@
-# Cmod A7 integration
+# CMOD A7 integration
 Back to the [README](../README.md)
 Previous step : [Installation of Amaranth and cie](00_Installation.md)
 
@@ -13,43 +13,43 @@ usage: flashZedBoard.py [-h] [--platform PLATFORM] [--bitlen BITLEN] [--noiselen
 
 options:
   -h, --help            show this help message and exit
-  --platform PLATFORM   Target Platform (cmoda7 only for now)
+  --platform PLATFORM   Target Platform (CMOD A7 only for now)
   --bitlen BITLEN       number of bits of the LFSR
   --noiselen NOISELEN   length of the PRN sequence
   -m MODFREQ, --modfreq MODFREQ
-                        frequency of the PSK modulation (Herz) (default :2.5e6)
+                        frequency of the PSK modulation (Hertz) (default :2.5e6)
   -v, --verbose         prints all the parameters used for this instance of the program
   --no-build            sources generate only
   --no-load             don't load bitstream
-  --flash               write bitstream into SPI flash (cmoda7 only)
+  --flash               write bitstream into SPI flash (CMOD A7 only)
   --build-dir BUILD_DIR
                         build directory
   --conv-to-bin         convert .bit file to .bit.bin
   --toolchain TOOLCHAIN
-                        toolchain to use (Vivado or Symbiflow) (cmoda7 only) (default: Vivado)
+                        toolchain to use (Vivado or Symbiflow) (CMOD A7 only) (default: Vivado)
 ```
 
 
-Requiered options:
+Required options:
 - `BITLEN` is the *PRN* shift register size ([Pseudo-Random Noise generation](02_PRN.md)) (default: 17)
 - `NOISELEN` is the number of bits produces before reseting the *PRN* shift register (default: 100000)
 
 Optional options:
-- `--no-build` limit to amaranth -> *verilog* convert
+- `--no-build` limit to amaranth -> *Verilog* convert
 - `--no-load` bypass load step after bitstream
-- `--flash` write the bitstream in non-volatile memory, by default, the bitstream is writen to volatile memory.
+- `--flash` write the bitstream in non-volatile memory, by default, the bitstream is written to volatile memory.
 
 for example:
 ```
 ./amaranth_twstft/flashZedBoard.py --bitlen 17 --noiselen 100000
 ```
 
-**cmoda7 only**: by default *Vivado* is used to produces the bitstream, but it's
+**CMOD A7 only**: by default *Vivado* is used to produces the bitstream, but it's
 also possible to use the *f4pga* Open-Source toolchain.
 
 ## Configuration
 
-At runtime, the fpga can be configured with the `twstft_config.py` script.
+At runtime, the FPGA can be configured with the `twstft_config.py` script.
 
 ```
 usage: twstft_config.py [-h] [-d DEVICE] [-b BAUDRATE] [-l BITLEN] [-m] [--list] [-p] [-ta TAPS_A] [-tb TAPS_B]
@@ -62,9 +62,9 @@ options:
   -b BAUDRATE, --baudrate BAUDRATE
                         serial baudrate
   -l BITLEN, --bitlen BITLEN
-                        the bitlen of the fpga's LFSR. Hardwired in FPGA's gateware, this option doesn't modify it's
-                        config but is requiered to communicate properly the taps settings
-  -m, --monitor         keep listning and print debug signals to stdout
+                        the bitlen of the FPGA's LFSR. Hardwired in FPGA's gateware, this option doesn't modify it's
+                        config but is required to communicate properly the taps settings
+  -m, --monitor         keep listening and print debug signals to stdout
   --list                list available devices
   -p, --pps             when monitoring, also print debug signal for valid and expected PPS
   -ta TAPS_A, --taps-a TAPS_A
@@ -81,14 +81,14 @@ options:
                         set calibration mode
 ```
 
-### Conecting to the device
+### Connecting to the device
 
 `./twstft_config.py --list` will list available serial ports.
 `DEVICE` must be set to the one connected to the FPGA.
 
 ### Setting taps and generating PRN
 
-The taps of both LFSR can be set independetly with:
+The taps of both LFSR can be set independently with:
 ```
 ./twstft_config.py -d DEVICE -l BITLEN -t{a|b} TAPS
 ```
@@ -108,7 +108,7 @@ Will set the LFSR taps on the FPGA to 9 and 15, and save both 100000 bits PRN in
 
 **Note:** setting LFSR's taps to zero disable it. At reset, both taps are set to zero.
 
-### Enable and configure antena output
+### Enable and configure antenna output
 
 The modulation scheme can be set with:
 ```
@@ -116,10 +116,10 @@ The modulation scheme can be set with:
 ```
 
 Where `MODE` can be:
- - `OFF` disable antena output and output a constant low signal.
+ - `OFF` disable antenna output and output a constant low signal.
  - `CARRIER` output clean 70MHz carrier.
  - `BPSK` output BPSK modulated by LFSR A
- - `QPSK` output QPSK modulated orthogonaly by LFSRs A and B
+ - `QPSK` output QPSK modulated orthogonally by LFSRs A and B
 
 **Note**: At reset, mode is set to `OFF`.
 
@@ -138,7 +138,7 @@ Where `MODE` can be:
 
  **Note**: At reset, timecode is disabled.
 
-When using `TIMECODE`, to set the fpga's seconds counter, use `--set-time` to set the fpga's time to computer's time.
+When using `TIMECODE`, to set the FPGA's seconds counter, use `--set-time` to set the FPGA's time to computer's time.
 
 ### Calibration output
 
@@ -148,7 +148,7 @@ Option `-C` sets the output off the calibration pin. It's usage is described in 
 
 ### Monitoring
 
-When recieving a PPS, the FPGA starts a timer that takes one second to finish. When an unexpected PPS is recieved, a warning is send via UART to the computer.
+When receiving a PPS, the FPGA starts a timer that takes one second to finish. When an unexpected PPS is received, a warning is send via UART to the computer.
 To monitor these warnings, use option `-m`. To also get messages when the PPS arrives at the right time, add `--pps`.
 
 All option, are compatibles, when using `-m`, all config modifications are performed before the monitoring begins.
@@ -156,15 +156,15 @@ It is also possible to modify config while another instance of the script is mon
 
 ## Calibration
 
-On certains phase conditions between the input PPS and the input 10MHz clock,
-a small jitter can be enouth for the PPS to be detected in one tick or another in the 280Hz clock domain.
+On certain phase conditions between the input PPS and the input 10MHz clock,
+a small jitter can be enough for the PPS to be detected in one tick or another in the 280Hz clock domain.
 In order to avoid these conditions, it may be necessary to phase shift the input PPS to ensure that it will always be detected during the same tick.
 
 ### Finding the safe phase conditions
 
-To find the safe phase conditions, we need a way to phase shift the PPS signal by a whole 280MHz phase (~3.6ns) and an osciloscope to monitor the effect of the phase shift.
+To find the safe phase conditions, we need a way to phase shift the PPS signal by a whole 280MHz phase (~3.6ns) and an oscilloscope to monitor the effect of the phase shift.
 
-To automate the search for a safe phase span, we used an Agilent 33220A arbitrary waveform generator to phase shift the 10MHz clock ticking the PPS generator, and a Rohde & Schwarz RTO2034 osciloscope triggered at the rising edge of the input PPS looking for the rising edge of the detected PPS.
+To automate the search for a safe phase span, we used an Agilent 33220A arbitrary waveform generator to phase shift the 10MHz clock ticking the PPS generator, and a Rohde & Schwarz RTO2034 oscilloscope triggered at the rising edge of the input PPS looking for the rising edge of the detected PPS.
 To output the detected PPS on the FPGA's calibration pin, use the command :
 ```
 ./twstft_config.py -d DEVICE -C PPS
@@ -173,31 +173,31 @@ To output the detected PPS on the FPGA's calibration pin, use the command :
 Setup for PPS calibration :
 <img src='../figures/pps_calib_setup.png'>
 
-For the cmod-a7 board, we performed 3 phase-sweeps, each with a 36ps step and 200 acquisitions per step,
-once without emiting on the antena pin, once emiting a clean carrier and once emiting a BPSK modulated signal.
-These two acquisitions are to ensure that cross-wire interference from the antena pin doesn't affect PPS detection.
+For the CMOD A7 board, we performed 3 phase-sweeps, each with a 36ps step and 200 acquisitions per step,
+once without emitting on the antenna pin, once emitting a clean carrier and once emitting a BPSK modulated signal.
+These two acquisitions are to ensure that cross-wire interference from the antenna pin doesn't affect PPS detection.
 
-Results with antena output off:
+Results with antenna output off:
 <img src='../experiments/250103_PPS_calibration/safe_span_for_pps_2.png'>
 
-Results with antena output emiting a clean carrier:
+Results with antenna output emitting a clean carrier:
 <img src='../experiments/250103_PPS_calibration/safe_span_for_pps_carrier.png'>
 
-Results with antena output emiting a BPSK modulated signal:
+Results with antenna output emitting a BPSK modulated signal:
 <img src='../experiments/250103_PPS_calibration/safe_span_for_pps_bpsk.png'>
 
-For the cmod-a7 board, we find that a 12ns delay between the rising edges at a 1V threshold, is safe.
+For the CMOD A7 board, we find that a 12ns delay between the rising edges at a 1V threshold, is safe.
 
-**Note :** the calibration pin has a notch filter set at 70MHz in order to cancel cross-wire interference from the antena.
+**Note :** the calibration pin has a notch filter set at 70MHz in order to cancel cross-wire interference from the antenna.
 
-**Note :** when setting up a twstft station with a cmod-a7 board, it is not necessary to replicate these aquisitions.
-Only to ensure that the mesured delay between the rising edges at a 1V threshold is in the green span of the above diagrams.
-When we will support other fpga boards, we will add the safe spans for each of them.
+**Note :** when setting up a TWSTFT station with a CMOD-a7 board, it is not necessary to replicate these acquisitions.
+Only to ensure that the measured delay between the rising edges at a 1V threshold is in the green span of the above diagrams.
+When we will support other FPGA boards, we will add the safe spans for each of them.
 
 ## Pin functions
 
 
-| function              | dir | <a href="https://digilent.com/reference/programmable-logic/cmod-a7/reference-manual">cmoda7</a> |
+| function              | dir | <a href="https://digilent.com/reference/programmable-logic/cmod-a7/reference-manual">CMOD A7</a> |
 |-----------------------|-----|--------|
 | 10MHz in              | in  | GPIO46 |
 | PPS in                | in  | GPIO42 |
