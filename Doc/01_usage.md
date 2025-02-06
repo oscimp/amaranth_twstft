@@ -181,10 +181,10 @@ Results with antena output off:
 <img src='../experiments/250103_PPS_calibration/safe_span_for_pps_2.png'>
 
 Results with antena output emiting a clean carrier:
-<img src='../experiments/250103_PPS_calibration/safe_span_for_pps_2.png'>
+<img src='../experiments/250103_PPS_calibration/safe_span_for_pps_carrier.png.png'>
 
 Results with antena output emiting a BPSK modulated signal:
-<img src='../experiments/250103_PPS_calibration/safe_span_for_pps_2.png'>
+<img src='../experiments/250103_PPS_calibration/safe_span_for_pps_bpsk.png'>
 
 For the cmod-a7 board, we find that a 12ns delay between the rising edges at a 1V threshold, is safe.
 
