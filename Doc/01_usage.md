@@ -4,7 +4,7 @@ Previous step : [Installation of Amaranth and cie](00_Installation.md)
 
 This section details how to flash the gateware and how to configure the FPGA via UART serial.
 
-## bitstream generation
+## Bitstream generation
 
 ```
 usage: flashZedBoard.py [-h] [--platform PLATFORM] [--bitlen BITLEN] [--noiselen NOISELEN] [-m MODFREQ] [-p] [-v]
@@ -154,6 +154,45 @@ To monitor these warnings, use option `-m`. To also get messages when the PPS ar
 All option, are compatibles, when using `-m`, all config modifications are performed before the monitoring begins.
 It is also possible to modify config while another instance of the script is monitoring, but beware that the monitoring will crash if another instance tries to read from the serial port.
 
+## Calibration
+
+On certains phase conditions between the input PPS and the input 10MHz clock,
+a small jitter can be enouth for the PPS to be detected in one tick or another in the 280Hz clock domain.
+In order to avoid these conditions, it may be necessary to phase shift the input PPS to ensure that it will always be detected during the same tick.
+
+### Finding the safe phase conditions
+
+To find the safe phase conditions, we need a way to phase shift the PPS signal by a whole 280MHz phase (~3.6ns) and an osciloscope to monitor the effect of the phase shift.
+
+To automate the search for a safe phase span, we used an Agilent 33220A arbitrary waveform generator to phase shift the 10MHz clock ticking the PPS generator, and a Rohde & Schwarz RTO2034 osciloscope triggered at the rising edge of the input PPS looking for the rising edge of the detected PPS.
+To output the detected PPS on the FPGA's calibration pin, use the command :
+```
+./twstft_config.py -d DEVICE -C PPS
+```
+
+Setup for PPS calibration :
+<img src='../figures/pps_calib_setup.png'>
+
+For the cmod-a7 board, we performed 3 phase-sweeps, each with a 36ps step and 200 acquisitions per step,
+once without emiting on the antena pin, once emiting a clean carrier and once emiting a BPSK modulated signal.
+These two acquisitions are to ensure that cross-wire interference from the antena pin doesn't affect PPS detection.
+
+Results with antena output off:
+<img src='../experiments/250103_PPS_calibration/safe_span_for_pps_2.png'>
+
+Results with antena output emiting a clean carrier:
+<img src='../experiments/250103_PPS_calibration/safe_span_for_pps_2.png'>
+
+Results with antena output emiting a BPSK modulated signal:
+<img src='../experiments/250103_PPS_calibration/safe_span_for_pps_2.png'>
+
+For the cmod-a7 board, we find that a 12ns delay between the rising edges at a 1V threshold, is safe.
+
+**Note :** the calibration pin has a notch filter set at 70MHz in order to cancel cross-wire interference from the antena.
+
+**Note :** when setting up a twstft station with a cmod-a7 board, it is not necessary to replicate these aquisitions.
+Only to ensure that the mesured delay between the rising edges at a 1V threshold is in the green span of the above diagrams.
+When we will support other fpga boards, we will add the safe spans for each of them.
 
 ## Pin functions
 

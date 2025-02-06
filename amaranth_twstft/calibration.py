@@ -74,6 +74,15 @@ def acquire(s, synth, oscil, steps=10, reps=10):
 
     def pps_handler(s, code):
         nonlocal i, j, last_pps_early
+        if j == reps:
+            i += 1
+            j = 0
+            results.append(list())
+            synth.write(f'PHASE {2*math.pi*i/steps/28}')
+            synth.ask('*OPC?')
+        if i == steps:
+            s.close()
+            return
         if code == SerialOutCodes.PPS_EARLY:
             if last_pps_early:
                 double_jumps.append((i, j))
@@ -82,14 +91,6 @@ def acquire(s, synth, oscil, steps=10, reps=10):
         offset = get_pps_offset(oscil)
         print(offset)
         if math.isnan(offset):
-            return
-        if j == reps:
-            i += 1
-            j = 0
-            results.append(list())
-            synth.write(f'PHASE {2*math.pi*i/steps/28}')
-        if i == steps:
-            s.close()
             return
         results[i].append(offset)
         j += 1
@@ -132,9 +133,9 @@ def experiment2():
     set_taps(s, 17, 53)
     synth, oscil = find_instruments()
     res = acquire(s, synth, oscil, 100, 200)
-    with open('results_antena_off2.txt', 'w') as f:
+    with open('results_antena_off.txt', 'w') as f:
         f.write(str(res))
-    get_view(oscil, save='view_antena_off2.txt')
+    get_view(oscil, save='view_antena_off.txt')
 
     s = new_serial('/dev/ttyUSB1')
     set_mode(s, Mode.CARRIER)
@@ -150,7 +151,7 @@ def experiment2():
         f.write(str(res))
     get_view(oscil, save='view_antena_bpsk.txt')
 
-def show(results):
+def show(results, double_jumps=[]):
     steps = len(results)
     reps = len(results[0])
     span = lambda x: max(x) - min(x)
@@ -174,6 +175,10 @@ def show(results):
                 )
     except:
         print('Couldn\'t find safe span.')
+
+    x_dj = [2*math.pi*i/steps for i, _j in double_jumps]
+    y_dj = [results[i + (j==reps)][j%reps] for i, j in double_jumps]
+    plt.scatter(x_dj, y_dj,marker='+', c='black')
 
     plt.title('Span of safe clock-to-PPS phase')
     plt.xlabel('Introduced phase on 280MHz [radian] (arbitrary zero)')
