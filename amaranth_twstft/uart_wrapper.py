@@ -1,118 +1,210 @@
 #!/usr/bin/env python3
 
+from enum import Enum
 from amaranth import *
-from amaranth_stdio.serial import AsyncSerial
-from amaranth_twstft.timer import Timer
+from amaranth.back.rtlil import Case
+from amaranth.lib.wiring import Component, In, Out
 
+from amaranth_serial import AsyncSerial, Parity
+from calibration_output import CalibrationMode
+from time_coder import TimeCoderMode, TIMECODE_SIZE
+from mixer import Mode
 
-class UARTWrapper(Elaboratable):
-    """A synchronizable version of the n-bits PRN Generator to use along the 1-PPS Signal
+class SerialInCommands(Enum):
+    TIMECODER_OFF = 0
+    TIMECODER_INVERT_FIRST_CODE = 1
+    SET_TAPS_A = 2
+    SET_TAPS_B = 3
+    MODE_CARRIER = 4
+    MODE_BPSK = 5
+    MODE_QPSK = 6
+    MODE_OFF = 7
+    SET_TIME = 8
+    TIMECODER_TIMECODE = 9
+    CALIB_OFF = 10
+    CALIB_CLK = 11
+    CALIB_PPS = 12
 
-    Parameters
-    ----------
-    bit_len : greater than 1 integer
-        the number of bits of our LFSR
-    
-    taps : less than 2^(bit_len)-1 positive integer
-        the taps to apply to our LFSR
-        if set to zero, we consider the taps as dynamically 
-        chosen by the signal `tsel` (see below attributes)
+class SerialOutCodes(Enum):
+    NOTHING = 0
+    PPS_GOOD = 1
+    PPS_EARLY = 2
+    PPS_LATE = 3
+    SERIAL_RX_OVERFLOW_ERROR = 4
+    SERIAL_RX_FRAME_ERROR = 5
+    SERIAL_RX_PARITY_ERROR = 6
+    UNKNOWN_COMMAND_ERROR = 7
+    CODE_UNALIGNED = 8
+    SYMBOL_UNALIGNED = 9
+    OSCIL_UNALIGNED = 10
 
-    seed : less than 2^(bit_len)-1 non-zero positive integer
-        the initial state of the LFSR
-        (1 by default)
+class UARTWrapper(Component):
+    def __init__(self, clk_freq, bitlen, pins):
+        super().__init__({
+            # Modifiable config
+            'mode': Out(Shape.cast(Mode)),
+            'timecoder_mode': Out(Shape.cast(TimeCoderMode)),
+            'calib_mode': Out(Shape.cast(CalibrationMode)),
+            'taps_a': Out(bitlen),
+            'taps_b': Out(bitlen),
 
+            # set time
+            'set_time': Out(1),
+            'time': Out(TIMECODE_SIZE),
 
-    Attributes
-    ----------
-    output : Signal()
-        the output of the LFSR
-        
-    reg : Signal(bit_len)
-        the LFSR used to compute the prn
-
-    enable : Signal()
-        the enable signal of the PRN Generator 
-        keeps the LFSR in its initial state as long as the signal is set to 0
-
-    next : Signal()
-        shifts the LFSR on every rising clock edge as long as it is set to 1
-
-    tsel : Signal(x)
-        x corresponds to the number of bits required to 
-        count up to the number of taps stored.
-        (5 by default as there are at most 32 different taps stored 
-        (change it by resetting the value of nb_taps_auto))
-        Its value corresponds to the address of the taps stored in memory
-        when driven from outside the module, allows to change dynamically 
-        the taps used on our LFSR. 
-        This can only be used when the `taps` parameter is 0
-
-    _dynamic_tsel : Boolean
-        true when taps are defined dynamically
-
-    _mem : Memory()
-        the place where dynamically used taps are stored
-        Only exists when the `taps` parameter is 0
-
-    _taps : Signal(20)
-        signal used as taps for the LFSR
-    """
-    
-    def __init__(self, clk_freq, uart_pads=None):
-        #check for a few assertions before working
-        assert uart_pads is not None
-
-        # input signal
-        self.rise_pps = Signal(reset_less=True) # used to start request
-        # output signals
-        self.date_en  = Signal()
-        self.date_val = Signal(range(60))
-
-        self._uart_pads = uart_pads
-        self._clk_freq  = clk_freq
+            # flags
+            'pps_good': In(1),
+            'pps_early': In(1),
+            'pps_late': In(1),
+            'code_unaligned': In(1),
+            'symbol_unaligned': In(1),
+            'oscil_unaligned': In(1),
+            })
+        self.clk_freq = clk_freq
+        self.pins = pins
 
     def elaborate(self, platform):
         m = Module()
 
-        m.submodules.timer = timer = Timer(int(self._clk_freq/2))
+        data_bits = 8
+        m.submodules.uart = uart = AsyncSerial(
+                divisor=int(self.clk_freq // 115200),
+                data_bits=data_bits,
+                parity=Parity.EVEN,
+                pins=self.pins)
 
-        uart = AsyncSerial(divisor=int(self._clk_freq // 115200),
-                           pins=self._uart_pads)
-        m.submodules.uart = uart
+        # raise external flags
+        pps_good_flag = Signal()
+        with m.If(self.pps_good):
+            m.d.sync += pps_good_flag.eq(True)
+        pps_late_flag = Signal()
+        with m.If(self.pps_late):
+            m.d.sync += pps_late_flag.eq(True)
+        pps_early_flag = Signal()
+        with m.If(self.pps_early):
+            m.d.sync += pps_early_flag.eq(True)
+        code_unaligned_flag = Signal()
+        with m.If(self.code_unaligned):
+            m.d.sync += code_unaligned_flag.eq(True)
+        symbol_unaligned_flag = Signal()
+        with m.If(self.symbol_unaligned):
+            m.d.sync += symbol_unaligned_flag.eq(True)
+        oscil_unaligned_flag = Signal()
+        with m.If(self.oscil_unaligned):
+            m.d.sync += oscil_unaligned_flag.eq(True)
 
-        rdy_old   = Signal()
-        m.d.sync += rdy_old.eq(uart.rx.rdy)
-        uart_rdy  = (~rdy_old & uart.rx.rdy)
+        # raise internal flags
+        unknown_command_flag = Signal()
+        rx_overflow_flag = Signal()
+        with m.If(uart.rx.err.overflow):
+            m.d.sync += rx_overflow_flag.eq(True)
+        rx_frame_flag = Signal()
+        with m.If(uart.rx.err.frame):
+            m.d.sync += rx_frame_flag.eq(True)
+        rx_parity_flag = Signal()
+        with m.If(uart.rx.err.parity):
+            m.d.sync += rx_parity_flag.eq(True)
 
-        m.d.comb += [
-            uart.tx.ack.eq(0),
-            uart.rx.ack.eq(0)
-        ]
+        m.d.sync += uart.tx.ack.eq(False)
 
-        m.d.sync += [
-            self.date_en.eq(0),
-            timer.enable.eq(0),
-        ]
+        with m.FSM(reset="WAITING"):
+            def recv_in_reg(state: str, reg: Signal, next_state:str='WAITING'):
+                """
+                this function create all FSM states necessary
+                to recieve an integer (in big endian),
+                fitting in the register `reg`,
+                by recieving `ceil(len(reg)//data_bits)` packets of `data_bits` bits.
+                To start recieving, the FSM should be set to `state`,
+                and once enough packets have been recieved,
+                the FSM goes to `next_state`: 'WAITING' by default.
+                The extra bits of the last packets are discarded.
 
-        with m.FSM(reset="WAIT_PPS") as fsm:
-            with m.State("WAIT_PPS"):
-                with m.If(self.rise_pps):
-                    m.d.comb += [
-                        uart.tx.ack.eq(1),
-                        uart.tx.data.eq(self.date_val),
-                    ]
-                    m.d.sync += timer.enable.eq(1)
-                    m.next = "WAIT_PC"
-            with m.State("WAIT_PC"):
-                m.d.comb += uart.rx.ack.eq(1)
-                #m.d.sync += timer.enable.eq(1)
-                with m.If(uart_rdy):
+                Warning : There is no timeout implemented yet and if not enouth packets are sent,
+                          the FSM will be locked indefinitly.
+                """
+                for i in range(0, len(reg), data_bits):
+                    name = state if i == 0 else f'__{state}__{i}'
+                    name_next = (f'__{state}__{i+data_bits}'
+                                 if i < len(reg) - data_bits else
+                                 next_state)
+                    with m.State(name):
+                        m.d.comb += uart.rx.ack.eq(True)
+                        with m.If(uart.rx.rdy):
+                            m.d.sync += reg[i:i+data_bits].eq(uart.rx.data)
+                            m.next = name_next
+
+            recv_in_reg("SET_TAPS_A", self.taps_a)
+            recv_in_reg("SET_TAPS_B", self.taps_b)
+            recv_in_reg("SET_TIME", self.time, next_state="SET_TIME_FINISH")
+            with m.State("WAITING"):
+                m.d.comb += uart.rx.ack.eq(True)
+                with m.If(uart.rx.rdy):
+                    with m.Switch(uart.rx.data):
+                        with m.Case(SerialInCommands.MODE_CARRIER):
+                            m.d.sync += self.mode.eq(Mode.CARRIER)
+                        with m.Case(SerialInCommands.MODE_BPSK):
+                            m.d.sync += self.mode.eq(Mode.BPSK)
+                        with m.Case(SerialInCommands.MODE_QPSK):
+                            m.d.sync += self.mode.eq(Mode.QPSK)
+                        with m.Case(SerialInCommands.MODE_OFF):
+                            m.d.sync += self.mode.eq(Mode.OFF)
+                        with m.Case(SerialInCommands.SET_TAPS_A):
+                            m.next = "SET_TAPS_A"
+                        with m.Case(SerialInCommands.SET_TAPS_B):
+                            m.next = "SET_TAPS_B"
+                        with m.Case(SerialInCommands.SET_TIME):
+                            m.next = "SET_TIME"
+                        with m.Case(SerialInCommands.TIMECODER_OFF):
+                            m.d.sync += self.timecoder_mode.eq(TimeCoderMode.OFF)
+                        with m.Case(SerialInCommands.TIMECODER_INVERT_FIRST_CODE):
+                            m.d.sync += self.timecoder_mode.eq(TimeCoderMode.INVERT_FIRST_CODE)
+                        with m.Case(SerialInCommands.TIMECODER_TIMECODE):
+                            m.d.sync += self.timecoder_mode.eq(TimeCoderMode.TIMECODE)
+                        with m.Case(SerialInCommands.CALIB_OFF):
+                            m.d.sync += self.calib_mode.eq(CalibrationMode.OFF)
+                        with m.Case(SerialInCommands.CALIB_CLK):
+                            m.d.sync += self.calib_mode.eq(CalibrationMode.CLK)
+                        with m.Case(SerialInCommands.CALIB_PPS):
+                            m.d.sync += self.calib_mode.eq(CalibrationMode.PPS)
+                        with m.Default():
+                            m.d.sync += unknown_command_flag.eq(True)
+                with m.If(uart.tx.rdy):
+                    def if_flag_send(flag: Signal, code: int, reset: bool = True, is_elif=False):
+                        """
+                        This helper function create the logic to send `code` if `flag` is up.
+                        If `reset` is True, the `flag` is lowered, so `code` is only sent once.
+                        If `flag` is lowered elsewhere, you want `reset` to be False.
+                        """
+                        with m.Elif(flag) if is_elif else m.If(flag):
+                            m.d.sync += [
+                                uart.tx.ack.eq(True),
+                                uart.tx.data.eq(code),
+                            ]
+                            if reset: # lower the flag
+                                m.d.sync += flag.eq(False)
+                            m.next = "SET_TX_TO_ZERO"
+                    def elif_flag_send(flag: Signal, code: int, reset: bool = True):
+                        if_flag_send(flag, code, reset, True)
+
+                    if_flag_send(unknown_command_flag, SerialOutCodes.UNKNOWN_COMMAND_ERROR)
+                    elif_flag_send(pps_good_flag, SerialOutCodes.PPS_GOOD)
+                    elif_flag_send(pps_late_flag, SerialOutCodes.PPS_LATE)
+                    elif_flag_send(pps_early_flag, SerialOutCodes.PPS_EARLY)
+                    elif_flag_send(code_unaligned_flag, SerialOutCodes.CODE_UNALIGNED)
+                    elif_flag_send(symbol_unaligned_flag, SerialOutCodes.SYMBOL_UNALIGNED)
+                    elif_flag_send(oscil_unaligned_flag, SerialOutCodes.OSCIL_UNALIGNED)
+                    elif_flag_send(rx_overflow_flag, SerialOutCodes.SERIAL_RX_OVERFLOW_ERROR)
+                    elif_flag_send(rx_frame_flag, SerialOutCodes.SERIAL_RX_FRAME_ERROR)
+                    elif_flag_send(rx_parity_flag, SerialOutCodes.SERIAL_RX_PARITY_ERROR)
+            with m.State("SET_TX_TO_ZERO"):
+                with m.If(uart.tx.rdy):
                     m.d.sync += [
-                        self.date_val.eq(uart.rx.data),
-                        self.date_en.eq(1),
+                        uart.tx.ack.eq(True),
+                        uart.tx.data.eq(SerialOutCodes.NOTHING),
                     ]
-                    m.next = "WAIT_PPS"
-                with m.Elif(timer.fire):
-                    m.next = "WAIT_PPS"
+                    m.next = "WAITING"
+            with m.State("SET_TIME_FINISH"):
+                m.d.comb += self.set_time.eq(True)
+                m.next = "WAITING"
+
         return m

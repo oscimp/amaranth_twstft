@@ -1,135 +1,210 @@
-# Zedboard / PynqZ2 / cmod A7 integration
+# CMOD A7 integration
 Back to the [README](../README.md)
 Previous step : [Installation of Amaranth and cie](00_Installation.md)
 
-*flashZedBoard* common script
+This section details how to flash the gateware and how to configure the FPGA via UART serial.
+
+## Bitstream generation
 
 ```
-usage: flashZedBoard.py [-h] [--platform PLATFORM] [--bitlen BITLEN]
-                        [--noiselen NOISELEN] [--no-reload] [-s SEED]
-                        [-t TAPS] [-m MODFREQ] [--invert-first-code]
-                        [--no-invert-first-code] [--no-uart] [-p] [-v]
-                        [--no-build] [--no-load] [--flash]
-                        [--build-dir BUILD_DIR] [--conv-to-bin] [--debug]
+usage: flashZedBoard.py [-h] [--platform PLATFORM] [--bitlen BITLEN] [--noiselen NOISELEN] [-m MODFREQ] [-p] [-v]
+                        [--no-build] [--no-load] [--flash] [--build-dir BUILD_DIR] [--conv-to-bin]
+                        [--toolchain TOOLCHAIN]
 
 options:
   -h, --help            show this help message and exit
-  --platform PLATFORM   Target Platform (pynq, cmoda7, zedboard(default)
+  --platform PLATFORM   Target Platform (CMOD A7 only for now)
   --bitlen BITLEN       number of bits of the LFSR
   --noiselen NOISELEN   length of the PRN sequence
-  --no-reload           stop generation after noiselen bits
-  -s SEED, --seed SEED  initial value of the LFSR (default 1)
-  -t TAPS, --taps TAPS  taps positions for the LFSR (if not defined, allows to
-                        dynamically define taps (currently not supported so
-                        default taps will be the smallest msequence generator
-                        taps))
   -m MODFREQ, --modfreq MODFREQ
-                        frequency of the PSK modulation (Herz) (default
-                        :2.5e6)
-  --invert-first-code   deprecated: default behaviour. Use --no-invert-first-
-                        code to disable xoring + counter
-  --no-invert-first-code
-                        disable invert (xor) the first code after PPS rise and
-                        8bits counter
-  --no-uart             disable uart request for PC second sent during
-                        sequence 1 -> 9 (cmoda7 only
-  -p, --print           creates a binary file containing the PRN sequence that
-                        should be generated
-  -v, --verbose         prints all the parameters used for this instance of
-                        the program
+                        frequency of the PSK modulation (Hertz) (default :2.5e6)
+  -v, --verbose         prints all the parameters used for this instance of the program
   --no-build            sources generate only
   --no-load             don't load bitstream
-  --flash               write bitstream into SPI flash (cmoda7 only)
+  --flash               write bitstream into SPI flash (CMOD A7 only)
   --build-dir BUILD_DIR
                         build directory
   --conv-to-bin         convert .bit file to .bit.bin
-  --debug               enable test signals including 1 PPS out signals
   --toolchain TOOLCHAIN
-                        toolchain to use (Vivado or Symbiflow) (cmoda7 only) (default: Vivado)
-
+                        toolchain to use (Vivado or Symbiflow) (CMOD A7 only) (default: Vivado)
 ```
 
-## bitstream generation
 
-```
-./flashZedBoard.py --platform PLATFORM_NAME --bitlen=BITLEN --noiselen=NOISELEN --taps=TAPS
-```
-
-Where:
-- `PLATFORM_NAME` may be `zedboard`, `pynq` or `cmoda7`
+Required options:
 - `BITLEN` is the *PRN* shift register size ([Pseudo-Random Noise generation](02_PRN.md)) (default: 17)
 - `NOISELEN` is the number of bits produces before reseting the *PRN* shift register (default: 100000)
-- `TAPS` is the *PRN* taps to use (see [Pseudo-Random Noise generation](02_PRN.md))
-  (if this argument is not provided,
-  the first taps according to `BITLEN` is used) (default: None, 9: LTFB, 15:
-  SYRTE)
 
 Optional options:
-- `--no-build` limit to amaranth -> *verilog* convert
-- `--no-load` bypass load step after bitstream 
+- `--no-build` limit to amaranth -> *Verilog* convert
+- `--no-load` bypass load step after bitstream
+- `--flash` write the bitstream in non-volatile memory, by default, the bitstream is written to volatile memory.
 
 for example:
 ```
-./amaranth_twstft/flashZedBoard.py --platform cmoda7 --bitlen 17 --noiselen 100000 -t 9 -p
+./amaranth_twstft/flashZedBoard.py --bitlen 17 --noiselen 100000
 ```
 
-**Note**: by default a numeric message (9bits) is sent once by second: the first
-sequence is inverted, 8 next sequences are xored with a 8 bits internal counter
-(LSB). This counter is free running, set to 0 after *enable* is set, incremented at each
-PPS rising edge for *zynq* based boards and for *cmoda7* when `--no-uart` is passed to
-*flashZedboard.py*. For cmoda7, for default behaviour: counter is set to 60,
-never incremented until PC answer to the date request (once per second).
-Communication is done using second FTDI interface, UART mode, 9600 8n1 (see
-[this script](../amaranth_twstft/host_req_date.py) as an example).
-
-To completely disable this coounter and the xor, `--no-invert-first-code` must
-be used.
-
-**cmoda7 only**: by default when `--no-load` is not passed to the script,
-bitstream is loaded to volatile memory (configuration is lost after a power
-cycle). But it's possible to write bitstream into non-volatile memory (SPI
-Flash) by using `--flash`.
-
-**cmoda7 only**: by default *Vivado* is used to produces the bitstream, but it's
+**CMOD A7 only**: by default *Vivado* is used to produces the bitstream, but it's
 also possible to use the *f4pga* Open-Source toolchain.
+
+## Configuration
+
+At runtime, the FPGA can be configured with the `twstft_config.py` script.
+
+```
+usage: twstft_config.py [-h] [-d DEVICE] [-b BAUDRATE] [-l BITLEN] [-m] [--list] [-p] [-ta TAPS_A] [-tb TAPS_B]
+                        [--prn N] [-t] [-M {OFF,CARRIER,BPSK,QPSK}] [-T {OFF,INVERT_FIRST_CODE,TIMECODE}]
+                        [-C {OFF,CLK,PPS}]
+
+options:
+  -h, --help            show this help message and exit
+  -d DEVICE, --device DEVICE
+  -b BAUDRATE, --baudrate BAUDRATE
+                        serial baudrate
+  -l BITLEN, --bitlen BITLEN
+                        the bitlen of the FPGA's LFSR. Hardwired in FPGA's gateware, this option doesn't modify it's
+                        config but is required to communicate properly the taps settings
+  -m, --monitor         keep listening and print debug signals to stdout
+  --list                list available devices
+  -p, --pps             when monitoring, also print debug signal for valid and expected PPS
+  -ta TAPS_A, --taps-a TAPS_A
+                        set taps for LFSR A (BPSK & QPSK)
+  -tb TAPS_B, --taps-b TAPS_B
+                        set taps for LFSR B (QPSK only)
+  --prn NOISELEN        save a PRN of N bits generated by given taps
+  -t, --set-time        set FPGA's time to computer's time
+  -M {OFF,CARRIER,BPSK,QPSK}, --mode {OFF,CARRIER,BPSK,QPSK}
+                        turn OFF / set modulation mode
+  -T {OFF,INVERT_FIRST_CODE,TIMECODE}, --time-mode {OFF,INVERT_FIRST_CODE,TIMECODE}
+                        set timecode mode
+  -C {OFF,CLK,PPS}, --calib-mode {OFF,CLK,PPS}
+                        set calibration mode
+```
+
+### Connecting to the device
+
+`./twstft_config.py --list` will list available serial ports.
+`DEVICE` must be set to the one connected to the FPGA.
+
+### Setting taps and generating PRN
+
+The taps of both LFSR can be set independently with:
+```
+./twstft_config.py -d DEVICE -l BITLEN -t{a|b} TAPS
+```
+Where `BITLEN` is the size of the LFSR, and the same as the `BITLEN` specified at bitstream generation.
+
+To save the generated PRN to disk:
+```
+./twstft_config --prn NOISELEN -l BITLEN -ta TAPS_A [-tb TAPS_B]
+```
+If both taps are specified, the two prn are interlaced bit by bit.
+
+Options are fully compatible, and can be passed in one command :
+```
+./twstft_config.py -d /dev/ttyUSB1 -l 17 -ta 9 -tb 15 --prn 100000
+```
+Will set the LFSR taps on the FPGA to 9 and 15, and save both 100000 bits PRN interlaced in a 200K file (1 bit per byte).
+
+**Note**: setting LFSR's taps to zero disable it. At reset, both taps are set to zero.
+
+### Enable and configure antenna output
+
+The modulation scheme can be set with:
+```
+./twstft_config.py -d DEVICE -M MODE
+```
+
+Where `MODE` can be:
+ - `OFF` disable antenna output and output a constant low signal.
+ - `CARRIER` output clean 70MHz carrier.
+ - `BPSK` output BPSK modulated by LFSR A
+ - `QPSK` output QPSK modulated orthogonally by LFSRs A and B
+
+**Note**: At reset, mode is set to `OFF`.
+
+### Enable timecode
+
+This option allows to encode the second start or even the seconds of the minute in the phases of PRNs.
+It is set with:
+```
+./twstft_config.py -d DEVICE -T MODE
+```
+
+Where `MODE` can be:
+ - `OFF` disable time encoding
+ - `INVERT_FIRST_CODE` at each PPS, the phase of the first PRN is flipped, allowing time comparison between clocks with more than a PRN's length in offset, as long as the offset is less than half a second.
+ - `TIMECODE` at each PPS, the phase of the first PRN is flipped, and the phases of the 6 following PRNs encode the seconds of the minute from 0 to 59. Allowing time comparison between clocks with as much as 30 seconds offset.
+
+**Note**: At reset, timecode is disabled.
+
+When using `TIMECODE`, to set the FPGA's seconds counter, use `--set-time` to set the FPGA's time to computer's time.
+
+### Calibration output
+
+Option `-C` sets the output off the calibration pin. It's usage is described in the next section. During normal use, this setting should be set to `OFF`.
+
+**Note**: At reset, this is set to `OFF`.
+
+### Monitoring
+
+When receiving a PPS, the FPGA starts a timer that takes one second to finish. When an unexpected PPS is received, a warning is send via UART to the computer.
+To monitor these warnings, use option `-m`. To also get messages when the PPS arrives at the right time, add `--pps`.
+
+All option, are compatibles, when using `-m`, all config modifications are performed before the monitoring begins.
+It is also possible to modify config while another instance of the script is monitoring, but beware that the monitoring will crash if another instance tries to read from the serial port.
+
+## Calibration
+
+On certain phase conditions between the input PPS and the input 10MHz clock,
+the detection system can enter a metastable state,
+causing the PPS to be detected in one tick or the next in the 280Hz clock domain.
+In order to avoid these conditions, it may be necessary to phase shift the input PPS to ensure that it will always be detected during the same tick.
+
+### Finding the safe phase conditions
+
+To find the safe phase conditions, we need a way to phase shift the PPS signal by a whole 280MHz phase (~3.6ns) and an oscilloscope to monitor the effect of the phase shift.
+
+To automate the search for a safe phase span, we used an Agilent 33220A arbitrary waveform generator to phase shift the 10MHz clock ticking the PPS generator, and a Rohde & Schwarz RTO2034 oscilloscope triggered at the rising edge of the input PPS looking for the rising edge of the detected PPS.
+To output the detected PPS on the FPGA's calibration pin, use the command :
+```
+./twstft_config.py -d DEVICE -C PPS
+```
+
+Setup for PPS calibration :
+<img src='../figures/pps_calib_setup.png'>
+
+For the CMOD A7 board, we performed 3 phase-sweeps, each with a 36ps step and 200 acquisitions per step,
+once without emitting on the antenna pin, once emitting a clean carrier and once emitting a BPSK modulated signal.
+These two acquisitions are to ensure that cross-wire interference from the antenna pin doesn't affect PPS detection.
+
+Results with antenna output off:
+<img src='../experiments/250103_PPS_calibration/safe_span_for_pps_2.png'>
+
+Results with antenna output emitting a clean carrier:
+<img src='../experiments/250103_PPS_calibration/safe_span_for_pps_carrier.png'>
+
+Results with antenna output emitting a BPSK modulated signal:
+<img src='../experiments/250103_PPS_calibration/safe_span_for_pps_bpsk.png'>
+
+For the CMOD A7 board, we find that a 12ns delay between the rising edges at a 1V threshold, is safe.
+
+**Note**: the calibration pin has a notch filter set at 70MHz in order to cancel cross-wire interference from the antenna.
+
+**Note**: when setting up a TWSTFT station with a CMOD A7 board, it is not necessary to replicate these acquisitions.
+Only to ensure that the measured delay between the rising edges at a 1V threshold is in the green span of the above diagrams.
+When we will support other FPGA boards, we will add the safe spans for each of them.
 
 ## Pin functions
 
-/!\ Clean carrier is output irrelevant of the ``enable`` signal: make sure to pull the clean_carrier debug signal to low if not used, DO NOT leave floating or a strong 70 MHz carrier will be emitted when Enable is low.
 
-Make sure to compile with ``--debug`` to activate 1 PPS outputs.
-
-``PPS_out`` is the signal propagating from input to output with only
-resynchronization with the internal clock
-
-``PPS_out2`` is generated by a counter running on the internal FPGA clock.
-
-| function              | dir | <a href="https://digilent.com/reference/programmable-logic/zedboard/start">ZedBoard</a> | <a href="https://global.discourse-cdn.com/business5/uploads/pynq1/original/2X/5/5b969c46185b0799d848915df3762fce368bf55d.png">Pynq Z2</a>  | <a href="https://digilent.com/reference/programmable-logic/cmod-a7/reference-manual">cmoda7</a> |
-|-----------------------|-----|----------|----------|--------|
-| 10MHz in              | in  | PMOD_A4  | RPI-11   | GPIO46 |
-| PPS in                | in  | PMOD_C4  | RPI-32   | GPIO42 |
-| enable (active high)  | in  | PMOD_C1  | RPI-8    | GPIO36 |
-| output                | out | PMOD_D4  | RPI-3    | GPIO31 |
-| BPSK/QPSK mode        | in  | SWITCH_0 | SWITCH_0 | GPIO23 |
-| clean_carrier (debug) | in  | SWITCH_1 | SWITCH_1 | GPIO19 |
-| clock out (debug)     | out | PMOD_B2  | RPI-15   | GPIO1  |
-| PPS out (debug)       | out | PMOD_B3  | RPI-36   | GPIO3  |
-| PPS out2 (debug)      | out | PMOD_B1  | RPI-40   | GPIO5  |
-| mixer_o (debug)       | out | PMOD_B7  | RPI-20   | GPIO7  |
-| mixer2_o (debug)      | out | PMOD_B8  | RPI-22   | GPIO9  |
-| inv_prn (debug)       | out | PMOD_D2  | RPI-24   | GPIO11 |
-
-### Zedboard
-
-<img src="../figures/pinout_zedboard.png">
-
-### CMOD A7 (PCB available <a href="https://github.com/oscimp/amaranth_twstft/tree/main/pcb/cmodA7_twtft">here</a>)
-
-<img src="../figures/cmodA7_twtft.png">
-
-### PYNQ Z2
-The input and output signals are available on the 40-pin Raspberry Pi compatible header:
-
-<img src="pynqz2_gpio_conn.png">
+| function              | dir | <a href="https://digilent.com/reference/programmable-logic/cmod-a7/reference-manual">CMOD A7</a> |
+|-----------------------|-----|--------|
+| 10MHz in              | in  | GPIO46 |
+| PPS in                | in  | GPIO42 |
+| calibration           | out | GPIO36 |
+| output                | out | GPIO31 |
+| UART-i                | in  | micro-USB |
+| UART-o                | out | micro-USB |
 
 Next step : [Pseudo-Random Noise generation](02_PRN.md)
