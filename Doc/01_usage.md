@@ -157,7 +157,8 @@ It is also possible to modify config while another instance of the script is mon
 ## Calibration
 
 On certain phase conditions between the input PPS and the input 10MHz clock,
-a small jitter can be enough for the PPS to be detected in one tick or another in the 280Hz clock domain.
+the detection system can enter a metastable state,
+causing the PPS to be detected in one tick or the next in the 280Hz clock domain.
 In order to avoid these conditions, it may be necessary to phase shift the input PPS to ensure that it will always be detected during the same tick.
 
 ### Finding the safe phase conditions
