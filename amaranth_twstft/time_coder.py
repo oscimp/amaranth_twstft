@@ -2,12 +2,7 @@ from enum import Enum
 from amaranth import Cat, Module, Shape, Signal
 from amaranth.lib.wiring import Component, In, Out
 
-TIMECODE_SIZE = 6
-
-class TimeCoderMode(Enum):
-    OFF = 0
-    INVERT_FIRST_CODE = 1
-    TIMECODE = 2 # also invert first code
+from common import TIMECODE_SIZE, TimeCoderMode
 
 class TimeCoder(Component):
     mode: In(Shape.cast(TimeCoderMode))

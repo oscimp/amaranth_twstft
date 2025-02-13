@@ -3,11 +3,7 @@ from enum import Enum
 from amaranth import ClockSignal, Module, Shape
 from amaranth.lib.wiring import Component, In, Out
 
-
-class CalibrationMode(Enum):
-    OFF = 0
-    CLK = 1
-    PPS = 2
+from common import CalibrationMode
 
 class CalibrationOutput(Component):
     mode: In(Shape.cast(CalibrationMode))

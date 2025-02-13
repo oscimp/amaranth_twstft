@@ -13,11 +13,7 @@ import time
 
 from datetime import datetime
 
-from prn import write_prn_seq
-from calibration_output import CalibrationMode
-from time_coder import TIMECODE_SIZE, TimeCoderMode
-from mixer import Mode
-from uart_wrapper import SerialInCommands, SerialOutCodes
+from common import write_prn_seq, CalibrationMode, TIMECODE_SIZE, TimeCoderMode, Mode, SerialInCommands, SerialOutCodes
 
 DEFAULT_BAUD=115200
 

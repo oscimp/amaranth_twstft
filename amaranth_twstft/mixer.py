@@ -4,12 +4,7 @@ from amaranth.sim import Simulator, SimulatorContext
 from amaranth.lib.wiring import Component, In, Out
 
 from oscillator import Oscillator
-
-class Mode(Enum):
-    OFF = 0
-    CARRIER = 1
-    BPSK = 2
-    QPSK = 3
+from common import Mode
 
 class Mixer(Component):
     carrier: In(1)

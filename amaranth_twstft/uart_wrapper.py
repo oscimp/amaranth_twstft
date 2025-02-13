@@ -9,34 +9,7 @@ from amaranth_serial import AsyncSerial, Parity
 from calibration_output import CalibrationMode
 from time_coder import TimeCoderMode, TIMECODE_SIZE
 from mixer import Mode
-
-class SerialInCommands(Enum):
-    TIMECODER_OFF = 0
-    TIMECODER_INVERT_FIRST_CODE = 1
-    SET_TAPS_A = 2
-    SET_TAPS_B = 3
-    MODE_CARRIER = 4
-    MODE_BPSK = 5
-    MODE_QPSK = 6
-    MODE_OFF = 7
-    SET_TIME = 8
-    TIMECODER_TIMECODE = 9
-    CALIB_OFF = 10
-    CALIB_CLK = 11
-    CALIB_PPS = 12
-
-class SerialOutCodes(Enum):
-    NOTHING = 0
-    PPS_GOOD = 1
-    PPS_EARLY = 2
-    PPS_LATE = 3
-    SERIAL_RX_OVERFLOW_ERROR = 4
-    SERIAL_RX_FRAME_ERROR = 5
-    SERIAL_RX_PARITY_ERROR = 6
-    UNKNOWN_COMMAND_ERROR = 7
-    CODE_UNALIGNED = 8
-    SYMBOL_UNALIGNED = 9
-    OSCIL_UNALIGNED = 10
+from common import SerialInCommands, SerialOutCodes
 
 class UARTWrapper(Component):
     def __init__(self, clk_freq, bitlen, pins):
