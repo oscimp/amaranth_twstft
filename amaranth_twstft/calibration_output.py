@@ -3,7 +3,7 @@ from enum import Enum
 from amaranth import ClockSignal, Module, Shape
 from amaranth.lib.wiring import Component, In, Out
 
-from common import CalibrationMode
+from amaranth_twstft.common import CalibrationMode
 
 class CalibrationOutput(Component):
     mode: In(Shape.cast(CalibrationMode))

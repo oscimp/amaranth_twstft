@@ -2,8 +2,6 @@ from amaranth import *
 from amaranth.lib.wiring import *
 from amaranth.sim import Simulator, SimulatorContext
 
-import inspect
-
 class Oscillator(Component):
     """
         An oscillator with same-tick-action reset.

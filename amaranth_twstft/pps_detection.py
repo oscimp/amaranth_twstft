@@ -1,7 +1,7 @@
 from amaranth import Module, Signal
 from amaranth.lib.wiring import Component, In, Out
 
-from safe_timer import SafeTimer
+from amaranth_twstft.safe_timer import SafeTimer
 
 
 class PPSDetector(Component):

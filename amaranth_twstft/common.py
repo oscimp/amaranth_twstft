@@ -70,7 +70,7 @@ def write_prn_seq(bitlen, noiselen, taps_a, taps_b=None):
                 f.write((b%2).to_bytes(1,byteorder='big'))
                 b = nextstate(b, taps_b, bitlen)
         f.close()
-    print(f"see f{filename}")
+    print(f"see {filename}")
 
 def taps_autofill(bit_len, nbtaps,save_file=pickle_file):
     global taps_dict

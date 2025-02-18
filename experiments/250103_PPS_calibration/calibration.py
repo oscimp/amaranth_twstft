@@ -8,10 +8,10 @@ import matplotlib.pyplot as plt
 
 from vxi11.vxi11 import time
 
-from mixer import Mode
-from uart_wrapper import SerialOutCodes
-from calibration_output import CalibrationMode
-from twstft_config import monitor, new_empty_monitoring_handlers, new_serial, set_calib_mode, set_mode, set_taps
+from amaranth_twstft.mixer import Mode
+from amaranth_twstft.uart_wrapper import SerialOutCodes
+from amaranth_twstft.calibration_output import CalibrationMode
+from amaranth_twstft.twstft_config import monitor, new_empty_monitoring_handlers, new_serial, set_calib_mode, set_mode, set_taps
 
 def find_instruments():
     synth = None

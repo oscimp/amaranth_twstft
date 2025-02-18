@@ -4,9 +4,9 @@ from amaranth import *
 from amaranth.build import *
 from amaranth_boards.resources import *
 
-from mixer import Mode
-from main import TwstftMain
-from common import write_prn_seq, taps_autofill, get_taps
+from amaranth_twstft.mixer import Mode
+from amaranth_twstft.main import TwstftMain
+from amaranth_twstft.common import write_prn_seq, taps_autofill, get_taps
 from zedboard import *
 
 import argparse
@@ -266,7 +266,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--platform",     default="cmoda7", help="Target Platform (cmoda7 only for now)", type=str)
     parser.add_argument("--bitlen",       default=17,help="number of bits of the LFSR", type=int)
-    parser.add_argument("--noiselen",     default=100000,  help="length of the PRN sequence", type=float)
+    parser.add_argument("--noiselen",     default=100000,  help="length of the PRN sequence", type=int)
     parser.add_argument("-m","--modfreq", default=int(2.5e6), help="frequency of the PSK modulation (Herz) (default :2.5e6)", type=int)
     parser.add_argument("-v","--verbose", help="prints all the parameters used for this instance of the program", action="store_true")
     parser.add_argument("--no-build",     help="sources generate only", action="store_true")
@@ -316,7 +316,7 @@ if __name__ == "__main__":
     print(platform)
 
     gateware = platform(toolchain=args.toolchain).build(
-        TWSTFT_top(args.bitlen, int(args.noiselen), freqout=args.modfreq),
+        TWSTFT_top(args.bitlen, args.noiselen, freqout=args.modfreq),
         do_program=not (args.no_load or flash_bitstream), do_build=not args.no_build, build_dir=args.build_dir)
     if flash_bitstream:
         flashBistream(args.build_dir)

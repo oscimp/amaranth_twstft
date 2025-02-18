@@ -3,14 +3,14 @@ from amaranth.lib.wiring import Component, In, Out
 from amaranth.sim import Simulator, SimulatorContext
 from amaranth_boards.resources import *
 
-from calibration_output import CalibrationOutput
-from time_coder import TimeCoder
-from uart_wrapper import UARTWrapper
-from synchronizer import Synchronizer 
-from mixer import Mixer, Mode
-from oscillator import Oscillator
-from pps_detection import PPSDetector
-from prn import PrnGenerator
+from amaranth_twstft.calibration_output import CalibrationOutput
+from amaranth_twstft.time_coder import TimeCoder
+from amaranth_twstft.uart_wrapper import UARTWrapper
+from amaranth_twstft.synchronizer import Synchronizer
+from amaranth_twstft.mixer import Mixer, Mode
+from amaranth_twstft.oscillator import Oscillator
+from amaranth_twstft.pps_detection import PPSDetector
+from amaranth_twstft.prn import PrnGenerator
 
 
 class TwstftMain(Component):

@@ -3,8 +3,8 @@ from amaranth import Module, Shape, Signal
 from amaranth.sim import Simulator, SimulatorContext
 from amaranth.lib.wiring import Component, In, Out
 
-from oscillator import Oscillator
-from common import Mode
+from amaranth_twstft.oscillator import Oscillator
+from amaranth_twstft.common import Mode
 
 class Mixer(Component):
     carrier: In(1)

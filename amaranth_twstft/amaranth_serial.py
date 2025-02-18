@@ -28,7 +28,7 @@ from amaranth.lib.wiring import In, Out, connect, flipped
 from amaranth.lib.cdc import FFSynchronizer
 from amaranth.utils import bits_for
 
-from safe_timer import SafeTimer
+from amaranth_twstft.safe_timer import SafeTimer
 
 
 __all__ = ["Parity", "AsyncSerialRX", "AsyncSerialTX", "AsyncSerial"]

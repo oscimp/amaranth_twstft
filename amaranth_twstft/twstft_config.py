@@ -13,7 +13,7 @@ import time
 
 from datetime import datetime
 
-from common import write_prn_seq, CalibrationMode, TIMECODE_SIZE, TimeCoderMode, Mode, SerialInCommands, SerialOutCodes
+from amaranth_twstft.common import write_prn_seq, CalibrationMode, TIMECODE_SIZE, TimeCoderMode, Mode, SerialInCommands, SerialOutCodes
 
 DEFAULT_BAUD=115200
 

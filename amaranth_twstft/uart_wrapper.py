@@ -5,11 +5,11 @@ from amaranth import *
 from amaranth.back.rtlil import Case
 from amaranth.lib.wiring import Component, In, Out
 
-from amaranth_serial import AsyncSerial, Parity
-from calibration_output import CalibrationMode
-from time_coder import TimeCoderMode, TIMECODE_SIZE
-from mixer import Mode
-from common import SerialInCommands, SerialOutCodes
+from amaranth_twstft.amaranth_serial import AsyncSerial, Parity
+from amaranth_twstft.calibration_output import CalibrationMode
+from amaranth_twstft.time_coder import TimeCoderMode, TIMECODE_SIZE
+from amaranth_twstft.mixer import Mode
+from amaranth_twstft.common import SerialInCommands, SerialOutCodes
 
 class UARTWrapper(Component):
     def __init__(self, clk_freq, bitlen, pins):

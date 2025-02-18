@@ -2,10 +2,10 @@ from amaranth import Assert, Module, Shape, Signal
 from amaranth.lib.wiring import Component, In, Out
 from amaranth.sim import Simulator, SimulatorContext, TriggerCombination
 
-from safe_timer import SafeTimer
-from mixer import Mode
-from oscillator import Oscillator
-from prn import PrnGenerator, nextstate
+from amaranth_twstft.safe_timer import SafeTimer
+from amaranth_twstft.mixer import Mode
+from amaranth_twstft.oscillator import Oscillator
+from amaranth_twstft.prn import PrnGenerator, nextstate
 
 class Synchronizer(Component):
     """
