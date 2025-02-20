@@ -70,7 +70,7 @@ def write_prn_seq(bitlen, noiselen, taps_a, taps_b=None):
                 f.write((b%2).to_bytes(1,byteorder='big'))
                 b = nextstate(b, taps_b, bitlen)
         f.close()
-    print(f"see f{filename}")
+    print(f"see {filename}")
 
 def taps_autofill(bit_len, nbtaps,save_file=pickle_file):
     global taps_dict
@@ -134,9 +134,10 @@ def get_taps(bit_len,save_file=pickle_file):
 # Enum classes
 
 class CalibrationMode(Enum):
-    OFF = 0
+    AUTO = 0
     CLK = 1
     PPS = 2
+    OFF = 3
 
 TIMECODE_SIZE = 6
 
@@ -165,6 +166,7 @@ class SerialInCommands(Enum):
     CALIB_OFF = 10
     CALIB_CLK = 11
     CALIB_PPS = 12
+    CALIB_AUTO = 13
 
 class SerialOutCodes(Enum):
     NOTHING = 0
@@ -178,4 +180,4 @@ class SerialOutCodes(Enum):
     CODE_UNALIGNED = 8
     SYMBOL_UNALIGNED = 9
     OSCIL_UNALIGNED = 10
-
+    CALIBRATION_DONE = 12

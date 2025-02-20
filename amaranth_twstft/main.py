@@ -1,26 +1,27 @@
-from amaranth import Module, Shape, Signal
+from amaranth import ClockDomain, Module, Shape, Signal
 from amaranth.lib.wiring import Component, In, Out
 from amaranth.sim import Simulator, SimulatorContext
 from amaranth_boards.resources import *
 
-from calibration_output import CalibrationOutput
-from time_coder import TimeCoder
-from uart_wrapper import UARTWrapper
-from synchronizer import Synchronizer 
-from mixer import Mixer, Mode
-from oscillator import Oscillator
-from pps_detection import PPSDetector
-from prn import PrnGenerator
+from amaranth_twstft.calibration_output import CalibrationOutput
+from amaranth_twstft.clocking import Clocking
+from amaranth_twstft.common import CalibrationMode
+from amaranth_twstft.time_coder import TimeCoder
+from amaranth_twstft.uart_wrapper import UARTWrapper
+from amaranth_twstft.synchronizer import Synchronizer
+from amaranth_twstft.mixer import Mixer, Mode
+from amaranth_twstft.oscillator import Oscillator
+from amaranth_twstft.prn import PrnGenerator
 
 
 class TwstftMain(Component):
+    clk10_in: In(1)
     pps: In(1)
     antena_out: Out(1)
     calib_out: Out(1)
 
     def __init__(
             self,
-            f_clock,
             f_carrier,
             f_code,
             code_len=10**4,
@@ -32,10 +33,10 @@ class TwstftMain(Component):
             uart=None,
             ):
         super().__init__()
-        self.f_clock = f_clock
+        self.f_clock = int(280e6)
         self.f_carrier = f_carrier
         self.f_code = f_code
-        assert f_clock % f_carrier == 0
+        assert self.f_clock % f_carrier == 0
         assert f_carrier % f_code == 0
         self.code_len = code_len
         self.bit_len = bit_len
@@ -45,7 +46,8 @@ class TwstftMain(Component):
         m = Module()
 
         # Modules
-        m.submodules.pps = mpps = PPSDetector(self.f_clock)
+        m.domains.sync = ClockDomain()
+        m.submodules.clocking = clocking = Clocking()
         m.submodules.prn_a = prn_a = PrnGenerator(self.bit_len)
         m.submodules.prn_b = prn_b = PrnGenerator(self.bit_len)
         m.submodules.oscil = oscil = Oscillator(self.f_clock, self.f_carrier)
@@ -68,21 +70,25 @@ class TwstftMain(Component):
 
         # Connexions
 
-        m.d.comb += mpps.pps_in.eq(self.pps)
+        m.d.comb += clocking.clk10_in.eq(self.clk10_in)
+        m.d.comb += clocking.pps_in.eq(self.pps)
+        m.d.comb += clocking.auto_calibrate.eq(uart.calib_mode == CalibrationMode.AUTO)
 
-        m.d.comb += uart.pps_good.eq(mpps.pps_good)
-        m.d.comb += uart.pps_late.eq(mpps.pps_late)
-        m.d.comb += uart.pps_early.eq(mpps.pps_early)
+        m.d.comb += uart.pps_good.eq(clocking.pps_good)
+        m.d.comb += uart.pps_late.eq(clocking.pps_late)
+        m.d.comb += uart.pps_early.eq(clocking.pps_early)
         m.d.comb += uart.code_unaligned.eq(synchronizer.code_unaligned)
         m.d.comb += uart.symbol_unaligned.eq(synchronizer.oscil_unaligned)
         m.d.comb += uart.oscil_unaligned.eq(synchronizer.oscil_unaligned)
+        m.d.comb += uart.calibration_done.eq(clocking.calibration_done)
+        m.d.comb += uart.pps_phase.eq(clocking.pps_phase)
 
-        m.d.comb += synchronizer.pps.eq(mpps.pps)
+        m.d.comb += synchronizer.pps.eq(clocking.pps)
 
         m.d.comb += time.mode.eq(uart.timecoder_mode)
         m.d.comb += time.time.eq(uart.time)
         m.d.comb += time.set_time.eq(uart.set_time)
-        m.d.comb += time.pps.eq(mpps.pps)
+        m.d.comb += time.pps.eq(clocking.pps)
         m.d.comb += time.next_bit.eq(synchronizer.next_code)
 
         m.d.comb += prn_a.taps.eq(uart.taps_a)
@@ -95,9 +101,10 @@ class TwstftMain(Component):
         m.d.comb += mixer.mode.eq(uart.mode)
 
         m.d.comb += calib.mode.eq(uart.calib_mode)
-        m.d.comb += calib.pps.eq(mpps.pps)
+        m.d.comb += calib.pps.eq(clocking.pps)
+        m.d.comb += calib.delayed_pps.eq(clocking.delayed_pps)
 
-        m.d.comb += self.antena_out.eq(mixer.out)
+        m.d.sync += self.antena_out.eq(mixer.out)
         m.d.comb += self.calib_out.eq(calib.out)
 
         return m

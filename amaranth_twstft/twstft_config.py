@@ -13,7 +13,7 @@ import time
 
 from datetime import datetime
 
-from common import write_prn_seq, CalibrationMode, TIMECODE_SIZE, TimeCoderMode, Mode, SerialInCommands, SerialOutCodes
+from amaranth_twstft.common import write_prn_seq, CalibrationMode, TIMECODE_SIZE, TimeCoderMode, Mode, SerialInCommands, SerialOutCodes
 
 DEFAULT_BAUD=115200
 
@@ -67,6 +67,8 @@ def set_calib_mode(s: serial.Serial, mode: CalibrationMode):
             s.write(SerialInCommands.CALIB_CLK.value.to_bytes())
         case CalibrationMode.PPS:
             s.write(SerialInCommands.CALIB_PPS.value.to_bytes())
+        case CalibrationMode.AUTO:
+            s.write(SerialInCommands.CALIB_AUTO.value.to_bytes())
     s.flush()
 
 def set_taps(s: serial.Serial, bitlen: int, taps_a:int = None, taps_b:int = None):
@@ -147,8 +149,10 @@ def main():
 
     handlers = new_empty_monitoring_handlers()
     if args.monitor:
-        def print_code(_, code: SerialOutCodes):
-            print(code.name)
+        def print_code(s: serial.Serial, code: SerialOutCodes):
+            print(time.ctime() , code.name)
+            if code == SerialOutCodes.CALIBRATION_DONE:
+                print('PPS detected in phase number', s.read(1)[0])
         if args.pps:
             handlers[SerialOutCodes.PPS_GOOD].append(print_code)
         handlers[SerialOutCodes.PPS_EARLY].append(print_code)
@@ -159,6 +163,7 @@ def main():
         handlers[SerialOutCodes.CODE_UNALIGNED].append(print_code)
         handlers[SerialOutCodes.SYMBOL_UNALIGNED].append(print_code)
         handlers[SerialOutCodes.OSCIL_UNALIGNED].append(print_code)
+        handlers[SerialOutCodes.CALIBRATION_DONE].append(print_code)
 
     if args.set_time:
         # We dont set time right away,

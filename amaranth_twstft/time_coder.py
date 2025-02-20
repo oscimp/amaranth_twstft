@@ -2,7 +2,7 @@ from enum import Enum
 from amaranth import Cat, Module, Shape, Signal
 from amaranth.lib.wiring import Component, In, Out
 
-from common import TIMECODE_SIZE, TimeCoderMode
+from amaranth_twstft.common import TIMECODE_SIZE, TimeCoderMode
 
 class TimeCoder(Component):
     mode: In(Shape.cast(TimeCoderMode))

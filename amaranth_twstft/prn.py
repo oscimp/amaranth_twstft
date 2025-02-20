@@ -4,7 +4,7 @@ from amaranth import *
 from amaranth.lib.wiring import Component, In, Out
 from amaranth.sim import *
 
-from common import nextstate
+from amaranth_twstft.common import nextstate
 
 #default number of different taps to choose among when dynamically selecting the taps for the LFSR
 nb_taps_auto = 32
