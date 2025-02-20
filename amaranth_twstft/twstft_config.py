@@ -67,6 +67,8 @@ def set_calib_mode(s: serial.Serial, mode: CalibrationMode):
             s.write(SerialInCommands.CALIB_CLK.value.to_bytes())
         case CalibrationMode.PPS:
             s.write(SerialInCommands.CALIB_PPS.value.to_bytes())
+        case CalibrationMode.AUTO:
+            s.write(SerialInCommands.CALIB_AUTO.value.to_bytes())
     s.flush()
 
 def set_taps(s: serial.Serial, bitlen: int, taps_a:int = None, taps_b:int = None):
@@ -159,6 +161,8 @@ def main():
         handlers[SerialOutCodes.CODE_UNALIGNED].append(print_code)
         handlers[SerialOutCodes.SYMBOL_UNALIGNED].append(print_code)
         handlers[SerialOutCodes.OSCIL_UNALIGNED].append(print_code)
+        handlers[SerialOutCodes.CALIBRATION_ERROR].append(print_code)
+        handlers[SerialOutCodes.CALIBRATION_DONE].append(print_code)
 
     if args.set_time:
         # We dont set time right away,

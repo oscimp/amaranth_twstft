@@ -68,8 +68,6 @@ class TWSTFT_top(Elaboratable):
     def elaborate(self,platform):
         m = Module()
 
-        m.domains.sync = ClockDomain()
-
         uart_pads = None
         
         #parametrizing the platforms outputs
@@ -147,81 +145,26 @@ class TWSTFT_top(Elaboratable):
 
         uart_pads = platform.request("uart")
         pins = platform.request('pins',0)
+        clk10_in = platform.request('external_clk').clk_in.i
+        clk10_in_buf = Signal()
+        m.submodules += Instance(
+                'BUFG',
+                i_I = clk10_in,
+                o_O = clk10_in_buf,
+                )
 
-        new_clk = platform.request('external_clk',0)
-
-        platform_clk = new_clk.clk_in
-        base_clk_freq    = 10000000
-        mmcm_clk_out     = Signal()
-        mmcm_locked      = Signal()
-        mmcm_feedback    = Signal()
-    
-        clk_input_buf    = Signal()
-        m.submodules += Instance("BUFG",
-            i_I  = platform_clk.i,
-            o_O  = clk_input_buf,
-        )
-        
-        if base_clk_freq == 20000000:
-            vco_mult = 42.0
-            mmc_out_div = 3.0
-        else:
-            vco_mult = 63.0
-            mmc_out_div = 2.25
-        mmc_out_period = 1e9 / (base_clk_freq * vco_mult / mmc_out_div)
-                
-        m.submodules.mmcm = Instance("MMCME2_ADV",
-            p_BANDWIDTH          = "OPTIMIZED",
-            p_CLKFBOUT_MULT_F    = vco_mult, 
-            p_CLKFBOUT_PHASE     = 0.0,
-            p_CLKIN1_PERIOD      = int(1e9 // base_clk_freq), # 10MHz
-            
-            
-            p_CLKOUT0_DIVIDE_F   = mmc_out_div,
-            p_CLKOUT0_DUTY_CYCLE = 0.5,
-            p_CLKOUT0_PHASE      = 0.0,
-
-            p_SS_EN              = "FALSE",
-            
-            i_DADDR                = Const(0, 7),
-            i_DEN                  = 0,
-            i_DI                   = Const(0, 16),
-            i_DWE                  = 0,
-
-            i_PSEN                 = 0,
-    
-            i_PWRDWN               = 0,
-            i_RST                  = 0,
-            i_CLKINSEL             = 1,
-            i_CLKFBIN              = mmcm_feedback,
-            o_CLKFBOUT             = mmcm_feedback,
-            i_CLKIN1               = clk_input_buf,
-            i_CLKIN2               = Const(0),
-            o_CLKOUT0              = mmcm_clk_out,
-            o_LOCKED               = mmcm_locked,
-        )
-    
-        m.submodules += Instance("BUFG",
-            i_I  = mmcm_clk_out,
-            o_O  = ClockSignal("sync"),
-        )
-        m.d.comb += ResetSignal("sync").eq(~mmcm_locked)
-    
-        clock_freq = 1e9/mmc_out_period
-        platform.add_clock_constraint(clk_input_buf, base_clk_freq)
-        print(f"clock freq {clock_freq} mmc out period {mmc_out_period}")
-
+        platform.add_clock_constraint(clk10_in_buf, int(10e6))
         m.submodules.main = main = TwstftMain(
-                int(clock_freq),
                 int(70e6),
                 int(self._freqout),
                 bit_len=self._bit_len,
                 code_len=self._noise_len,
                 uart=uart_pads)
 
+        m.d.comb += main.clk10_in.eq(clk10_in_buf)
         m.d.comb += main.pps.eq(pins.PPS_in.i)
         m.d.comb += pins.calib_out.o.eq(main.calib_out)
-        m.d.sync += pins.output.o.eq(main.antena_out)
+        m.d.comb += pins.output.o.eq(main.antena_out)
 
         return m
 

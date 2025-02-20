@@ -54,8 +54,8 @@ def get_pps_offset(oscil):
 def setup_synth(synth: vxi11.Instrument):
     synth.write('FUNC SIN')
     synth.write('FREQ 10e6')
-    synth.write('VOLT:LOW -50e-3')
-    synth.write('VOLT:HIGH 50e-3')
+    synth.write('VOLT:LOW -500e-3')
+    synth.write('VOLT:HIGH 500e-3')
     synth.write('UNIT:ANGLE RADIAN')
     synth.write('PHASE 0')
     synth.write('OUTPUT ON')
@@ -101,6 +101,33 @@ def acquire(s, synth, oscil, steps=10, reps=10):
     monitor(s, handlers)
 
     return results[:-1], double_jumps
+
+
+def sweep_phases(s, synth, steps=10, reps=10):
+    setup_synth(synth)
+
+    i = 0
+    j = 0
+
+
+    def pps_handler(s, code):
+        nonlocal i, j
+        if j == reps:
+            i += 1
+            j = 0
+            synth.write(f'PHASE {2*math.pi*i/steps/28}')
+            synth.ask('*OPC?')
+        if i == steps:
+            s.close()
+            return
+        j += 1
+        print(i,j, code)
+    handlers = new_empty_monitoring_handlers()
+    handlers[SerialOutCodes.PPS_GOOD].append(pps_handler)
+    handlers[SerialOutCodes.PPS_EARLY].append(pps_handler)
+
+    monitor(s, handlers)
+
 
 def show_view(x, ch1, ch2):
     plt.plot(x, ch1, label='PPS signal')
