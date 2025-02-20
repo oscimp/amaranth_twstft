@@ -150,7 +150,7 @@ def main():
     handlers = new_empty_monitoring_handlers()
     if args.monitor:
         def print_code(s: serial.Serial, code: SerialOutCodes):
-            print(code.name)
+            print(time.ctime() , code.name)
             if code == SerialOutCodes.CALIBRATION_DONE:
                 print('PPS detected in phase number', s.read(1)[0])
         if args.pps:
@@ -163,7 +163,6 @@ def main():
         handlers[SerialOutCodes.CODE_UNALIGNED].append(print_code)
         handlers[SerialOutCodes.SYMBOL_UNALIGNED].append(print_code)
         handlers[SerialOutCodes.OSCIL_UNALIGNED].append(print_code)
-        handlers[SerialOutCodes.CALIBRATION_ERROR].append(print_code)
         handlers[SerialOutCodes.CALIBRATION_DONE].append(print_code)
 
     if args.set_time:
