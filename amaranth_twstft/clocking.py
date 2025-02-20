@@ -10,11 +10,11 @@ class Clocking(Component):
 
     pps: Out(1)
     delayed_pps: Out(1)
+    pps_phase: Out(range(28))
 
     # flags
     auto_calibrate: In(1)
     calibration_done: Out(1)
-    calibration_error: Out(1)
     pps_good: Out(1)
     pps_late: Out(1)
     pps_early: Out(1)
@@ -25,7 +25,8 @@ class Clocking(Component):
     def elaborate(self, platform):
         m = Module()
 
-        m.domains += ClockDomain('clk210')
+        clk210 = Signal()
+        clk10 = Signal()
 
         mmcm_feedback = Signal()
         mmcm_locked = Signal()
@@ -35,6 +36,8 @@ class Clocking(Component):
                 p_CLKIN1_PERIOD = 100,
                 p_CLKOUT0_DIVIDE_F = 2.25,
                 p_CLKOUT1_DIVIDE = 3,
+                p_CLKOUT2_DIVIDE = 63, # restituate the 10MHz clock, safely readable from the 280MHz clock domain
+                p_CLKOUT2_PHASE = -180/28,
 
                 i_CLKFBIN = mmcm_feedback,
                 o_CLKFBOUT = mmcm_feedback,
@@ -43,7 +46,8 @@ class Clocking(Component):
 
                 i_CLKIN1 = self.clk10_in,
                 o_CLKOUT0 = ClockSignal('sync'),
-                o_CLKOUT1 = ClockSignal('clk210'),
+                o_CLKOUT1 = clk210,
+                o_CLKOUT2 = clk10,
 
                 # Unused inputs tied to zero
                 i_CLKIN2 = 0,
@@ -59,15 +63,14 @@ class Clocking(Component):
                 i_RST = 0,
                 )
         m.d.comb += ResetSignal('sync').eq(~mmcm_locked)
-        m.d.comb += ResetSignal('clk210').eq(~mmcm_locked)
 
         delay_reset = Signal() # forcibly reset the delay element
         delay_ready = Signal() # is asserted when the delay element is ready
         m.submodules += Instance(
                 'IDELAYCTRL',
                 o_RDY = delay_ready,
-                i_REFCLK = ClockSignal('clk210'),
-                i_RST = ResetSignal('clk210') | delay_reset,
+                i_REFCLK = clk210,
+                i_RST = ResetSignal('sync') | delay_reset,
                 )
         delay_cnt = Signal(5)
         delay_load = Signal()
@@ -162,5 +165,17 @@ class Clocking(Component):
                     m.d.comb += self.pps.eq(True)
                     m.d.comb += self.calibration_done.eq(True)
                     m.next = 'RUNNING'
+
+        edge_detect_10_a = Signal()
+        edge_detect_10_b = Signal()
+        m.d.sync += edge_detect_10_a.eq(clk10)
+        m.d.sync += edge_detect_10_b.eq(edge_detect_10_a)
+        phase_count = Signal(range(28))
+        with m.If(edge_detect_10_a & ~edge_detect_10_b):
+            m.d.sync += phase_count.eq(0)
+        with m.Else():
+            m.d.sync += phase_count.eq(phase_count + 1)
+        with m.If(pps_detected):
+            m.d.sync += self.pps_phase.eq(phase_count)
 
         return m

@@ -149,8 +149,10 @@ def main():
 
     handlers = new_empty_monitoring_handlers()
     if args.monitor:
-        def print_code(_, code: SerialOutCodes):
+        def print_code(s: serial.Serial, code: SerialOutCodes):
             print(code.name)
+            if code == SerialOutCodes.CALIBRATION_DONE:
+                print('PPS detected in phase number', s.read(1)[0])
         if args.pps:
             handlers[SerialOutCodes.PPS_GOOD].append(print_code)
         handlers[SerialOutCodes.PPS_EARLY].append(print_code)

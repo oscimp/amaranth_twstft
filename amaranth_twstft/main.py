@@ -80,8 +80,8 @@ class TwstftMain(Component):
         m.d.comb += uart.code_unaligned.eq(synchronizer.code_unaligned)
         m.d.comb += uart.symbol_unaligned.eq(synchronizer.oscil_unaligned)
         m.d.comb += uart.oscil_unaligned.eq(synchronizer.oscil_unaligned)
-        m.d.comb += uart.calibration_error.eq(clocking.calibration_error)
         m.d.comb += uart.calibration_done.eq(clocking.calibration_done)
+        m.d.comb += uart.pps_phase.eq(clocking.pps_phase)
 
         m.d.comb += synchronizer.pps.eq(clocking.pps)
 
