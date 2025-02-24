@@ -35,6 +35,7 @@ def arg_parser():
     parser.add_argument('-M', '--mode', choices=Mode._member_names_, help='turn OFF / set modulation mode')
     parser.add_argument('-T', '--time-mode', choices=TimeCoderMode._member_names_, help='set timecode mode')
     parser.add_argument('-C', '--calib-mode', choices=CalibrationMode._member_names_, help='set calibration mode')
+    parser.add_argument('-c', '--ask-calib', action='store_true', help='(re)calibbrate if not already done and return pps phase')
     return parser
 
 def set_mode(s: serial.Serial, mode: Mode):
@@ -89,8 +90,20 @@ def set_time(s: serial.Serial, time: int):
         SerialInCommands.SET_TIME.value,
         time%60))
 
+def ask_calib(s: serial.Serial, return_pps_phase=False):
+    s.write(SerialInCommands.ASK_CALIB.value.to_bytes())
+    if return_pps_phase:
+        while s.read(1)[0] != SerialOutCodes.CALIBRATION_DONE.value:
+            pass
+        return s.read(1)[0]
+
 def new_empty_monitoring_handlers():
     return {code:list() for code in SerialOutCodes.__members__.values()}
+
+def print_code(s: serial.Serial, code: SerialOutCodes):
+    print(time.ctime() , code.name)
+    if code == SerialOutCodes.CALIBRATION_DONE:
+        print('PPS detected in phase number', s.read(1)[0])
 
 def monitor(s: serial.Serial,
             handlers: Dict[
@@ -149,10 +162,6 @@ def main():
 
     handlers = new_empty_monitoring_handlers()
     if args.monitor:
-        def print_code(s: serial.Serial, code: SerialOutCodes):
-            print(time.ctime() , code.name)
-            if code == SerialOutCodes.CALIBRATION_DONE:
-                print('PPS detected in phase number', s.read(1)[0])
         if args.pps:
             handlers[SerialOutCodes.PPS_GOOD].append(print_code)
         handlers[SerialOutCodes.PPS_EARLY].append(print_code)
@@ -163,6 +172,7 @@ def main():
         handlers[SerialOutCodes.CODE_UNALIGNED].append(print_code)
         handlers[SerialOutCodes.SYMBOL_UNALIGNED].append(print_code)
         handlers[SerialOutCodes.OSCIL_UNALIGNED].append(print_code)
+        handlers[SerialOutCodes.UNKNOWN_COMMAND_ERROR].append(print_code)
         handlers[SerialOutCodes.CALIBRATION_DONE].append(print_code)
 
     if args.set_time:
@@ -177,12 +187,19 @@ def main():
         def set_time_handler(s: serial.Serial, _):
             time.sleep(0.4)
             set_time(s, int(time.time()))
-            if not args.monitor:
+            if not args.monitor and not args.ask_calib:
                 s.close()
         handlers[SerialOutCodes.PPS_GOOD].append(set_time_handler)
 
+    if args.ask_calib:
+        ask_calib(s)
+        if not args.monitor:
+            def ask_calib_handler(s, code):
+                print_code(s, code)
+                s.close()
+            handlers[SerialOutCodes.CALIBRATION_DONE].append(ask_calib_handler)
 
-    if args.monitor or args.set_time:
+    if args.monitor or args.set_time or args.ask_calib:
         monitor(s, handlers)
 
 

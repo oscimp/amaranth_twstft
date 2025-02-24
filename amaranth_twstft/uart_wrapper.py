@@ -26,7 +26,7 @@ class UARTWrapper(Component):
             'time': Out(TIMECODE_SIZE),
 
             # flags
-            'calibration_done': In(1),
+            'calibration_finish': In(1),
             'pps_good': In(1),
             'pps_early': In(1),
             'pps_late': In(1),
@@ -36,6 +36,7 @@ class UARTWrapper(Component):
 
             # misc
             'pps_phase': In(5),
+            'ask_calib': Out(1),
             })
         self.clk_freq = clk_freq
         self.pins = pins
@@ -69,9 +70,9 @@ class UARTWrapper(Component):
         oscil_unaligned_flag = Signal()
         with m.If(self.oscil_unaligned):
             m.d.sync += oscil_unaligned_flag.eq(True)
-        calibration_done_flag = Signal()
-        with m.If(self.calibration_done):
-            m.d.sync += calibration_done_flag.eq(True)
+        calibration_finish_flag = Signal()
+        with m.If(self.calibration_finish):
+            m.d.sync += calibration_finish_flag.eq(True)
 
         # raise internal flags
         unknown_command_flag = Signal()
@@ -148,6 +149,8 @@ class UARTWrapper(Component):
                             m.d.sync += self.calib_mode.eq(CalibrationMode.PPS)
                         with m.Case(SerialInCommands.CALIB_AUTO):
                             m.d.sync += self.calib_mode.eq(CalibrationMode.AUTO)
+                        with m.Case(SerialInCommands.ASK_CALIB):
+                            m.d.comb += self.ask_calib.eq(True)
                         with m.Default():
                             m.d.sync += unknown_command_flag.eq(True)
                 with m.If(uart.tx.rdy):
@@ -178,7 +181,7 @@ class UARTWrapper(Component):
                     elif_flag_send(rx_overflow_flag, SerialOutCodes.SERIAL_RX_OVERFLOW_ERROR)
                     elif_flag_send(rx_frame_flag, SerialOutCodes.SERIAL_RX_FRAME_ERROR)
                     elif_flag_send(rx_parity_flag, SerialOutCodes.SERIAL_RX_PARITY_ERROR)
-                    elif_flag_send(calibration_done_flag, SerialOutCodes.CALIBRATION_DONE, next_state='SEND_PPS_PHASE')
+                    elif_flag_send(calibration_finish_flag, SerialOutCodes.CALIBRATION_DONE, next_state='SEND_PPS_PHASE')
             with m.State("SEND_PPS_PHASE"):
                 with m.If(uart.tx.rdy):
                     m.d.sync += [

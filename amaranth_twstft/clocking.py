@@ -14,7 +14,8 @@ class Clocking(Component):
 
     # flags
     auto_calibrate: In(1)
-    calibration_done: Out(1)
+    ask_calibrate: In(1)
+    calibration_finish: Out(1)
     pps_good: Out(1)
     pps_late: Out(1)
     pps_early: Out(1)
@@ -124,20 +125,39 @@ class Clocking(Component):
 
         m.d.sync += delay_load.eq(False)
 
+        calibration_done = Signal()
+        calibration_asked = Signal()
+        with m.If(self.ask_calibrate):
+            m.d.sync += calibration_asked.eq(True)
+
         with m.FSM(reset='START'):
             with m.State('START'):
                 with m.If(self.auto_calibrate):
-                    m.d.sync += delay_cnt.eq(0)
-                    m.d.sync += delay_load.eq(True)
-                    m.next = 'CALIBRATION'
+                    m.next = 'CALIBRATION_BEGIN'
                 with m.Else():
                     m.next = 'RUNNING'
+
             with m.State('RUNNING'):
-                m.d.comb += self.pps.eq(pps_detected)
-                with m.If(self.auto_calibrate & (self.pps_late | self.pps_early)):
-                    m.d.sync += delay_cnt.eq(0)
-                    m.d.sync += delay_load.eq(True)
-                    m.next = 'CALIBRATION'
+                with m.If(calibration_asked):
+                    m.d.sync += calibration_asked.eq(False)
+                    with m.If(calibration_done):
+                        m.next = 'FINALIZE'
+                    with m.Else():
+                        m.next = 'CALIBRATION_BEGIN'
+                with m.If(self.pps_late | self.pps_early):
+                    m.d.sync += calibration_done.eq(False)
+                    with m.If(self.auto_calibrate):
+                        m.next = 'CALIBRATION_BEGIN'
+                with m.Else():
+                    m.d.comb += self.pps.eq(pps_detected)
+
+            with m.State('CALIBRATION_BEGIN'):
+                m.d.sync += delay_cnt.eq(0)
+                m.d.sync += delay_load.eq(True)
+                m.d.sync += calibration_done.eq(False)
+                m.d.sync += self.pps_phase.eq(31)
+                m.next = 'CALIBRATION'
+
             with m.State('CALIBRATION'):
                 with m.If(self.pps_good):
                     with m.If(delay_cnt == 31): # no jumps have been found in the whole span
@@ -161,10 +181,12 @@ class Clocking(Component):
                                     31)))
                     m.d.sync += delay_load.eq(True)
                     m.next = 'FINALIZE'
+
             with m.State('FINALIZE'):
                 with m.If(self.pps_good):
                     m.d.comb += self.pps.eq(True)
-                    m.d.comb += self.calibration_done.eq(True)
+                    m.d.sync += calibration_done.eq(True)
+                    m.d.comb += self.calibration_finish.eq(True)
                     m.next = 'RUNNING'
 
         edge_detect_10_a = Signal()
@@ -176,7 +198,7 @@ class Clocking(Component):
             m.d.sync += phase_count.eq(0)
         with m.Else():
             m.d.sync += phase_count.eq(phase_count + 1)
-        with m.If(self.pps_good):
+        with m.If(self.pps):
             m.d.sync += self.pps_phase.eq(phase_count)
 
         return m

@@ -74,6 +74,7 @@ class TwstftMain(Component):
         m.d.comb += clocking.clk10_in.eq(self.clk10_in)
         m.d.comb += clocking.pps_in.eq(self.pps)
         m.d.comb += clocking.auto_calibrate.eq(uart.calib_mode == CalibrationMode.AUTO)
+        m.d.comb += clocking.ask_calibrate.eq(uart.ask_calib)
 
         m.d.comb += uart.pps_good.eq(clocking.pps_good)
         m.d.comb += uart.pps_late.eq(clocking.pps_late)
@@ -81,7 +82,7 @@ class TwstftMain(Component):
         m.d.comb += uart.code_unaligned.eq(synchronizer.code_unaligned)
         m.d.comb += uart.symbol_unaligned.eq(synchronizer.oscil_unaligned)
         m.d.comb += uart.oscil_unaligned.eq(synchronizer.oscil_unaligned)
-        m.d.comb += uart.calibration_done.eq(clocking.calibration_done)
+        m.d.comb += uart.calibration_finish.eq(clocking.calibration_finish)
         m.d.comb += uart.pps_phase.eq(clocking.pps_phase)
 
         m.d.comb += synchronizer.pps.eq(clocking.pps)
