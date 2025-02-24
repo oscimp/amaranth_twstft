@@ -35,7 +35,7 @@ class Clocking(Component):
                 p_CLKOUT0_DIVIDE_F = 2.25,
                 p_CLKOUT1_DIVIDE = 3,
                 p_CLKOUT2_DIVIDE = 63, # restituate the 10MHz clock, safely readable from the 280MHz clock domain
-                p_CLKOUT2_PHASE = 180.0/28,
+                p_CLKOUT2_PHASE = -180.0/28,
 
                 i_CLKFBIN = mmcm_feedback,
                 o_CLKFBOUT = mmcm_feedback,
