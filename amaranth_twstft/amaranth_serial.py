@@ -390,6 +390,7 @@ class AsyncSerialTX(wiring.Component):
             with m.State("IDLE"):
                 m.d.comb += self.rdy.eq(1)
                 with m.If(self.ack):
+                    m.d.comb += self.rdy.eq(0)
                     m.d.sync += [
                         shreg.start .eq(0),
                         shreg.data  .eq(self.data),

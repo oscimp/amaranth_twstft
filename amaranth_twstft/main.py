@@ -47,6 +47,7 @@ class TwstftMain(Component):
 
         # Modules
         m.domains.sync = ClockDomain()
+
         m.submodules.clocking = clocking = Clocking()
         m.submodules.prn_a = prn_a = PrnGenerator(self.bit_len)
         m.submodules.prn_b = prn_b = PrnGenerator(self.bit_len)
@@ -111,13 +112,14 @@ class TwstftMain(Component):
 
 if __name__ == '__main__':
     dut = TwstftMain(
-            280000,
             70000,
             2500,
             code_len=100,
             uart=None)
     sim = Simulator(dut)
-    sim.add_clock(1/280000)
+    sim.add_clock(1/280000, phase=0, domain='sync')
+    sim.add_clock(1/210000, phase=0, domain='clk210')
+    sim.add_clock(1/10000, phase=1/2/280000, domain='clk10')
 
     async def process(ctx: SimulatorContext):
         i = 0

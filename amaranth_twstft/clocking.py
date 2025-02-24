@@ -10,7 +10,7 @@ class Clocking(Component):
 
     pps: Out(1)
     delayed_pps: Out(1)
-    pps_phase: Out(range(28))
+    pps_phase: Out(5, reset=31)
 
     # flags
     auto_calibrate: In(1)
@@ -19,17 +19,14 @@ class Clocking(Component):
     pps_late: Out(1)
     pps_early: Out(1)
 
-    def __init__(self):
-        super().__init__()
-
     def elaborate(self, platform):
         m = Module()
 
-        clk210 = Signal()
-        clk10 = Signal()
-
         mmcm_feedback = Signal()
         mmcm_locked = Signal()
+        mmcm_sync = Signal()
+        mmcm_clk210 = Signal()
+        mmcm_clk10 = Signal()
         m.submodules.mmcm = Instance(
                 'MMCME2_ADV',
                 p_CLKFBOUT_MULT_F = 63,
@@ -37,7 +34,7 @@ class Clocking(Component):
                 p_CLKOUT0_DIVIDE_F = 2.25,
                 p_CLKOUT1_DIVIDE = 3,
                 p_CLKOUT2_DIVIDE = 63, # restituate the 10MHz clock, safely readable from the 280MHz clock domain
-                p_CLKOUT2_PHASE = -180/28,
+                p_CLKOUT2_PHASE = 180.0/28,
 
                 i_CLKFBIN = mmcm_feedback,
                 o_CLKFBOUT = mmcm_feedback,
@@ -45,9 +42,9 @@ class Clocking(Component):
                 o_LOCKED = mmcm_locked,
 
                 i_CLKIN1 = self.clk10_in,
-                o_CLKOUT0 = ClockSignal('sync'),
-                o_CLKOUT1 = clk210,
-                o_CLKOUT2 = clk10,
+                o_CLKOUT0 = mmcm_sync,
+                o_CLKOUT1 = mmcm_clk210,
+                o_CLKOUT2 = mmcm_clk10,
 
                 # Unused inputs tied to zero
                 i_CLKIN2 = 0,
@@ -62,6 +59,11 @@ class Clocking(Component):
                 i_PWRDWN = 0,
                 i_RST = 0,
                 )
+        m.submodules += Instance(
+                'BUFG',
+                i_I = mmcm_sync,
+                o_O = ClockSignal('sync'),
+                )
         m.d.comb += ResetSignal('sync').eq(~mmcm_locked)
 
         delay_reset = Signal() # forcibly reset the delay element
@@ -69,12 +71,11 @@ class Clocking(Component):
         m.submodules += Instance(
                 'IDELAYCTRL',
                 o_RDY = delay_ready,
-                i_REFCLK = clk210,
+                i_REFCLK = mmcm_clk210,
                 i_RST = ResetSignal('sync') | delay_reset,
                 )
         delay_cnt = Signal(5)
         delay_load = Signal()
-        #delay_inc = Signal()
         m.submodules += Instance(
                 'IDELAYE2',
                 p_DELAY_SRC = 'IDATAIN',
@@ -168,14 +169,14 @@ class Clocking(Component):
 
         edge_detect_10_a = Signal()
         edge_detect_10_b = Signal()
-        m.d.sync += edge_detect_10_a.eq(clk10)
+        m.d.sync += edge_detect_10_a.eq(mmcm_clk10)
         m.d.sync += edge_detect_10_b.eq(edge_detect_10_a)
-        phase_count = Signal(range(28))
+        phase_count = Signal(5)
         with m.If(edge_detect_10_a & ~edge_detect_10_b):
             m.d.sync += phase_count.eq(0)
         with m.Else():
             m.d.sync += phase_count.eq(phase_count + 1)
-        with m.If(pps_detected):
+        with m.If(self.pps_good):
             m.d.sync += self.pps_phase.eq(phase_count)
 
         return m

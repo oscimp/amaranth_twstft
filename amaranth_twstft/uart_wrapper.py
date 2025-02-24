@@ -35,7 +35,7 @@ class UARTWrapper(Component):
             'oscil_unaligned': In(1),
 
             # misc
-            'pps_phase': In(range(28)),
+            'pps_phase': In(5),
             })
         self.clk_freq = clk_freq
         self.pins = pins
@@ -151,7 +151,7 @@ class UARTWrapper(Component):
                         with m.Default():
                             m.d.sync += unknown_command_flag.eq(True)
                 with m.If(uart.tx.rdy):
-                    def if_flag_send(flag: Signal, code: int, reset: bool = True, is_elif=False, next_state='SET_TX_TO_ZERO'):
+                    def if_flag_send(flag: Signal, code: int, reset: bool = True, is_elif=False, next_state='WAITING'):
                         """
                         This helper function create the logic to send `code` if `flag` is up.
                         If `reset` is True, the `flag` is lowered, so `code` is only sent once.
@@ -165,8 +165,8 @@ class UARTWrapper(Component):
                             if reset: # lower the flag
                                 m.d.sync += flag.eq(False)
                             m.next = next_state
-                    def elif_flag_send(flag: Signal, code: int, reset: bool = True, next_state='SET_TX_TO_ZERO'):
-                        if_flag_send(flag, code, reset, True)
+                    def elif_flag_send(flag: Signal, code: int, reset: bool = True, next_state='WAITING'):
+                        if_flag_send(flag, code, reset, True, next_state)
 
                     if_flag_send(unknown_command_flag, SerialOutCodes.UNKNOWN_COMMAND_ERROR)
                     elif_flag_send(pps_good_flag, SerialOutCodes.PPS_GOOD)
@@ -179,20 +179,13 @@ class UARTWrapper(Component):
                     elif_flag_send(rx_frame_flag, SerialOutCodes.SERIAL_RX_FRAME_ERROR)
                     elif_flag_send(rx_parity_flag, SerialOutCodes.SERIAL_RX_PARITY_ERROR)
                     elif_flag_send(calibration_done_flag, SerialOutCodes.CALIBRATION_DONE, next_state='SEND_PPS_PHASE')
-            with m.State("SET_TX_TO_ZERO"):
-                with m.If(uart.tx.rdy):
-                    m.d.sync += [
-                        uart.tx.ack.eq(True),
-                        uart.tx.data.eq(SerialOutCodes.NOTHING),
-                    ]
-                    m.next = "WAITING"
             with m.State("SEND_PPS_PHASE"):
                 with m.If(uart.tx.rdy):
                     m.d.sync += [
                         uart.tx.ack.eq(True),
                         uart.tx.data.eq(self.pps_phase),
                     ]
-                    m.next = "SET_TX_TO_ZERO"
+                    m.next = "WAITING"
             with m.State("SET_TIME_FINISH"):
                 m.d.comb += self.set_time.eq(True)
                 m.next = "WAITING"
