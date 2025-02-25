@@ -7,6 +7,7 @@ from amaranth_twstft.safe_timer import SafeTimer
 class Clocking(Component):
     pps_in: In(1)
     clk10_in: In(1)
+    reset: In(1)
 
     pps: Out(1)
     delayed_pps: Out(1)
@@ -58,14 +59,14 @@ class Clocking(Component):
                 i_PSEN = 0,
                 i_PSINCDEC = 0,
                 i_PWRDWN = 0,
-                i_RST = 0,
+                i_RST = self.reset,
                 )
         m.submodules += Instance(
                 'BUFG',
                 i_I = mmcm_sync,
                 o_O = ClockSignal('sync'),
                 )
-        m.d.comb += ResetSignal('sync').eq(~mmcm_locked)
+        m.d.comb += ResetSignal('sync').eq(~mmcm_locked | self.reset)
 
         delay_reset = Signal() # forcibly reset the delay element
         delay_ready = Signal() # is asserted when the delay element is ready

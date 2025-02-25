@@ -19,6 +19,7 @@ class TwstftMain(Component):
     pps: In(1)
     antena_out: Out(1)
     calib_out: Out(1)
+    reset: In(1)
 
     def __init__(
             self,
@@ -73,6 +74,7 @@ class TwstftMain(Component):
 
         m.d.comb += clocking.clk10_in.eq(self.clk10_in)
         m.d.comb += clocking.pps_in.eq(self.pps)
+        m.d.comb += clocking.reset.eq(self.reset)
         m.d.comb += clocking.auto_calibrate.eq(uart.calib_mode == CalibrationMode.AUTO)
         m.d.comb += clocking.ask_calibrate.eq(uart.ask_calib)
 
