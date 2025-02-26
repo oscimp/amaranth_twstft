@@ -163,7 +163,6 @@ class TWSTFT_top(Elaboratable):
 
         m.d.comb += main.clk10_in.eq(clk10_in_buf)
         m.d.comb += main.pps.eq(pins.PPS_in.i)
-        m.d.comb += main.reset.eq(platform.request('button').i)
         m.d.comb += pins.calib_out.o.eq(main.calib_out)
         m.d.comb += pins.output.o.eq(main.antena_out)
 
