@@ -162,6 +162,7 @@ class TWSTFT_top(Elaboratable):
                 )
 
         platform.add_clock_constraint(clk10_in_buf, int(10e6))
+        platform.add_clock_constraint(local_clk_buf, int(12e6))
         m.submodules.main = main = TwstftMain(
                 int(70e6),
                 int(self._freqout),

@@ -1,4 +1,4 @@
-from amaranth import ClockDomain, Module, Shape, Signal, ResetSignal
+from amaranth import ClockDomain, Module, Shape, Signal, ResetSignal, ClockSignal
 from amaranth.lib.wiring import Component, In, Out
 from amaranth.sim import Simulator, SimulatorContext
 from amaranth.lib.cdc import FFSynchronizer, AsyncFFSynchronizer
@@ -50,6 +50,7 @@ class TwstftMain(Component):
         # Modules
         m.domains.sync = ClockDomain()
         m.domains.local = ClockDomain()
+        m.d.comb += ClockSignal('local').eq(self.local_clk)
 
         m.submodules.clocking = clocking = Clocking()
         m.submodules.prn_a = prn_a = PrnGenerator(self.bit_len)
@@ -116,7 +117,8 @@ class TwstftMain(Component):
         m.d.comb += mixer.carrier90.eq(oscil.out90)
         m.d.comb += mixer.data.eq(synchronizer.data)
         m.d.comb += mixer.time_code_data.eq(time.data)
-        m.d.comb += mixer.mode.eq(uart.mode)
+        with m.If(clocking.pps): # only start emission at the beginning of the second
+            m.d.sync += mixer.mode.eq(uart.mode)
 
         m.d.comb += calib.mode.eq(uart.calib_mode)
         m.d.comb += calib.pps.eq(clocking.pps)

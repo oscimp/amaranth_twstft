@@ -168,6 +168,7 @@ class SerialInCommands(Enum):
     CALIB_PPS = 12
     CALIB_AUTO = 13
     ASK_CALIB = 14
+    DO_RESET = 15
 
 class SerialOutCodes(Enum):
     NOTHING = 0

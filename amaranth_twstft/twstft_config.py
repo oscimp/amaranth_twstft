@@ -36,6 +36,7 @@ def arg_parser():
     parser.add_argument('-T', '--time-mode', choices=TimeCoderMode._member_names_, help='set timecode mode')
     parser.add_argument('-C', '--calib-mode', choices=CalibrationMode._member_names_, help='set calibration mode')
     parser.add_argument('-c', '--ask-calib', action='store_true', help='(re)calibbrate if not already done and return pps phase')
+    parser.add_argument('-R', '--reset', action='store_true', help='reset FPGA and config to default')
     return parser
 
 def set_mode(s: serial.Serial, mode: Mode):
@@ -70,6 +71,10 @@ def set_calib_mode(s: serial.Serial, mode: CalibrationMode):
             s.write(SerialInCommands.CALIB_PPS.value.to_bytes())
         case CalibrationMode.AUTO:
             s.write(SerialInCommands.CALIB_AUTO.value.to_bytes())
+    s.flush()
+
+def reset(s):
+    s.write(SerialInCommands.DO_RESET.value.to_bytes())
     s.flush()
 
 def set_taps(s: serial.Serial, bitlen: int, taps_a:int = None, taps_b:int = None):
@@ -160,6 +165,10 @@ def main():
             parser.error("--device must be specified unless --list or --prn is")
 
     s = new_serial(args.device, args.baudrate)
+
+    if args.reset:
+        reset(s)
+        time.sleep(0.1)
 
     if args.mode:
         set_mode(s, Mode[args.mode])

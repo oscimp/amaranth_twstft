@@ -156,6 +156,8 @@ class UARTWrapper(Component):
                             m.d.sync += self.calib_mode.eq(CalibrationMode.AUTO)
                         with m.Case(SerialInCommands.ASK_CALIB):
                             m.d.comb += self.ask_calib.eq(True)
+                        with m.Case(SerialInCommands.DO_RESET):
+                            m.d.sync += self.do_reset.eq(True)
                         with m.Default():
                             m.d.sync += unknown_command_flag.eq(True)
                 with m.If(uart.tx.rdy):
@@ -187,7 +189,7 @@ class UARTWrapper(Component):
                     elif_flag_send(rx_frame_flag, SerialOutCodes.SERIAL_RX_FRAME_ERROR)
                     elif_flag_send(rx_parity_flag, SerialOutCodes.SERIAL_RX_PARITY_ERROR)
                     elif_flag_send(calibration_finish_flag, SerialOutCodes.CALIBRATION_DONE, next_state='SEND_PPS_PHASE')
-                    elif_flag_send(lost_lock_flag, SerialOutCodes.LOST_LOCK, next_state='DO_RESET')
+                    elif_flag_send(lost_lock_flag, SerialOutCodes.LOST_LOCK)
             with m.State("SEND_PPS_PHASE"):
                 with m.If(uart.tx.rdy):
                     m.d.sync += [
@@ -198,8 +200,5 @@ class UARTWrapper(Component):
             with m.State("SET_TIME_FINISH"):
                 m.d.comb += self.set_time.eq(True)
                 m.next = "WAITING"
-            with m.State('DO_RESET'):
-                m.d.comb += self.do_reset.eq(True)
-                m.next = 'WAITING'
 
         return m

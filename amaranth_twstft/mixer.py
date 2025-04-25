@@ -12,7 +12,7 @@ class Mixer(Component):
     data: In(2)
     time_code_data: In(1)
     mode: In(Shape.cast(Mode))
-    
+
     out: Out(1)
 
     def elaborate(self, plateform):
