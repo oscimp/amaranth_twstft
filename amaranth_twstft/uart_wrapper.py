@@ -33,10 +33,12 @@ class UARTWrapper(Component):
             'code_unaligned': In(1),
             'symbol_unaligned': In(1),
             'oscil_unaligned': In(1),
+            'lost_lock': In(1),
 
             # misc
             'pps_phase': In(5),
             'ask_calib': Out(1),
+            'do_reset': Out(1),
             })
         self.clk_freq = clk_freq
         self.pins = pins
@@ -73,6 +75,9 @@ class UARTWrapper(Component):
         calibration_finish_flag = Signal()
         with m.If(self.calibration_finish):
             m.d.sync += calibration_finish_flag.eq(True)
+        lost_lock_flag = Signal()
+        with m.If(self.lost_lock):
+            m.d.sync += lost_lock_flag.eq(True)
 
         # raise internal flags
         unknown_command_flag = Signal()
@@ -182,6 +187,7 @@ class UARTWrapper(Component):
                     elif_flag_send(rx_frame_flag, SerialOutCodes.SERIAL_RX_FRAME_ERROR)
                     elif_flag_send(rx_parity_flag, SerialOutCodes.SERIAL_RX_PARITY_ERROR)
                     elif_flag_send(calibration_finish_flag, SerialOutCodes.CALIBRATION_DONE, next_state='SEND_PPS_PHASE')
+                    elif_flag_send(lost_lock_flag, SerialOutCodes.LOST_LOCK, next_state='DO_RESET')
             with m.State("SEND_PPS_PHASE"):
                 with m.If(uart.tx.rdy):
                     m.d.sync += [
@@ -192,5 +198,8 @@ class UARTWrapper(Component):
             with m.State("SET_TIME_FINISH"):
                 m.d.comb += self.set_time.eq(True)
                 m.next = "WAITING"
+            with m.State('DO_RESET'):
+                m.d.comb += self.do_reset.eq(True)
+                m.next = 'WAITING'
 
         return m

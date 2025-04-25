@@ -182,3 +182,4 @@ class SerialOutCodes(Enum):
     SYMBOL_UNALIGNED = 9
     OSCIL_UNALIGNED = 10
     CALIBRATION_DONE = 12
+    LOST_LOCK = 13

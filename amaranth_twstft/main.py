@@ -1,6 +1,7 @@
-from amaranth import ClockDomain, Module, Shape, Signal
+from amaranth import ClockDomain, Module, Shape, Signal, ResetSignal
 from amaranth.lib.wiring import Component, In, Out
 from amaranth.sim import Simulator, SimulatorContext
+from amaranth.lib.cdc import FFSynchronizer, AsyncFFSynchronizer
 from amaranth_boards.resources import *
 
 from amaranth_twstft.calibration_output import CalibrationOutput
@@ -16,6 +17,7 @@ from amaranth_twstft.prn import PrnGenerator
 
 class TwstftMain(Component):
     clk10_in: In(1)
+    local_clk: In(1) 
     pps: In(1)
     antena_out: Out(1)
     calib_out: Out(1)
@@ -47,6 +49,7 @@ class TwstftMain(Component):
 
         # Modules
         m.domains.sync = ClockDomain()
+        m.domains.local = ClockDomain()
 
         m.submodules.clocking = clocking = Clocking()
         m.submodules.prn_a = prn_a = PrnGenerator(self.bit_len)
@@ -79,11 +82,24 @@ class TwstftMain(Component):
         m.d.comb += uart.pps_good.eq(clocking.pps_good)
         m.d.comb += uart.pps_late.eq(clocking.pps_late)
         m.d.comb += uart.pps_early.eq(clocking.pps_early)
+        m.d.comb += uart.lost_lock.eq(clocking.lost_lock)
         m.d.comb += uart.code_unaligned.eq(synchronizer.code_unaligned)
         m.d.comb += uart.symbol_unaligned.eq(synchronizer.oscil_unaligned)
         m.d.comb += uart.oscil_unaligned.eq(synchronizer.oscil_unaligned)
         m.d.comb += uart.calibration_finish.eq(clocking.calibration_finish)
         m.d.comb += uart.pps_phase.eq(clocking.pps_phase)
+
+        do_rst = Signal()
+        m.submodules += FFSynchronizer(
+                i = uart.do_reset,
+                o = do_rst,
+                o_domain = 'local',
+                )
+        m.submodules += AsyncFFSynchronizer(
+                i = do_rst,
+                o = ResetSignal('sync'),
+                o_domain = 'sync',
+                )
 
         m.d.comb += synchronizer.pps.eq(clocking.pps)
 

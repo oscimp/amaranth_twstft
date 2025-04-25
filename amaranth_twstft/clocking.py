@@ -19,6 +19,7 @@ class Clocking(Component):
     pps_good: Out(1)
     pps_late: Out(1)
     pps_early: Out(1)
+    lost_lock: Out(1)
 
     def elaborate(self, platform):
         m = Module()
@@ -65,7 +66,7 @@ class Clocking(Component):
                 i_I = mmcm_sync,
                 o_O = ClockSignal('sync'),
                 )
-        m.d.comb += ResetSignal('sync').eq(~mmcm_locked)
+        m.d.comb += self.lost_lock.eq(~mmcm_locked)
 
         delay_reset = Signal() # forcibly reset the delay element
         delay_ready = Signal() # is asserted when the delay element is ready

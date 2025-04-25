@@ -103,7 +103,10 @@ def new_empty_monitoring_handlers():
 def print_code(s: serial.Serial, code: SerialOutCodes):
     print(time.ctime() , code.name)
     if code == SerialOutCodes.CALIBRATION_DONE:
+        old_timeout = s.timeout
+        s.timeout = None
         print('PPS detected in phase number', s.read(1)[0])
+        s.timeout = old_timeout
 
 def monitor(s: serial.Serial,
             handlers: Dict[
@@ -124,6 +127,18 @@ def new_serial(device, baudrate=DEFAULT_BAUD):
     s = serial.Serial(device, baudrate, bytesize=8, parity=serial.PARITY_EVEN)
     atexit.register(s.close)
     return s
+
+def print_logs(s: serial.Serial):
+    old_timeout = s.timeout
+    s.timeout = 0
+    while (code := s.read(1)) != b'':
+        try:
+            code = SerialOutCodes(code[0])
+        except ValueError:
+            print(f"Error : unknown code {code}")
+            continue
+        print_code(s, code)
+    s.timeout = old_timeout
 
 
 def main():
@@ -174,6 +189,7 @@ def main():
         handlers[SerialOutCodes.OSCIL_UNALIGNED].append(print_code)
         handlers[SerialOutCodes.UNKNOWN_COMMAND_ERROR].append(print_code)
         handlers[SerialOutCodes.CALIBRATION_DONE].append(print_code)
+        handlers[SerialOutCodes.LOST_LOCK].append(print_code)
 
     if args.set_time:
         # We dont set time right away,

@@ -153,6 +153,14 @@ class TWSTFT_top(Elaboratable):
                 o_O = clk10_in_buf,
                 )
 
+        local_clk = platform.request('clk12').i
+        local_clk_buf = Signal()
+        m.submodules += Instance(
+                'BUFG',
+                i_I = local_clk,
+                o_O = local_clk_buf,
+                )
+
         platform.add_clock_constraint(clk10_in_buf, int(10e6))
         m.submodules.main = main = TwstftMain(
                 int(70e6),
@@ -162,6 +170,7 @@ class TWSTFT_top(Elaboratable):
                 uart=uart_pads)
 
         m.d.comb += main.clk10_in.eq(clk10_in_buf)
+        m.d.comb += main.local_clk.eq(local_clk_buf)
         m.d.comb += main.pps.eq(pins.PPS_in.i)
         m.d.comb += pins.calib_out.o.eq(main.calib_out)
         m.d.comb += pins.output.o.eq(main.antena_out)
