@@ -79,6 +79,7 @@ options:
                         set timecode mode
   -C {OFF,CLK,PPS}, --calib-mode {OFF,CLK,PPS}
                         set calibration mode
+  -R, --reset           reset FPGA and config to default
 ```
 
 ### Connecting to the device
