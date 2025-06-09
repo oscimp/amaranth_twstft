@@ -56,3 +56,16 @@ X310 software](Doc/09_X310.md)
 A similar proprietary development unrelated to this work is under way as described at 
 http://www.eltvor.cz/elttt21.html as part of the ESA contract 
 https://navisp.esa.int/project/details/108/show
+
+## Note on using SSD (Solid State Drive) with GNU/Linux
+
+The adopted strategy is to store the records from the SDR receiver for post-processing
+in order to remove the burden of computational load and dependency with accelerating
+co-processing units such as GPU or FPGA. However it has been observed that the mass-storage
+disk would end up loosing samples and hence stop acquisition after some time.
+
+These issues were solved with
+* adding ``lazytime,norelatime,noatime`` in ``/etc/fstab`` to prevent updating too often
+the file tag associated with file access
+* formatting with EXT2 to avoid journaling
+* regularly running ``sudo fstrim -v /data`` where ``/data/`` is the SSD mouting point.
