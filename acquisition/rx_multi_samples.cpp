@@ -31,7 +31,7 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
         ("help", "help message")
         ("args", po::value<std::string>(&args)->default_value(""), "single uhd device address args")
         ("secs", po::value<double>(&seconds_in_future)->default_value(1.5), "number of seconds in the future to receive")
-        ("nsamps", po::value<size_t>(&total_num_samps)->default_value(5e6*60*5.5*2), "total number of samples to receive")
+        ("nsamps", po::value<size_t>(&total_num_samps)->default_value(5e6*60*5.5), "total number of samples to receive")
         ("rate", po::value<double>(&rate)->default_value(5e6), "rate of incoming samples")
         ("freq", po::value<double>(&freq)->default_value(70e6), "center frequency")
         ("lo_offset", po::value<double>(&lo_offset)->default_value(0), "frequency offset")
@@ -148,7 +148,7 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
 
     // create a receive streamer
     // linearly map channels (index0 = channel0, index1 = channel1, ...)
-    uhd::stream_args_t stream_args("sc8","sc8"); // JMF
+    uhd::stream_args_t stream_args("sc16","sc16"); // data size
     stream_args.channels             = channel_nums;
     uhd::rx_streamer::sptr rx_stream = usrp->get_rx_stream(stream_args);
 
@@ -168,11 +168,11 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
 
     // allocate buffers to receive with samples (one buffer per channel)
     const size_t samps_per_buff = rx_stream->get_max_num_samps();
-    std::vector<std::vector<std::complex<char>>> buffs(
-        usrp->get_rx_num_channels(), std::vector<std::complex<char>>(samps_per_buff));
+    std::vector<std::vector<std::complex<short>>> buffs(
+        usrp->get_rx_num_channels(), std::vector<std::complex<short>>(samps_per_buff));
 
     // create a vector of pointers to point to each of the channel buffers
-    std::vector<std::complex<char>*> buff_ptrs;
+    std::vector<std::complex<short>*> buff_ptrs;
     for (size_t i = 0; i < buffs.size(); i++)
         buff_ptrs.push_back(&buffs[i].front());
 
@@ -204,8 +204,8 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
         if (md.error_code == uhd::rx_metadata_t::ERROR_CODE_OVERFLOW){
             std::cerr << "overflow\n" << std::endl;
             }
-        outfile1.write( (const char*)&buffs[0].front(), samps_per_buff*sizeof(std::complex<char>));
-        outfile2.write( (const char*)&buffs[1].front(), samps_per_buff*sizeof(std::complex<char>));
+        outfile1.write( (const char*)&buffs[0].front(), samps_per_buff*sizeof(std::complex<short>));
+        outfile2.write( (const char*)&buffs[1].front(), samps_per_buff*sizeof(std::complex<short>));
         num_acc_samps += num_rx_samps;
     }
   }
