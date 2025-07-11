@@ -12,6 +12,7 @@ OP=0
 affiche=0;
 debug=1
 datalocation='./'
+codelocation='/home/jmfriedt/codes/';
 remotechannel=2 % 1 or 2 => localchannel=3-remotechannel
 ls=2;
 
@@ -69,8 +70,6 @@ function [xval,indice,correction,SNRr,SNRi,puissance,puissancecode,puissancenois
 	cm=cm+1;
       end
 end
-
-codelocation='/home/jmfriedt/codes/';
 
 dirlist=dir([datalocation,'/*_1.bin']);
 dirbit=dir([codelocation,'/n*.bin']);
@@ -158,11 +157,11 @@ for dirnum=1:length(dirlist)
   %       end
         pfreq=pfreq+1;
       end
-    until (longueur<length(fcode)*2*ls);  % ls s
+    until (longueur!=fs*2*ls);  % ls s
     fclose(f)
     eval(['save -mat ',nomout,' corr* df indic* SNR* code puissan* xval* moved*']);
     clear corr* df* indic* p SNR* puissa* xval*
-    eval(['system(''mv /data/',dirlist(dirnum).name,' /data/donetw/'')']);
+    eval(['system(''mv ',datalocation,dirlist(dirnum).name,' ',datalocation,'/donetw/'')']);
   else
     printf("%s already done\n",nomout);
   end
