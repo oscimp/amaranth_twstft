@@ -8,14 +8,19 @@ global temps freq fcode code fs Nint    % save time by avoiding unnecessary fixe
 fs=5e6;
 Nint=1;
 remote=1
-ranging=1;
-OP=0
+OP=getenv('OP')
+datalocation=gentenv('processing_dir')
+codelocation=getenv('codelocation')
+remotechannel=getenv('remotechannel')
+ls=2;
 affiche=0;
 debug=1
-datalocation='./'
-codelocation='/home/jmfriedt/codes/';
-remotechannel=2 % 1 or 2 => localchannel=3-remotechannel
-ls=2;
+ranging=1
+
+if (isempty('codelocation')) codelocation='/home/jmfriedt/codes/';end
+if (isempty('OP')) OP=0;end
+if (isempty('datalocation')) datalocation='./';end
+if (isempty('remotechannel')) remotechannel=2';end % 1 or 2 => localchannel=3-remotechannel
 
 function [xval,indice,correction,SNRr,SNRi,puissance,puissancecode,puissancenoise]=processing(d,k,df)
       global temps freq fcode code fs Nint
@@ -72,7 +77,7 @@ function [xval,indice,correction,SNRr,SNRi,puissance,puissancecode,puissancenois
       end
 end
 
-dirlist=dir([datalocation,'/*_2.bin']);
+dirlist=dir([datalocation,'/*_',num2str(remotechannel),'.bin']);
 dirbit=dir([codelocation,'/n*.bin']);
 for dirnum=1:length(dirlist)
   nomin=dirbit(mod(OP+remote+ranging,2)+1).name  % LTFB=odd OP=even
@@ -97,7 +102,7 @@ for dirnum=1:length(dirlist)
     fclose(f);
     dirlist(dirnum).name
     eval(["f=fopen('",datalocation,"/",dirlist(dirnum).name,"');"]);
-    d=fread(f,fs*2*10,'int16');         % 15s JMFXX
+    d=fread(f,fs*2*10,'int16');
     p=1;
     pfreq=1;
     temps=[0:length(code)-1]'/fs;

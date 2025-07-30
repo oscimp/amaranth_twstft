@@ -8,13 +8,18 @@ global temps freq fcode code fs Nint    % save time by avoiding unnecessary fixe
 fs=5e6;
 Nint=1;
 remote=1
-OP=0
+OP=getenv('OP')
+datalocation=gentenv('processing_dir')
+codelocation=getenv('codelocation')
+remotechannel=getenv('remotechannel')
+ls=2;
 affiche=0;
 debug=1
-datalocation='./'
-codelocation='/home/jmfriedt/codes/';
-remotechannel=2 % 1 or 2 => localchannel=3-remotechannel
-ls=2;
+
+if (isempty('codelocation')) codelocation='/home/jmfriedt/codes/';end
+if (isempty('OP')) OP=0;end
+if (isempty('datalocation')) datalocation='./';end
+if (isempty('remotechannel')) remotechannel=2';end % 1 or 2 => localchannel=3-remotechannel
 
 function [xval,indice,correction,SNRr,SNRi,puissance,puissancecode,puissancenoise]=processing(d,k,df)
       global temps freq fcode code fs Nint
@@ -71,7 +76,7 @@ function [xval,indice,correction,SNRr,SNRi,puissance,puissancecode,puissancenois
       end
 end
 
-dirlist=dir([datalocation,'/*_2.bin']);
+dirlist=dir([datalocation,'/*_',num2str(remotechannel),'.bin']);
 dirbit=dir([codelocation,'/n*.bin']);
 for dirnum=1:length(dirlist)
   nomin=dirbit(mod(OP+remote,2)+1).name  % LTFB=odd OP=even
@@ -115,19 +120,19 @@ for dirnum=1:length(dirlist)
       longueur=length(d);
       if (longueur==fs*2*ls)              % ls s
         d=d(1:2:end)+j*d(2:2:end);
-#        if (remote==1)        % vvv 0.5 Hz accuracy
+%        if (remote==1)        % vvv 0.5 Hz accuracy
            d2=fftshift(abs(fft(d(1:end).^2))); % adjust for remote channel vs remote
            d=[dold ; d(1:end)];                % adjust for remote channel vs remote
-#        else                  % vvv 0.5 Hz accuracy
-#           d2=fftshift(abs(fft(d(3-remotechannel:2:end).^2))); % adjust for local channel vs remote
-#           d=[dold ; d(3-remotechannel:2:end)];                % adjust for local channel vs remote
-#        end
+%        else                  % vvv 0.5 Hz accuracy
+%           d2=fftshift(abs(fft(d(3-remotechannel:2:end).^2))); % adjust for local channel vs remote
+%           d=[dold ; d(3-remotechannel:2:end)];                % adjust for local channel vs remote
+%        end
         [~,df(pfreq)]=max(d2(k));df(pfreq)=df(pfreq)+k(1)-1;df(pfreq)=freq(df(pfreq))/2;df(pfreq)
         dindex=1;
         do
           dpart=d(round(dindex):round(dindex)+length(fcode)-1);dpart=dpart-mean(dpart);
           [xval1(p),indice1(p),correction1(p),SNR1r(p),SNR1i(p),puissance1(p),puissancecode,puissancenoise]=processing(dpart,k,df(pfreq));
-          indice1(p)=(indice1(p)/(2*Nint+1));
+          indice1(p)=floor(indice1(p)/(2*Nint+1));
           if (10*log10(SNR1i(p)+SNR1r(p))>-30)
              if (((indice1(p)>43)&&(indice1(p)<length(code)/2)) || ((indice1(p)<length(code)-2)&&(indice1(p)>length(code)/2)))
   printf("MOVED %d\n",indice1(p));

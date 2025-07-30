@@ -22,3 +22,8 @@ When updating to a new environment, make sure to
 * update the reference and surveillance channels (``remotechannel=2`` or ``remotechannel=2``
 with ``localchannel=3-remotechannel``)
 * update the working directory at the end of the Octave script when moving the processed files
+
+When changing scheduled times, make sure the ``script_raspberryPi4.py`` Python
+script running on the RPi5 and polling the 1-PPS do determine when to start
+broadcasting with respect to NTP time is consistent with the ``crontab`` data
+acquisition settings.

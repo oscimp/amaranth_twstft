@@ -14,12 +14,14 @@
 #include <complex>
 #include <thread>
 
+#define repertoire "/data/" // /home/time/workarea/2403/data_out/"
+
 namespace po = boost::program_options;
 
 int UHD_SAFE_MAIN(int argc, char* argv[])
 {
     // variables to be set by po
-    std::string args, sync, subdev, channel_list;
+    std::string args, sync, subdev, channel_list, directory;
     double seconds_in_future;
     size_t total_num_samps;
     double rate, freq, gain, lo_offset;
@@ -39,12 +41,14 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
         ("gain", po::value<double>(&gain)->default_value(70), "gain for the RF chain")
         ("subdev", po::value<std::string>(&subdev)->default_value("A:0 B:0"), "subdev spec (homogeneous across motherboards)")
         ("channels", po::value<std::string>(&channel_list)->default_value("0,1"), "which channel(s) to use (specify \"0\", \"1\", \"0,1\", etc)")
+        ("dir", po::value<std::string>(&directory)->default_value(repertoire), "data storage directory")
     ;
     // clang-format on
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
 
+    printf("storing data in: %s\n",directory.c_str()); // use ./rx_multi_samples --dir=/mydir to store in /mydir
     // print the help message
     if (vm.count("help")) {
         std::cout << boost::format("UHD RX Multi Samples %s") % desc << std::endl;
@@ -180,8 +184,11 @@ int UHD_SAFE_MAIN(int argc, char* argv[])
     double timeout = seconds_in_future + 0.1; // timeout (delay before receive + padding)
 
     std::ofstream outfile1, outfile2;
-    outfile1.open("/data/file1.bin", std::ofstream::binary);
-    outfile2.open("/data/file2.bin", std::ofstream::binary);
+    char nomtmp[256];
+    sprintf(nomtmp,"%s/file1.bin",directory.c_str());
+    outfile1.open(nomtmp, std::ofstream::binary);
+    sprintf(nomtmp,"%s/file2.bin",directory.c_str());
+    outfile2.open(nomtmp, std::ofstream::binary);
 
     size_t num_acc_samps = 0; // number of accumulated samples
 //for (int jmf=0;jmf<6;jmf++)   // 8 GB RPi4
