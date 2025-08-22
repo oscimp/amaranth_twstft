@@ -17,10 +17,10 @@ affiche=0;
 debug=1
 ranging=1
 
-if (isempty('codelocation')) codelocation='/home/jmfriedt/codes/';end
-if (isempty('OP')) OP=0;end
-if (isempty('datalocation')) datalocation='./';end
-if (isempty('remotechannel')) remotechannel=2';end % 1 or 2 => localchannel=3-remotechannel
+if (isempty(codelocation)) codelocation='/home/jmfriedt/codes/';end
+if (isempty(OP)) OP=0;end
+if (isempty(datalocation)) datalocation='./';end
+if (isempty(remotechannel)) remotechannel=2';end % 1 or 2 => localchannel=3-remotechannel
 
 function [xval,indice,correction,SNRr,SNRi,puissance,puissancecode,puissancenoise]=processing(d,k,df)
       global temps freq fcode code fs Nint
