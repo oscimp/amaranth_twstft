@@ -3576,12 +3576,6 @@
 		(uuid "05746a83-ba9f-4cfa-acc7-dfed7344d94a")
 	)
 	(junction
-		(at 212.09 45.72)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "11ae89d1-2d82-460d-92d8-5671d868a85f")
-	)
-	(junction
 		(at 233.68 102.87)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -3678,6 +3672,12 @@
 		(uuid "8e535896-86db-41ba-93fa-731efa7372f9")
 	)
 	(junction
+		(at 212.09 78.74)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "9d9c23ae-0d1a-4a94-9ef8-159ca89a79ac")
+	)
+	(junction
 		(at 238.76 68.58)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -3694,12 +3694,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "e49cf46c-bfd1-42a4-908b-a8a5b158dc23")
-	)
-	(junction
-		(at 212.09 67.31)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "ee5f1ddb-de0c-4c62-9a6e-9d157ce39700")
 	)
 	(junction
 		(at 156.21 68.58)
@@ -3947,16 +3941,6 @@
 	)
 	(wire
 		(pts
-			(xy 212.09 45.72) (xy 212.09 67.31)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "17c89c1e-7d4f-4bf2-b6ee-9e77deab0f8d")
-	)
-	(wire
-		(pts
 			(xy 207.01 62.23) (xy 207.01 60.96)
 		)
 		(stroke
@@ -4067,7 +4051,7 @@
 	)
 	(wire
 		(pts
-			(xy 218.44 45.72) (xy 212.09 45.72)
+			(xy 133.35 45.72) (xy 218.44 45.72)
 		)
 		(stroke
 			(width 0)
@@ -4217,6 +4201,16 @@
 	)
 	(wire
 		(pts
+			(xy 199.39 78.74) (xy 204.47 78.74)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5dd4256d-7721-4b6d-b0b2-d564bfde875c")
+	)
+	(wire
+		(pts
 			(xy 38.1 69.85) (xy 53.34 69.85)
 		)
 		(stroke
@@ -4294,16 +4288,6 @@
 			(type default)
 		)
 		(uuid "7a4725aa-d359-4d45-872b-1ca544aaed9f")
-	)
-	(wire
-		(pts
-			(xy 212.09 45.72) (xy 133.35 45.72)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7c60fd26-f282-48a2-a9a8-c1571e922aa1")
 	)
 	(wire
 		(pts
@@ -5549,6 +5533,72 @@
 			(project "cmodA7_twtft"
 				(path "/2e73ae6d-318d-4efe-bb10-e1152fb16749"
 					(reference "U2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 199.39 78.74 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "0a3f5e34-c4a6-4786-8f5b-f78da315380b")
+		(property "Reference" "#PWR026"
+			(at 199.39 85.09 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "GND"
+			(at 199.39 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 199.39 78.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" ""
+			(at 199.39 78.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
+			(at 199.39 78.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "7f778931-f104-4000-98a3-a1d50f8c66ab")
+		)
+		(instances
+			(project "cmodA7_twtft"
+				(path "/2e73ae6d-318d-4efe-bb10-e1152fb16749"
+					(reference "#PWR026")
 					(unit 1)
 				)
 			)
@@ -7240,6 +7290,74 @@
 			(project "cmodA7_twtft"
 				(path "/2e73ae6d-318d-4efe-bb10-e1152fb16749"
 					(reference "J2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 208.28 78.74 90)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "8b242b85-215b-45c6-a35f-600075eddd6d")
+		(property "Reference" "R9"
+			(at 208.28 72.39 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "NC"
+			(at 208.28 74.93 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0805_2012Metric_Pad1.20x1.40mm_HandSolder"
+			(at 208.28 80.518 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 208.28 78.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 208.28 78.74 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "a28b2ee7-734a-4198-b6c8-2cc09e55f60f")
+		)
+		(pin "2"
+			(uuid "17b4ddb6-9169-4129-9e42-2467e938a053")
+		)
+		(instances
+			(project "cmodA7_twtft"
+				(path "/2e73ae6d-318d-4efe-bb10-e1152fb16749"
+					(reference "R9")
 					(unit 1)
 				)
 			)
