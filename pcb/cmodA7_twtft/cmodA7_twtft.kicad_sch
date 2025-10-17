@@ -3666,16 +3666,16 @@
 		(uuid "703508d6-c6ff-4702-a8a6-752ea5dcb8f4")
 	)
 	(junction
+		(at 162.56 68.58)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "7b946f23-1590-432b-b9b8-3c19b4742441")
+	)
+	(junction
 		(at 210.82 125.73)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "8e535896-86db-41ba-93fa-731efa7372f9")
-	)
-	(junction
-		(at 212.09 78.74)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "9d9c23ae-0d1a-4a94-9ef8-159ca89a79ac")
 	)
 	(junction
 		(at 238.76 68.58)
@@ -3851,6 +3851,16 @@
 	)
 	(wire
 		(pts
+			(xy 162.56 60.96) (xy 162.56 68.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "00801d73-eaa8-4078-a087-5ba69be623f1")
+	)
+	(wire
+		(pts
 			(xy 151.13 116.84) (xy 151.13 115.57)
 		)
 		(stroke
@@ -3891,7 +3901,7 @@
 	)
 	(wire
 		(pts
-			(xy 156.21 68.58) (xy 176.53 68.58)
+			(xy 156.21 68.58) (xy 162.56 68.58)
 		)
 		(stroke
 			(width 0)
@@ -3941,7 +3951,7 @@
 	)
 	(wire
 		(pts
-			(xy 207.01 62.23) (xy 207.01 60.96)
+			(xy 157.48 55.88) (xy 157.48 54.61)
 		)
 		(stroke
 			(width 0)
@@ -4381,16 +4391,6 @@
 	)
 	(wire
 		(pts
-			(xy 212.09 67.31) (xy 212.09 78.74)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "8eb73479-e49f-41ff-90c0-918fb08061f5")
-	)
-	(wire
-		(pts
 			(xy 238.76 68.58) (xy 237.49 68.58)
 		)
 		(stroke
@@ -4488,6 +4488,16 @@
 			(type default)
 		)
 		(uuid "a3edad9b-fac7-4549-914c-43b192567573")
+	)
+	(wire
+		(pts
+			(xy 162.56 68.58) (xy 176.53 68.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a7deb8c3-9dc6-4c55-b213-35b45aeda371")
 	)
 	(wire
 		(pts
@@ -5612,10 +5622,9 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "0ab66c7b-a2d1-441f-b2b4-10f2441808bc")
 		(property "Reference" "R5"
-			(at 180.34 62.23 90)
+			(at 180.34 66.294 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5623,7 +5632,7 @@
 			)
 		)
 		(property "Value" "0"
-			(at 180.34 64.77 90)
+			(at 180.34 70.866 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5674,7 +5683,7 @@
 	)
 	(symbol
 		(lib_id "Connector:Conn_Coaxial")
-		(at 207.01 67.31 180)
+		(at 157.48 60.96 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -5683,7 +5692,7 @@
 		(fields_autoplaced yes)
 		(uuid "1686d7a4-5a2e-4435-a609-ffb7e0e38501")
 		(property "Reference" "J12"
-			(at 204.47 68.2869 0)
+			(at 154.94 61.9369 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5692,7 +5701,7 @@
 			)
 		)
 		(property "Value" "cmp_out"
-			(at 204.47 65.7469 0)
+			(at 154.94 59.3969 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5701,7 +5710,7 @@
 			)
 		)
 		(property "Footprint" "Connector_Coaxial:SMA_Molex_73251-1153_EdgeMount_Horizontal"
-			(at 207.01 67.31 0)
+			(at 157.48 60.96 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5710,7 +5719,7 @@
 			)
 		)
 		(property "Datasheet" " ~"
-			(at 207.01 67.31 0)
+			(at 157.48 60.96 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5719,7 +5728,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 207.01 67.31 0)
+			(at 157.48 60.96 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6214,7 +6223,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 207.01 60.96 180)
+		(at 157.48 54.61 180)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -6223,7 +6232,7 @@
 		(fields_autoplaced yes)
 		(uuid "40a564ff-3bdb-4444-9188-a9a7bdaa69c0")
 		(property "Reference" "#PWR025"
-			(at 207.01 54.61 0)
+			(at 157.48 48.26 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6232,7 +6241,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 207.01 55.88 0)
+			(at 157.48 49.53 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6240,7 +6249,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 207.01 60.96 0)
+			(at 157.48 54.61 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6249,7 +6258,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 207.01 60.96 0)
+			(at 157.48 54.61 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6258,7 +6267,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 207.01 60.96 0)
+			(at 157.48 54.61 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7303,10 +7312,9 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "8b242b85-215b-45c6-a35f-600075eddd6d")
 		(property "Reference" "R9"
-			(at 208.28 72.39 90)
+			(at 208.28 76.454 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -7314,7 +7322,7 @@
 			)
 		)
 		(property "Value" "NC"
-			(at 208.28 74.93 90)
+			(at 208.28 81.026 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8002,7 +8010,6 @@
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "b69f6c3f-dcf7-4d14-a7ea-c6d674ec9947")
 		(property "Reference" "U5"
 			(at 210.82 85.1602 0)
@@ -8013,7 +8020,7 @@
 			)
 		)
 		(property "Value" "LTC6957xMS-3"
-			(at 210.82 82.6202 0)
+			(at 211.836 87.376 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -8730,7 +8737,7 @@
 				)
 			)
 		)
-		(property "Value" "0"
+		(property "Value" "NC"
 			(at 222.25 41.91 90)
 			(effects
 				(font

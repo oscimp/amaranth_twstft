@@ -12,3 +12,10 @@ where $\log_2(10^5)=16.6\leq 17$ leading to the selection of the 17-bit long GLF
 <img src="IMG_20251017_083525_691small.jpg">
 
 <img src="IMG_20251017_083536_264small.jpg">
+
+```
+python3 amaranth_twstft/twstft_config.py -d /dev/ttyUSB1 -l 17 -ta 9 -C OFF -M BPSK
+```
+
+<img src="oscilloscope_screenshot.png">
+
