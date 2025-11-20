@@ -1,5 +1,9 @@
 # Acquisition and processing software
 
+**The content of this directory is obsolete and superseded with ../acquisition.
+For archive only (and maybe future conversion of Octave processing to C++
+if speed is needed).**
+
 ## C
 
 ``stat.c`` is a short program for the Raspberry Pi to display the
@@ -15,8 +19,8 @@ power. The ``_remote`` extension is the same script than without the
 extension, only dupplicated to allow execution of both scripts in parallel
 when an acquisition was completed. 
 
-Once all .bin files have been processed
-and all .mat files generated, the relevant information is exctracted
+Once all ``.bin`` files have been processed
+and all ``.mat`` files generated, the relevant information is exctracted
 and stored as a text file by ``gofinal*``.
 
 Finally, the content of the text files are analyzed for ranging or two-way

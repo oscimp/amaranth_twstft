@@ -1,19 +1,29 @@
 #!/bin/bash
+
+acq_rep=${processing_dir:='/data/'}  # assign if processing_dir is defined, default otherwise
+sto_rep=${storage_dir:='/data/'}  # assign if processing_dir is defined, default otherwise
+exec_dir=${exec_dir:='/home/jmfriedt/2401/'}  # assign if processing_dir is defined, default otherwise
+
 pid=`ps aux | grep multi_ | grep -v grep | cut -d\  -f2`; if [[ -n "$pid" ]]; then echo "killed $pid";kill -9 $pid;fi
 sleep 30
+uhd_usrp_probe # reset RFNOC ?
 echo "Start"
 ladate=`date +%s`
-nice -n -20 /home/jmfriedt/2401/rx_multi_samples > /data/$ladate.log 2>&1 &
-# /usr/bin/python3 /home/jmfriedt/2401/acq5min.py > /data/$ladate.log 2>&1 &
-echo "Waiting"
-wait
+touch ${acq_rep}/file2.bin
+while (test $( ls -s  ${acq_rep}/file2.bin | cut -d\  -f1 ) -le 10) do # repeat measurement until success
+  nice -n -20 $exec_dir/rx_multi_samples --dir ${acq_rep} > ${acq_rep}/$ladate.log 2>&1 &
+  # /usr/bin/python3 /home/jmfriedt/2401/acq5min.py > ${acq_rep}/$ladate.log 2>&1 &
+  echo "Waiting"
+  wait
+done
 echo "Finished"
 ladatefin=`date +%s`
-fractionfin=`stat -c "%y" /data/file1.bin  | cut -d\.  -f2 | cut -d\  -f1`
-entierfin=`stat -c "%Y" /data/file1.bin`
+fractionfin=`stat -c "%y" ${acq_rep}/file1.bin  | cut -d\.  -f2 | cut -d\  -f1`
+entierfin=`stat -c "%Y" ${acq_rep}/file1.bin`
 echo "${ladate}_${entierfin}.${fractionfin}"
-mv /data/file1.bin /data/${ladate}_${entierfin}.${fractionfin}_1.bin
-fractionfin=`stat -c "%y" /data/file2.bin  | cut -d\.  -f2 | cut -d\  -f1`
-entierfin=`stat -c "%Y" /data/file2.bin`
+mv ${acq_rep}/file1.bin ${sto_rep}/${ladate}_${entierfin}.${fractionfin}_1.bin
+fractionfin=`stat -c "%y" ${acq_rep}/file2.bin  | cut -d\.  -f2 | cut -d\  -f1`
+entierfin=`stat -c "%Y" ${acq_rep}/file2.bin`
 echo "${ladate}_${entierfin}.${fractionfin}"
-mv /data/file2.bin /data/${ladate}_${entierfin}.${fractionfin}_2.bin
+mv ${acq_rep}/file2.bin ${sto_rep}/${ladate}_${entierfin}.${fractionfin}_2.bin
+uhd_usrp_probe # reset RFNOC ?

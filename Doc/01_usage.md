@@ -47,6 +47,14 @@ for example:
 **CMOD A7 only**: by default *Vivado* is used to produces the bitstream, but it's
 also possible to use the *f4pga* Open-Source toolchain.
 
+For testing if the FPGA configuration was successful, the output must be enabled, e.g. with
+```
+python3 amaranth_twstft/twstft_config.py -d /dev/ttyUSB1 -l 17 -ta 9 -C OFF -M BPSK
+```
+leading to the following output if the input 10 MHz and 1 PPS are well connected:
+
+<img src="Screenshot_2025-11-03_0_192713.png">
+
 ## Configuration
 
 At runtime, the FPGA can be configured with the `twstft_config.py` script.
