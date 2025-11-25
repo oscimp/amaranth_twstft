@@ -133,6 +133,9 @@ class TWSTFT_top(Elaboratable):
                     Subsignal('output',    Pins('31', conn = connect, dir='o')),
                     Subsignal('calib_out',    Pins('36', conn = connect, dir='o')),
                     Subsignal('PPS_in',    Pins('42', conn = connect, dir='i')),
+                    
+                    Subsignal('status_emit',    Pins('23', conn = connect, dir='o')),
+                    Subsignal('status_qpsk',    Pins('19', conn = connect, dir='o')),
 
                     Attrs(IOSTANDARD="LVCMOS33")
                 ),
@@ -175,6 +178,11 @@ class TWSTFT_top(Elaboratable):
         m.d.comb += main.pps.eq(pins.PPS_in.i)
         m.d.comb += pins.calib_out.o.eq(main.calib_out)
         m.d.comb += pins.output.o.eq(main.antena_out)
+
+        m.d.comb += platform.request('led', 0).o.eq(main.led_emit)
+        m.d.comb += platform.request('led', 1).o.eq(main.led_qpsk)
+        m.d.comb += pins.status_emit.o.eq(main.led_emit)
+        m.d.comb += pins.status_qpsk.o.eq(main.led_qpsk)
 
         return m
 
