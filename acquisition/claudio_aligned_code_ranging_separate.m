@@ -7,7 +7,8 @@ format long
 global temps freq fcode code fs Nint    % save time by avoiding unnecessary fixed parameter arguments
 fs=5e6;
 Nint=1;
-remote=1
+remote=0
+ranging=1
 OP=getenv('OP')
 datalocation=gentenv('processing_dir')
 codelocation=getenv('codelocation')
@@ -22,7 +23,29 @@ if (isempty(OP)) OP=0;end
 if (isempty(datalocation)) datalocation='./';end
 if (isempty(remotechannel)) remotechannel=2';end % 1 or 2 => localchannel=3-remotechannel
 
-function [xval,indice,correction,SNRr,SNRi,puissance,puissancecode,puissancenoise]=processing(d,k,df)
+function k=search_df(d,k,df_threshold)
+  global freq fcode temps fs
+  kbon=0;
+  d2=fftshift(abs(fft(d(1:end).^2))); % adjust for remote channel vs remote
+  ktmp=find(d2(k)>median(d2(k))*df_threshold);ktmp=ktmp+k(1)-1;
+  if (length(ktmp)>0 && length(ktmp)<100)
+     for kindex=1:length(ktmp);
+        dftmp=freq(ktmp(kindex))/2
+        lo=exp(-j*2*pi*dftmp*temps);
+        y=d(1:length(fcode)).*lo;                       % frequency transposition
+        ffty=fft(y);
+        prnmap=abs(ifft(fcode.*conj(ffty)));            % xcorr
+	[prnsig,b]=max(prnmap);
+	prnmap(b-5:b+5)=0;
+        prnvar=var(prnmap);
+	snr=prnsig^2/prnvar
+	if ((prnsig^2/prnvar)>100) kbon=ktmp(kindex);end % detect of SNR>20
+     end
+  end
+  k=kbon;
+end
+
+function [xval,indice,correction,SNRr,SNRi,puissance,puissancecode,puissancenoise]=processing(d,df)
       global temps freq fcode code fs Nint
       % if (abs(df1(p))<(freq(2)-freq(1))) df1(p)=0;end;
       lo=exp(-j*2*pi*df*temps);         % coarse frequency offset
@@ -80,17 +103,16 @@ end
 dirlist=dir([datalocation,'/*_',num2str(remotechannel),'.bin']);
 dirbit=dir([codelocation,'/n*.bin']);
 for dirnum=1:length(dirlist)
-  nomin=dirbit(mod(OP+remote+ranging,2)+1).name  % LTFB=odd OP=even
+  nomin=dirbit(mod(OP+remote+ranging*2,2)+1).name  % LTFB=odd OP=even
   % OP=1, remote=0 or OP=0, remote=1 => even ; OP=0, remote=0 or OP=1, remote=1 => odd
   nom=strrep(dirlist(dirnum).name,'.bin','.mat');
-  if (ranging==1)
-    nomout=['rangingclaudio',nom];
-  else
-    if (remote==1)
-       nomout=['remote',nom];
-    else
-       nomout=['local',nom];
-    end
+  if (remote==1)
+    nomout=['remoteclaudio',nom];
+    else if (ranging==1)
+      nomout=['rangingclaudio',nom];
+      else
+        nomout=['localclaudio',nom];
+      end
   end
   nomoutgz=[nomout,'.gz'];
   if ((exist(nomout)==0)&&(exist(nomoutgz)==0))
@@ -102,42 +124,53 @@ for dirnum=1:length(dirlist)
     fclose(f);
     dirlist(dirnum).name
     eval(["f=fopen('",datalocation,"/",dirlist(dirnum).name,"');"]);
-    d=fread(f,fs*2*10,'int16');
+    fseek(f,30*fs*2*2);
     p=1;
     pfreq=1;
     temps=[0:length(code)-1]'/fs;
     freq=linspace(-fs/2,fs/2-fs/fs,fs*ls);
     printf("n\tdt1\tdf1\tP1\tSNR1\tdt2\tdf2\tP2\tSNR2\r\n");
-    if ((remote!=1)||(ranging==1))
-       k=find((freq<5000)&(freq>-5000));
+    if (ranging==1)
+       k=find((freq<8000)&(freq>-8000));
     else
        if (OP==1)
-           k=find((freq>-12000)&(freq<12000)); % -50 kHz
+           k=find((freq>-108000)&(freq<-92000)); % -50 kHz
        else
-           k=find((freq<120000)&(freq>80000));
+           k=find((freq<108000)&(freq>92000));
        end
     end
     dold=[];
     moved=[];
     movedval=[];
+    df_found=0;
     do
       d=fread(f,fs*2*ls,'int16');         % ls s
       longueur=length(d);
       if (longueur==fs*2*ls)              % ls s
         d=d(1:2:end)+j*d(2:2:end);
-%        if (remote==1)
-%           d2=fftshift(abs(fft(d(remotechannel:2:end).^2))); % 0.5 Hz accuracy
-%           d=[dold ; d(remotechannel:2:end)];
-%        else
-           d2=fftshift(abs(fft(d(1:end).^2))); % 0.5 Hz accuracy
-           d=[dold ; d(1:end)];
-%        end
-        [~,df(pfreq)]=max(d2(k));df(pfreq)=df(pfreq)+k(1)-1;df(pfreq)=freq(df(pfreq))/2;df(pfreq)
+#        if (remote==1)        % vvv 0.5 Hz accuracy
+	 if (df_found==0)
+	   kbon=search_df(d,k,df_threshold);
+	   if (kbon!=0) df_found=1;end
+	   fclose(f);
+           eval(["f=fopen('",datalocation,"/",dirlist(dirnum).name,"');"]);
+           d=fread(f,fs*2*ls,'int16');         % ls s
+           d=d(1:2:end)+j*d(2:2:end);
+	 end
+#        else                  % vvv 0.5 Hz accuracy
+#           d2=fftshift(abs(fft(d(3-remotechannel:2:end).^2))); % adjust for local channel vs remote
+#           d=[dold ; d(3-remotechannel:2:end)];                % adjust for local channel vs remote
+#        end
+
+if (df_found==1)
+        d=[dold ; d(1:end)];                % adjust for remote channel vs remote
+        d2=fftshift(abs(fft(d(1:end).^2))); % adjust for remote channel vs remote
+        [~,df(pfreq)]=max(d2(kbon-3:kbon+3));df(pfreq)=df(pfreq)+kbon-3-1;df(pfreq)=freq(df(pfreq))/2;df(pfreq)
         dindex=1;
         do
           dpart=d(round(dindex):round(dindex)+length(fcode)-1);dpart=dpart-mean(dpart);
-          [xval1(p),indice1(p),correction1(p),SNR1r(p),SNR1i(p),puissance1(p),puissancecode,puissancenoise]=processing(dpart,k,df(pfreq));
-          indice1(p)=floor(indice1(p)/(2*Nint+1));
+          [xval1(p),indice1(p),correction1(p),SNR1r(p),SNR1i(p),puissance1(p),puissancecode,puissancenoise]=processing(dpart,df(pfreq));
+          indice1(p)=(indice1(p)/(2*Nint+1));
           if (10*log10(SNR1i(p)+SNR1r(p))>-30)
              if (((indice1(p)>43)&&(indice1(p)<length(code)/2)) || ((indice1(p)<length(code)-2)&&(indice1(p)>length(code)/2)))
   printf("MOVED %d\n",indice1(p));
@@ -148,7 +181,7 @@ for dirnum=1:length(dirlist)
                 end 
                 dindex=dindex-(indice1(p))+21;
                 dpart=d(round(dindex):round(dindex)+length(fcode)-1); dpart=dpart-mean(dpart); % measurement
-                [xval1(p),indice1(p),correction1(p),SNR1r(p),SNR1i(p),puissance1(p),puissancecode,puissancenoise]=processing(dpart,k,df(pfreq));
+                [xval1(p),indice1(p),correction1(p),SNR1r(p),SNR1i(p),puissance1(p),puissancecode,puissancenoise]=processing(dpart,df(pfreq));
              end
   % figure; plot(temps,conv(angle(y.*code'),ones(100,1)/100)(50:end-50),'.');
   % xlabel('time (s)');  ylabel('arg(code.*data) (s)')
@@ -157,6 +190,7 @@ for dirnum=1:length(dirlist)
           p=p+1;
           dindex=dindex+length(fcode);
         until (dindex+length(fcode)-1>length(d))
+end
       end
       if (exist('dindex'))
         if (dindex<length(d)) 
@@ -171,7 +205,11 @@ for dirnum=1:length(dirlist)
     fclose(f)
     eval(['save -mat ',nomout,' corr* df indic* SNR* code puissan* xval* moved*']);
     clear corr* df* indic* p SNR* puissa* xval*
-    ddir=dir(['*remote*',nom,'*']);
+    if (remote==1)
+      ddir=dir(['*ranging*',nom,'*']);
+    else
+      ddir=dir(['*remote*',nom,'*']);
+    end
     if (isempty(ddir)==0)
         eval(['system(''mv ',datalocation,'/',dirlist(dirnum).name,' ',datalocation,'/donetw/'')']);
     end

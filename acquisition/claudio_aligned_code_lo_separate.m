@@ -97,7 +97,6 @@ for dirnum=1:length(dirlist)
     fclose(f);
     dirlist(dirnum).name
     eval(["f=fopen('",datalocation,"/",dirlist(dirnum).name,"');"]);
-    d=fread(f,fs*2*10,'int16');         % 15s
     p=1;
     pfreq=1;
     temps=[0:length(code)-1]'/fs;
