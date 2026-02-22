@@ -17,6 +17,7 @@ ls=2;
 affiche=0;
 debug=1
 ranging=1
+df_threshold=20;
 
 if (isempty(codelocation)) codelocation='/home/jmfriedt/codes/';end
 if (isempty(OP)) OP=0;end
@@ -204,7 +205,7 @@ end
     until (longueur!=fs*2*ls);  % ls s
     fclose(f)
     eval(['save -mat ',nomout,' corr* df indic* SNR* code puissan* xval* moved*']);
-    clear corr* df* indic* p SNR* puissa* xval*
+    clear corr* df indic* p SNR* puissa* xval*
     if (remote==1)
       ddir=dir(['*ranging*',nom,'*']);
     else
