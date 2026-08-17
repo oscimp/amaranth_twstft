@@ -124,4 +124,9 @@ of the 70 MHz carrier.
 
 <img src="../figures/pinout_zedboard.png">
 
+On the Digilent Cmod-A7, the gateware is manually transferred using
+```
+openFPGALoader -b cmoda7_35t -f --freq 30e6 -m build/top.bin
+```
+
 Next step : [Usage](01_usage.md)
