@@ -27,9 +27,26 @@ if (isempty(remotechannel)) remotechannel=2';end % 1 or 2 => localchannel=3-remo
 function k=search_df(d,k,df_threshold)
   global freq fcode temps fs
   kbon=0;
-  d2=fftshift(abs(fft(d(1:end).^2))); % adjust for remote channel vs remote
+  d2=fftshift(abs(fft(d.^2))); % adjust for remote channel vs remote
   ktmp=find(d2(k)>median(d2(k))*df_threshold);ktmp=ktmp+k(1)-1;
-  if (length(ktmp)>0 && length(ktmp)<100)
+  % ktmp=find(d2>median(d2)*df_threshold);
+  kdiff=find(diff(ktmp)>1);    % remove multiple samples in same peak
+  ktmp
+  if (isempty(kdiff)==0)
+     ktmp=[ktmp(1) ; ktmp(kdiff+1)];
+  end
+  ktmp
+
+%  m=1
+%  for df=-100000:10:100000
+%        lo=exp(-j*2*pi*df*temps);
+%        y=fft(d(1:length(fcode)).*lo);                       % frequency transposition
+%	sol(m)=max(abs(ifft(conj(y).*fcode)));
+%	m=m+1;
+%  end
+%  plot(sol)
+
+  if ((length(ktmp)>0) && (length(ktmp)<100) && (isempty(ktmp)==0))
      for kindex=1:length(ktmp);
         dftmp=freq(ktmp(kindex))/2
         lo=exp(-j*2*pi*dftmp*temps);
@@ -40,9 +57,10 @@ function k=search_df(d,k,df_threshold)
 	prnmap(b-5:b+5)=0;
         prnvar=var(prnmap);
 	snr=prnsig^2/prnvar
-	if ((prnsig^2/prnvar)>100) kbon=ktmp(kindex);end % detect of SNR>20
+	if ((prnsig^2/prnvar)>500) kbon=ktmp(kindex);end % detect of SNR>20
      end
   end
+  if isempty(ktmp) kbon=NaN;end
   k=kbon;
 end
 
@@ -90,7 +108,9 @@ function [xval,indice,correction,SNRr,SNRi,puissance,puissancecode,puissancenois
         if (indice(cm)>2)
            yincode=[codetmp(indice(cm)-1:end) ; codetmp(1:indice(cm)-2)].*yintmp;
         else
-           yincode=codetmp.*yintmp;
+	   if (exist('yincode')==0)
+              yincode=codetmp.*yintmp;
+	   end
         end
         SNRr(cm)=mean(real(yincode))^2/var(yincode);
         SNRi(cm)=mean(imag(yincode))^2/var(yincode);
@@ -125,25 +145,27 @@ for dirnum=1:length(dirlist)
     fclose(f);
     dirlist(dirnum).name
     eval(["f=fopen('",datalocation,"/",dirlist(dirnum).name,"');"]);
-    fseek(f,30*fs*2*2);
+    fseek(f,60*fs*2*2);
     p=1;
     pfreq=1;
     temps=[0:length(code)-1]'/fs;
     freq=linspace(-fs/2,fs/2-fs/fs,fs*ls);
     printf("n\tdt1\tdf1\tP1\tSNR1\tdt2\tdf2\tP2\tSNR2\r\n");
-    if (ranging==1)
-       k=find((freq<8000)&(freq>-8000));
-    else
-       if (OP==1)
-           k=find((freq>-108000)&(freq<-92000)); % -50 kHz
-       else
-           k=find((freq<108000)&(freq>92000));
-       end
-    end
+    k=find((freq<1E6)&(freq>-1E6));
+%    if (ranging==1)
+%       k=find((freq<8000)&(freq>-8000));
+%    else
+%       if (OP==1)
+%           k=find((freq>-108000)&(freq<-92000)); % -50 kHz
+%       else
+%           k=find((freq<108000)&(freq>92000));
+%       end
+%    end
     dold=[];
     moved=[];
     movedval=[];
     df_found=0;
+    kbon=NaN;
     do
       d=fread(f,fs*2*ls,'int16');         % ls s
       longueur=length(d);
@@ -152,7 +174,7 @@ for dirnum=1:length(dirlist)
 #        if (remote==1)        % vvv 0.5 Hz accuracy
 	 if (df_found==0)
 	   kbon=search_df(d,k,df_threshold);
-	   if (kbon!=0) df_found=1;end
+	   if ((kbon!=0) && (isnan(kbon)==0)) df_found=1;end
 	   fclose(f);
            eval(["f=fopen('",datalocation,"/",dirlist(dirnum).name,"');"]);
            d=fread(f,fs*2*ls,'int16');         % ls s
@@ -202,19 +224,21 @@ end
   %       end
         pfreq=pfreq+1;
       end
-    until (longueur!=fs*2*ls);  % ls s
+    until ((longueur!length(fcode)*2*ls) || (isnan(kbon)==1) || (kbon==0));  % ls s
     fclose(f)
-    eval(['save -mat ',nomout,' corr* df indic* SNR* code puissan* xval* moved*']);
+    if (isnan(kbon)==0)
+      eval(['save -mat ',nomout,' corr* df indic* SNR* code puissan* xval* moved*']);
+    end
     clear corr* df indic* p SNR* puissa* xval*
-    if (remote==1)
-      ddir=dir(['*ranging*',nom,'*']);
-    else
-      ddir=dir(['*remote*',nom,'*']);
-    end
-    if (isempty(ddir)==0)
-        eval(['system(''mv ',datalocation,'/',dirlist(dirnum).name,' ',datalocation,'/donetw/'')']);
-    end
   else
     printf("%s already done\n",nomout);
+  end
+  if (remote==1)
+    ddir=dir(['*ranging*',nom,'*']);
+  else
+    ddir=dir(['*remote*',nom,'*']);
+  end
+  if (isempty(ddir)==0)
+    eval(['system(''mv ',datalocation,dirlist(dirnum).name,' /data/donetw/'')']);
   end
 end

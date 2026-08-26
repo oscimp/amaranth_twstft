@@ -4,7 +4,7 @@ pkg load signal
 format long
 
 % graphics_toolkit('gnuplot')
-global temps freq fcode code fs Nint    % save time by avoiding unnecessary fixed parameter arguments
+global temps freq fcode code fs Nint codesic fcodesic pinvy possic oldpossic codesictmp % save time by avoiding unnecessary fixed parameter arguments
 fs=5e6;
 Nint=1;
 remote=1
@@ -26,9 +26,16 @@ if (isempty(remotechannel)) remotechannel=2';end % 1 or 2 => localchannel=3-remo
 function k=search_df(d,k,df_threshold)
   global freq fcode temps fs
   kbon=0;
-  d2=fftshift(abs(fft(d(1:end).^2))); % adjust for remote channel vs remote
-  ktmp=find(d2(k)>median(d2(k))*df_threshold);ktmp=ktmp+k(1)-1;
-  if (length(ktmp)>0 && length(ktmp)<100)
+  d2=fftshift(abs(fft(d.^2))); % adjust for remote channel vs remote
+  % ktmp=find(d2(k)>median(d2(k))*df_threshold);ktmp=ktmp+k(1)-1;
+  ktmp=find(d2>median(d2)*df_threshold);
+  kdiff=find(diff(ktmp)>1);
+  ktmp
+  if (isempty(kdiff)==0)
+     ktmp=[ktmp(1) ; ktmp(kdiff+1)];
+  end
+  ktmp
+  if ((length(ktmp)>0) && (length(ktmp)<100) && (isempty(ktmp)==0))
      for kindex=1:length(ktmp);
         dftmp=freq(ktmp(kindex))/2
         lo=exp(-j*2*pi*dftmp*temps);
@@ -39,14 +46,15 @@ function k=search_df(d,k,df_threshold)
 	prnmap(b-5:b+5)=0;
         prnvar=var(prnmap);
 	snr=prnsig^2/prnvar
-	if ((prnsig^2/prnvar)>100) kbon=ktmp(kindex);end % detect of SNR>20
+	if ((snr)>500) kbon=ktmp(kindex);end % detect of SNR>500
      end
   end
+  if isempty(ktmp) kbon=NaN;end
   k=kbon;
 end
 
-function [xval,indice,correction,SNRr,SNRi,puissance,puissancecode,puissancenoise]=processing(d,df)
-      global temps freq fcode code fs Nint
+function [xval,indice,correction,SNRr,SNRi,puissance,puissancecode,puissancenoise,indicesic,correctionsic,SNRsicr,SNRsici]=processing(d,df)
+      global temps freq fcode code fs Nint codesic fcodesic pinvy possic oldpossic codesictmp
       % if (abs(df1(p))<(freq(2)-freq(1))) df1(p)=0;end;
       lo=exp(-j*2*pi*df*temps);         % coarse frequency offset
       y=d.*lo;                          % coarse frequency transposition
@@ -89,21 +97,84 @@ function [xval,indice,correction,SNRr,SNRi,puissance,puissancecode,puissancenois
         if (indice(cm)>2)
            yincode=[codetmp(indice(cm)-1:end) ; codetmp(1:indice(cm)-2)].*yintmp;
         else
-           yincode=codetmp.*yintmp;
+	   if (exist('yincode')==0)
+              yincode=codetmp.*yintmp;
+	   end
         end
         SNRr(cm)=mean(real(yincode))^2/var(yincode);
         SNRi(cm)=mean(imag(yincode))^2/var(yincode);
         puissance(cm)=var(y);
         puissancecode(cm)=mean(real(yincode))^2+mean(imag(yincode))^2;
         puissancenoise(cm)=var(yincode);
+%%% SIC
+	SNRsic=abs(SNRr+j*SNRi);
+	if (10*log10(SNRsic)>-30);
+	   xcorrsic=ifft(fcodesic.*conj(ffty));
+           [~,possic]=max(abs(xcorrsic));
+	   possic=possic-1;
+	   if (oldpossic!=possic)
+  	     codesictmp=[ codesic(possic+1:end) ; codesic(1:possic)];
+	     codesictmp=[ codesictmp [ codesic(possic:end) ; codesic(1:possic-1) ]];
+	     codesictmp=[ codesictmp [ codesic(possic+2:end) ; codesic(1:possic+1) ]];
+%	     codesictmp=[ codesictmp [ codesic(possic+3:end) ; codesic(1:possic+2) ]];
+%	     codesictmp=[ codesictmp [ codesic(possic-1:end) ; codesic(1:possic-2) ]];
+             pinvy=pinv(codesictmp);
+	     oldpossic=possic;
+	     printf("pinvy recalc\n");
+	   end
+	   weight=pinvy*y;
+%   abs(weight)
+	   ysic=y-codesictmp*weight;
+%	   plot(abs(xcorr(y,codesic))); hold on; plot(abs(xcorr(ytmp,codesic))); hold off
+           fftysic=fft(ysic);
+           prnmapsic=fftshift(fcode.*conj(fftysic));     % xcorr
+           prnmapsic=[zeros(length(ysic)*(Nint),1) ; prnmapsic ; zeros(length(ysic)*(Nint),1)]; % interpolation to 3x samp_rate
+           prnmapsic=(ifft(fftshift(prnmapsic)));  % back to time /!\ NO outer fftshift for 0-delay at left
+           yintsic=zeros(length(ysic)*(2*Nint+1),1);
+           yintsic(1:length(ysic)/2)=fftysic(1:length(ysic)/2);
+           yintsic(end-length(ysic)/2+1:end)=fftysic(length(ysic)/2+1:end);
+           yintsic=ifft(yintsic);
+           cm=1;
+           for codeindex=1:length(code)*(2*Nint+1):length(prnmapsic)-length(code)*(2*Nint+1)+1
+              [~,indicesic(cm)]=max(abs(prnmapsic(codeindex:codeindex+length(code)*(2*Nint+1)-1)));
+              xvalsic=prnmapsic(indicesic(cm)+codeindex-1);
+              if ((indicesic(cm)+codeindex-1-1)>=1)
+                  xvalm1sic=prnmapsic(indicesic(cm)+codeindex-1-1);
+              else
+                  xvalm1sic=prnmapsic(end);
+              end
+              if ((indicesic(cm)+codeindex-1+1)<length(prnmapsic))
+                  xvalp1sic=prnmapsic(indicesic(cm)+codeindex-1+1);
+              else
+                  xvalp1sic=prnmapsic(1);
+	      end
+           end
+           correctionsic(cm)=(abs(xvalm1sic)-abs(xvalp1sic))/(abs(xvalm1sic)+abs(xvalp1sic)-2*abs(xvalsic))/2;
+           yintmpsic=yintsic(codeindex:codeindex+length(code)*(2*Nint+1)-1);
+           if (indice(cm)>2)
+              yincodesic=[codetmp(indicesic(cm)-1:end) ; codetmp(1:indicesic(cm)-2)].*yintmpsic;
+           else
+              yincodesic=codetmp.*yintmpsic;
+           end
+           SNRsicr(cm)=mean(real(yincodesic))^2/var(yincodesic);
+           SNRsici(cm)=mean(imag(yincodesic))^2/var(yincodesic);
+        else
+  	   indicesic=NaN;
+	   correctionsic=NaN;
+	   SNRsicr=NaN;
+	   SNRsici=NaN;
+	end
+%%% end SIC
 	cm=cm+1;
       end
 end
 
 dirlist=dir([datalocation,'/*_',num2str(remotechannel),'.bin']);
 dirbit=dir([codelocation,'/n*.bin']);
+oldpossic=0;
 for dirnum=1:length(dirlist)
   nomin=dirbit(mod(OP+remote+ranging*2,2)+1).name  % LTFB=odd OP=even
+  nominsic=dirbit(mod(OP+remote+ranging*2+1,2)+1).name  % LTFB=odd OP=even
   % OP=1, remote=0 or OP=0, remote=1 => even ; OP=0, remote=0 or OP=1, remote=1 => odd
   nom=strrep(dirlist(dirnum).name,'.bin','.mat');
   if (remote==1)
@@ -115,34 +186,51 @@ for dirnum=1:length(dirlist)
       end
   end
   nomoutgz=[nomout,'.gz'];
-  if ((exist(nomout)==0)&&(exist(nomoutgz)==0))
+  if ((exist(nomout)==0)&&(exist(nomoutgz)==0)&&(dirlist(dirnum).bytes>fs*2*ls*2))
     f=fopen([codelocation,'/',nomin]);
     code=fread(f,inf,'int8');
     code=repelems(code,[[1:length(code)] ; ones(1,length(code))*2]); % interpolate
     code=2*code-1;  % +1/-1
     fcode=fft(code');
     fclose(f);
+    %%% SIC
+    f=fopen([codelocation,'/',nominsic]);
+    codesic=fread(f,inf,'int8');
+    codesic=repelems(codesic,[[1:length(codesic)] ; ones(1,length(codesic))*2]); % interpolate
+    codesic=2*codesic-1;  % +1/-1
+    fclose(f);
+    %%% end SIC
     dirlist(dirnum).name
     eval(["f=fopen('",datalocation,"/",dirlist(dirnum).name,"');"]);
-    fseek(f,30*fs*2*2);
+    fseek(f,60*fs*2*2);
     p=1;
     pfreq=1;
     temps=[0:length(code)-1]'/fs;
+    %%% SIC
+    if (OP==0)
+      lo50=exp(-j*2*pi*50000*temps);    % frequency offset
+    else
+      lo50=exp(+j*2*pi*50000*temps);    % frequency offset
+    end
+    codesic=codesic'.*lo50;
+    fcodesic=fft(codesic);
+    %%% end SIC
     freq=linspace(-fs/2,fs/2-fs/fs,fs*ls);
     printf("n\tdt1\tdf1\tP1\tSNR1\tdt2\tdf2\tP2\tSNR2\r\n");
     if (ranging==1)
-       k=find((freq<8000)&(freq>-8000));
+       k=find((freq<18000)&(freq>-18000));
     else
        if (OP==1)
-           k=find((freq>-108000)&(freq<-92000)); % -50 kHz
+           k=find((freq>-118000)&(freq<-82000)); % -50 kHz
        else
-           k=find((freq<108000)&(freq>92000));
+           k=find((freq<118000)&(freq>82000));
        end
     end
     dold=[];
     moved=[];
     movedval=[];
     df_found=0;
+    kbon=NaN;
     do
       d=fread(f,fs*2*ls,'int16');         % ls s
       longueur=length(d);
@@ -151,7 +239,7 @@ for dirnum=1:length(dirlist)
 #        if (remote==1)        % vvv 0.5 Hz accuracy
 	 if (df_found==0)
 	   kbon=search_df(d,k,df_threshold);
-	   if (kbon!=0) df_found=1;end
+	   if ((kbon!=0) && (isnan(kbon)==0)) df_found=1;end
 	   fclose(f);
            eval(["f=fopen('",datalocation,"/",dirlist(dirnum).name,"');"]);
            d=fread(f,fs*2*ls,'int16');         % ls s
@@ -169,7 +257,7 @@ if (df_found==1)
         dindex=1;
         do
           dpart=d(round(dindex):round(dindex)+length(fcode)-1);dpart=dpart-mean(dpart);
-          [xval1(p),indice1(p),correction1(p),SNR1r(p),SNR1i(p),puissance1(p),puissancecode,puissancenoise]=processing(dpart,df(pfreq));
+          [xval1(p),indice1(p),correction1(p),SNR1r(p),SNR1i(p),puissance1(p),puissancecode,puissancenoise,indice1sic(p),correction1sic(p),SNR1sicr(p),SNR1sici(p)]=processing(dpart,df(pfreq));
           indice1(p)=(indice1(p)/(2*Nint+1));
           if (10*log10(SNR1i(p)+SNR1r(p))>-30)
              if (((indice1(p)>43)&&(indice1(p)<length(code)/2)) || ((indice1(p)<length(code)-2)&&(indice1(p)>length(code)/2)))
@@ -181,12 +269,12 @@ if (df_found==1)
                 end 
                 dindex=dindex-(indice1(p))+21; % 230802
                 dpart=d(round(dindex):round(dindex)+length(fcode)-1); dpart=dpart-mean(dpart); % measurement
-                [xval1(p),indice1(p),correction1(p),SNR1r(p),SNR1i(p),puissance1(p),puissancecode,puissancenoise]=processing(dpart,df(pfreq));
+                [xval1(p),indice1(p),correction1(p),SNR1r(p),SNR1i(p),puissance1(p),puissancecode,puissancenoise,indice1sic(p),correction1sic(p),SNR1sicr(p),SNR1sici(p)]=processing(dpart,df(pfreq));
              end
   % figure; plot(temps,conv(angle(y.*code'),ones(100,1)/100)(50:end-50),'.');
   % xlabel('time (s)');  ylabel('arg(code.*data) (s)')
           end
-          printf("%d\t%.12f\t%.3f\t%.1f\t%.1f\r\n",p,(indice1(p)-1+correction1(p))/fs/(2*Nint+1),df(pfreq),10*log10(puissance1(p)),10*log10(SNR1i(p)+SNR1r(p)))
+          printf("%d\t%.12f\t%.3f\t%.1f\t%.1f\t%.12f\t%.1f\r\n",p,(indice1(p)-1+correction1(p))/fs/(2*Nint+1),df(pfreq),10*log10(puissance1(p)),10*log10(SNR1i(p)+SNR1r(p)),(indice1(p)-1+correction1sic(p))/fs/(2*Nint+1),10*log10(SNR1sici(p)+SNR1sicr(p)))
           p=p+1;
           dindex=dindex+length(fcode);
         until (dindex+length(fcode)-1>length(d))
@@ -201,19 +289,21 @@ end
   %       end
         pfreq=pfreq+1;
       end
-    until (longueur!=fs*2*ls);  % ls s
+    until ((longueur<length(fcode)*2*ls) || (isnan(kbon)==1) || (kbon==0));  % ls s
     fclose(f)
-    eval(['save -mat ',nomout,' corr* df indic* SNR* code puissan* xval* moved*']);
+    if (isnan(kbon)==0)
+      eval(['save -mat ',nomout,' corr* df indic* SNR* code puissan* xval* moved*']);
+    end
     clear corr* df indic* p SNR* puissa* xval*
-    if (remote==1)
-      ddir=dir(['*ranging*',nom,'*']);
-    else
-      ddir=dir(['*remote*',nom,'*']);
-    end
-    if (isempty(ddir)==0)
-        eval(['system(''mv ',datalocation,'/',dirlist(dirnum).name,' ',datalocation,'/','donetw/'')']);
-    end
   else
     printf("%s already done\n",nomout);
+  end
+  if (remote==1)
+    ddir=dir(['*ranging*',nom,'*']);
+  else
+    ddir=dir(['*remote*',nom,'*']);
+  end
+  if (isempty(ddir)==0)
+    eval(['system(''mv ',datalocation,dirlist(dirnum).name,' /data/donetw/'')']);
   end
 end
