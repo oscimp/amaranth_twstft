@@ -76,17 +76,18 @@ The python package that we are going to use and abuse to work on our FPGA boards
 There are two git repositories to clone : one for the programming tools, and one for the possibility to flash our programs on different kinds of boards.
 
 ```bash
+if [ "$(uname -a | grep ebian)" ]; then OPTION="--break-system-packages"; else OPTION=""; fi  # handle Debian v.s Ubuntu
 git clone https://github.com/amaranth-lang/amaranth
 cd amaranth
-pip3 install --user -e . --break-system-packages
+pip3 install --user -e . $OPTION
 
 git clone https://github.com/amaranth-lang/amaranth-boards
 cd amaranth-boards
-pip3 install --user -e . --break-system-packages
+pip3 install --user -e . $OPTION
 
 git clone https://github.com/amaranth-lang/amaranth-stdio
 cd amaranth-stdio
-pip3 install --user -e . --break-system-packages
+pip3 install --user -e . $OPTION
 ```
 
 And finally... 
@@ -96,7 +97,7 @@ And finally...
 ```bash
 git clone https://github.com/oscimp/amaranth_twstft
 cd amaranth_twstft
-pip3 install --user -e . --break-system-packages
+pip3 install --user -e . --use-pep517 $OPTION
 ```
 
 ## And now?
