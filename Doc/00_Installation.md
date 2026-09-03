@@ -70,35 +70,18 @@ sudo make install
 The *f4pga* toolchain may used instead of *Vivado*.
 The install procedure is described in [this guide](https://f4pga-examples.readthedocs.io/en/latest/getting.html#getting)
 
-### Amaranth :
+### amaranth twstft
 
-The python package that we are going to use and abuse to work on our FPGA boards and implement.
-There are two git repositories to clone : one for the programming tools, and one for the possibility to flash our programs on different kinds of boards.
+Since Amaranth is a dependency of ``amaranth_twstft``, run
 
 ```bash
 if [ "$(uname -a | grep ebian)" ]; then OPTION="--break-system-packages"; else OPTION=""; fi  # handle Debian v.s Ubuntu
-git clone https://github.com/amaranth-lang/amaranth
-cd amaranth
-pip3 install --user -e . $OPTION
-
-git clone https://github.com/amaranth-lang/amaranth-boards
-cd amaranth-boards
-pip3 install --user -e . $OPTION
-
-git clone https://github.com/amaranth-lang/amaranth-stdio
-cd amaranth-stdio
-pip3 install --user -e . $OPTION
-```
-
-And finally... 
-
-### amaranth twstft
-
-```bash
 git clone https://github.com/oscimp/amaranth_twstft
 cd amaranth_twstft
 pip3 install --user -e . --use-pep517 $OPTION
 ```
+
+to install Amaranth and this tool.
 
 ## And now?
 
