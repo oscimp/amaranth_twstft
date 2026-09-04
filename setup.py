@@ -19,7 +19,7 @@ setup(
     use_scm_version=scm_version(),
     description="Using Amaranth to implement TWSTFT Signal generation",
     license="GPL",
-    setup_requires=["setuptools_scm"],
+#    setup_requires=["setuptools_scm"],
     install_requires=["amaranth", "amaranth-boards", "amaranth-stdio"],
     packages=find_packages(),
     project_urls={
