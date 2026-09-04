@@ -113,9 +113,15 @@ function [xval,indice,correction,SNRr,SNRi,puissance,puissancecode,puissancenois
            [~,possic]=max(abs(xcorrsic));
 	   possic=possic-1;
 	   if (oldpossic!=possic)
-  	     codesictmp=[ codesic(possic+1:end) ; codesic(1:possic)];
-	     codesictmp=[ codesictmp [ codesic(possic:end) ; codesic(1:possic-1) ]];
-	     codesictmp=[ codesictmp [ codesic(possic+2:end) ; codesic(1:possic+1) ]];
+             if (possic<length(codesic))
+  	       codesictmp=[ codesic(possic+1:end) ; codesic(1:possic)];
+	     end
+             if (possic>1)
+	       codesictmp=[ codesictmp [ codesic(possic:end) ; codesic(1:possic-1) ]];
+	     end
+             if (possic<length(codesic)-1)
+	       codesictmp=[ codesictmp [ codesic(possic+2:end) ; codesic(1:possic+1) ]];
+	     end
 %	     codesictmp=[ codesictmp [ codesic(possic+3:end) ; codesic(1:possic+2) ]];
 %	     codesictmp=[ codesictmp [ codesic(possic-1:end) ; codesic(1:possic-2) ]];
              pinvy=pinv(codesictmp);
