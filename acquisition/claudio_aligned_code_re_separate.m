@@ -10,18 +10,52 @@ Nint=1;
 remote=1
 ranging=0
 OP=getenv('OP')
-datalocation=gentenv('processing_dir')
+sic=getenv('sic');
+datalocation=getenv('processing_dir')
 codelocation=getenv('codelocation')
 remotechannel=getenv('remotechannel')
-ls=2;
+codenum=getenv('codenum')  % loop through all codes
+fcenter=getenv('fcenter') 
+ls=0.4;   % 260907 : 2 -> 0.4
 affiche=0;
-debug=1
 df_threshold=20;
 
-if (isempty(codelocation)) codelocation='/home/jmfriedt/codes/';end
-if (isempty(OP)) OP=0;end
-if (isempty(datalocation)) datalocation='./';end
-if (isempty(remotechannel)) remotechannel=2';end % 1 or 2 => localchannel=3-remotechannel
+if (isempty(codelocation))  
+   printf("missing codelocation\n");
+   codelocation='/home/jmfriedt/codes/';
+end
+if (isempty(OP)) 
+   printf("missing OP\n");
+   OP=0;
+end
+if (isempty(datalocation)) 
+   printf("missing datalocation\n");
+   datalocation='./';
+end
+if (isempty(remotechannel)) 
+   printf("missing remotechannel\n");
+   remotechannel=1; % 1 or 2 => localchannel=3-remotechannel
+end 
+if (isempty(codenum)) 
+   codenum=1;
+   printf("missing codenum\n");
+end 
+if (isempty(sic)) 
+   sic=0;
+   printf("missing SIC\n");
+end 
+if (isempty(fcenter)) 
+   if (ranging==1)
+      fcenter=0; % fcenter=0
+   else
+      if (OP==1)
+          fcenter=-100000; % -50 kHz
+      else
+         fcenter=100000;
+      end
+   end
+   printf("missing fcenter\n");
+end 
 
 function k=search_df(d,k,df_threshold)
   global freq fcode temps fs
@@ -106,6 +140,7 @@ function [xval,indice,correction,SNRr,SNRi,puissance,puissancecode,puissancenois
         puissance(cm)=var(y);
         puissancecode(cm)=mean(real(yincode))^2+mean(imag(yincode))^2;
         puissancenoise(cm)=var(yincode);
+if (sic11==1)
 %%% SIC
 	SNRsic=abs(SNRr+j*SNRi);
 	if (10*log10(SNRsic)>-30);
@@ -171,6 +206,9 @@ function [xval,indice,correction,SNRr,SNRi,puissance,puissancecode,puissancenois
 	   SNRsici=NaN;
 	end
 %%% end SIC
+else
+indicesic=0; correctionsic=0; SNRsicr=0;SNRsici=0; 
+end
 	cm=cm+1;
       end
 end
@@ -179,18 +217,21 @@ dirlist=dir([datalocation,'/*_',num2str(remotechannel),'.bin']);
 dirbit=dir([codelocation,'/n*.bin']);
 oldpossic=0;
 for dirnum=1:length(dirlist)
-  nomin=dirbit(mod(OP+remote+ranging*2,2)+1).name  % LTFB=odd OP=even
+  nomin=dirbit(codenum).name  % LTFB=odd OP=even
+if (sic==1)
   nominsic=dirbit(mod(OP+remote+ranging*2+1,2)+1).name  % LTFB=odd OP=even
+end
   % OP=1, remote=0 or OP=0, remote=1 => even ; OP=0, remote=0 or OP=1, remote=1 => odd
   nom=strrep(dirlist(dirnum).name,'.bin','.mat');
-  if (remote==1)
-    nomout=['remoteclaudio',nom];
-    else if (ranging==1)
-      nomout=['rangingclaudio',nom];
-      else
-        nomout=['localclaudio',nom];
-      end
-  end
+  nomout=['code',num2str(codenum),'_',nom];
+%  if (remote==1)
+%    nomout=['remoteclaudio',nom];
+%    else if (ranging==1)
+%      nomout=['rangingclaudio',nom];
+%      else
+%        nomout=['localclaudio',nom];
+%      end
+%  end
   nomoutgz=[nomout,'.gz'];
   if ((exist(nomout)==0)&&(exist(nomoutgz)==0)&&(dirlist(dirnum).bytes>fs*2*ls*2))
     f=fopen([codelocation,'/',nomin]);
@@ -200,11 +241,13 @@ for dirnum=1:length(dirlist)
     fcode=fft(code');
     fclose(f);
     %%% SIC
+if (sic==1)
     f=fopen([codelocation,'/',nominsic]);
     codesic=fread(f,inf,'int8');
     codesic=repelems(codesic,[[1:length(codesic)] ; ones(1,length(codesic))*2]); % interpolate
     codesic=2*codesic-1;  % +1/-1
     fclose(f);
+end
     %%% end SIC
     dirlist(dirnum).name
     eval(["f=fopen('",datalocation,"/",dirlist(dirnum).name,"');"]);
@@ -213,6 +256,7 @@ for dirnum=1:length(dirlist)
     pfreq=1;
     temps=[0:length(code)-1]'/fs;
     %%% SIC
+if (sic==1)
     if (OP==0)
       lo50=exp(-j*2*pi*50000*temps);    % frequency offset
     else
@@ -220,18 +264,11 @@ for dirnum=1:length(dirlist)
     end
     codesic=codesic'.*lo50;
     fcodesic=fft(codesic);
+end
     %%% end SIC
     freq=linspace(-fs/2,fs/2-fs/fs,fs*ls);
     printf("n\tdt1\tdf1\tP1\tSNR1\tdt2\tdf2\tP2\tSNR2\r\n");
-    if (ranging==1)
-       k=find((freq<18000)&(freq>-18000));
-    else
-       if (OP==1)
-           k=find((freq>-118000)&(freq<-82000)); % -50 kHz
-       else
-           k=find((freq<118000)&(freq>82000));
-       end
-    end
+    k=find((freq<fcenter+18000)&(freq>fcenter-18000));  % fcenter=0
     dold=[];
     moved=[];
     movedval=[];

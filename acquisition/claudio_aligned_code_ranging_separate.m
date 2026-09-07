@@ -10,19 +10,47 @@ Nint=1;
 remote=0
 ranging=1
 OP=getenv('OP')
-datalocation=gentenv('processing_dir')
+datalocation=getenv('processing_dir')
 codelocation=getenv('codelocation')
 remotechannel=getenv('remotechannel')
+codenum=getenv('codenum')  % loop through all codes
 ls=2;
 affiche=0;
 debug=1
-ranging=1
 df_threshold=20;
 
-if (isempty(codelocation)) codelocation='/home/jmfriedt/codes/';end
-if (isempty(OP)) OP=0;end
-if (isempty(datalocation)) datalocation='./';end
-if (isempty(remotechannel)) remotechannel=2';end % 1 or 2 => localchannel=3-remotechannel
+if (isempty(codelocation))  
+   printf("missing codelocation\n");
+   codelocation='/home/jmfriedt/codes/';
+end
+if (isempty(OP)) 
+   printf("missing OP\n");
+   OP=0;
+end
+if (isempty(datalocation)) 
+   printf("missing datalocation\n");
+   datalocation='./';
+end
+if (isempty(remotechannel)) 
+   printf("missing remotechannel\n");
+   remotechannel=2;
+end % 1 or 2 => localchannel=3-remotechannel
+if (isempty(codenum)) 
+   codenum=1;
+   printf("missing codenum\n");
+end 
+if (isempty(fcenter)) 
+   if (ranging==1)
+      fcenter=0; % fcenter=0
+   else
+      if (OP==1)
+          fcenter=-100000; % -50 kHz
+      else
+         fcenter=100000;
+      end
+   end
+   printf("missing fcenter\n");
+end 
 
 function k=search_df(d,k,df_threshold)
   global freq fcode temps fs
@@ -124,19 +152,21 @@ end
 dirlist=dir([datalocation,'/*_',num2str(remotechannel),'.bin']);
 dirbit=dir([codelocation,'/n*.bin']);
 for dirnum=1:length(dirlist)
-  nomin=dirbit(mod(OP+remote+ranging*2,2)+1).name  % LTFB=odd OP=even
+  % nomin=dirbit(mod(OP+remote+ranging*2,2)+1).name  % LTFB=odd OP=even
+  nomin=dirbit(codenum).name  % LTFB=odd OP=even
   % OP=1, remote=0 or OP=0, remote=1 => even ; OP=0, remote=0 or OP=1, remote=1 => odd
   nom=strrep(dirlist(dirnum).name,'.bin','.mat');
-  if (remote==1)
-    nomout=['remoteclaudio',nom];
-    else if (ranging==1)
-      nomout=['rangingclaudio',nom];
-      else
-        nomout=['localclaudio',nom];
-      end
-  end
+  nomout=['code',num2str(codenum),'_',nom];
+%  if (remote==1)
+%    nomout=['remoteclaudio',nom];
+%    else if (ranging==1)
+%      nomout=['rangingclaudio',nom];
+%      else
+%        nomout=['localclaudio',nom];
+%      end
+%  end
   nomoutgz=[nomout,'.gz'];
-  if ((exist(nomout)==0)&&(exist(nomoutgz)==0))
+  if ((exist(nomout)==0)&&(exist(nomoutgz)==0)&&(dirlist(dirnum).bytes>fs*2*ls*2))
     f=fopen([codelocation,'/',nomin]);
     code=fread(f,inf,'int8');
     code=repelems(code,[[1:length(code)] ; ones(1,length(code))*2]); % interpolate
@@ -224,7 +254,7 @@ end
   %       end
         pfreq=pfreq+1;
       end
-    until ((longueur!length(fcode)*2*ls) || (isnan(kbon)==1) || (kbon==0));  % ls s
+    until ((longueur<length(fcode)*2*ls) || (isnan(kbon)==1) || (kbon==0));  % ls s
     fclose(f)
     if (isnan(kbon)==0)
       eval(['save -mat ',nomout,' corr* df indic* SNR* code puissan* xval* moved*']);
