@@ -4,9 +4,9 @@ Ethernet interface. The associated crontab and data acquisition script (assumes
 
 <img src="setup.png">
 
-Broadcasting the signal is controlled by a Raspberry Pi4 triggered every second
-with a 1-PPS input and NTP synchronized: the ``script_raspberryPi4.py`` script controls
-the emission time and duration. 
+Broadcasting the signal is controlled by the ``getinterrupt.py`` manually launched
+on the PC controlling the SDR and probing the NTP state to decide when to send a command
+to the FPGA to start broadcasting.
 
 Recording the X310 stream is performed through a 10 GbEthernet link to a PC storing on 
 SSD: make sure to regularly
