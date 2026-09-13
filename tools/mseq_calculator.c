@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
     int max_length;
 
     if (argc>1) bits=atoi(argv[1]); else bits=17;
-    if (argc>1) taps=atoi(argv[2]); else taps=9;
+    if (argc>2) taps=atoi(argv[2]); else taps=9;
     seed=1;
 
     uint32_t lfsr=seed,n=0;
