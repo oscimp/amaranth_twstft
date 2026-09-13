@@ -25,3 +25,9 @@ Finding at most 5 taps for a 17 bits msequence... This may take a while...
 51 is a m-sequence generator taps
 [9, 15, 33, 45, 51]
 ```
+
+For saving the sequence:
+```
+./mseq_calculator  17 15 100000 w
+```
+generates ``noiselen100000_bitlen17_taps15.bin``
