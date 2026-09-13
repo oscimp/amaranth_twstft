@@ -22,6 +22,9 @@ class TwstftMain(Component):
     antena_out: Out(1)
     calib_out: Out(1)
 
+    led_emit: Out(1)
+    led_qpsk: Out(1)
+
     def __init__(
             self,
             f_carrier,
@@ -126,6 +129,9 @@ class TwstftMain(Component):
 
         m.d.sync += self.antena_out.eq(mixer.out)
         m.d.comb += self.calib_out.eq(calib.out)
+
+        m.d.comb += self.led_emit.eq(mixer.mode != Mode.OFF)
+        m.d.comb += self.led_qpsk.eq(mixer.mode == Mode.QPSK)
 
         return m
 
