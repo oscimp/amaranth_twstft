@@ -15,6 +15,7 @@ datalocation=getenv('processing_dir')
 codelocation=getenv('codelocation')
 remotechannel=getenv('remotechannel')
 codenum=getenv('codenum')  % loop through all codes
+codesicnum=getenv('codesicnum')  % loop through all codes
 fcenter=getenv('fcenter') 
 ls=0.4;   % 260907 : 2 -> 0.4
 affiche=0;
@@ -38,6 +39,12 @@ if (isempty(codenum))
    printf("missing codenum %d\n",codenum);
 else
    codenum=str2num(codenum);
+end 
+if (isempty(codesicnum)) 
+   codesicnum=1;
+   printf("missing codesicnum %d\n",codesicnum);
+else
+   codesicnum=str2num(codesicnum);
 end 
 if (isempty(sic)) 
    sic=0;
@@ -250,9 +257,9 @@ dirlist=dir([datalocation,'/*_',num2str(remotechannel),'.bin']);
 dirbit=dir([codelocation,'/n*.bin']);
 oldpossic=0;
 for dirnum=1:length(dirlist)
-  nomin=dirbit(codenum).name  % LTFB=odd OP=even
+  nomin=dirbit(codenum).name
 if (sic==1)
-  nominsic=dirbit(mod(OP+remote+ranging*2+1,2)+1).name  % LTFB=odd OP=even
+  nominsic=dirbit(codesicnum).name
 end
   % OP=1, remote=0 or OP=0, remote=1 => even ; OP=0, remote=0 or OP=1, remote=1 => odd
   nom=strrep(dirlist(dirnum).name,'.bin','.mat');
