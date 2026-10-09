@@ -44,11 +44,10 @@ int main(int argc, char **argv) {
     printf("%d %d\t-> %d/%d",bits,taps,n,max_length);
     if (n==max_length) printf(" OK\n"); else printf("\n");
     if (filewrite==1)
-       {sprintf(name,"noiselen%d_bitlen%d_taps%d.bin", length, bits, taps);
+       {sprintf(name,"noiselen%d_bitlen%d_taps%02d.bin", length, bits, taps);
         f=open(name, O_WRONLY | O_CREAT | O_EXCL, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
         write(f,sequence,length);
         close(f);
        }
     return 0;
 }
-
