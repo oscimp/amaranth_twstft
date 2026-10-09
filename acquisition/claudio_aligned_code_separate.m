@@ -240,7 +240,7 @@ if (sic==1)
 	end
 %%% end SIC
 else
-indicesic=0; correctionsic=0; SNRsicr=0;SNRsici=0; 
+    indicesic=0; correctionsic=0; SNRsicr=0;SNRsici=0; 
 end
 	cm=cm+1;
       end
