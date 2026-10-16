@@ -13,7 +13,7 @@ ranging=getenv('ranging')
 sic=getenv('sic');
 datalocation=getenv('processing_dir')
 codelocation=getenv('codelocation')
-remotechannel=getenv('remotechannel')
+channel=getenv('channel')
 codenum=getenv('codenum')  % loop through all codes
 fcenter=getenv('fcenter') 
 ls=0.4;   % 260907 : 2 -> 0.4
@@ -57,15 +57,15 @@ if (isempty(remote))
 else 
    remote=str2num(remote);
 end 
-if (isempty(remotechannel)) 
+if (isempty(channel)) 
    if ((remote==0)&&(ranging==0))
-      remotechannel=2; % lo = 2 ; re = 1
+      channel=2; % lo = 2 ; re = 1
    else
-      remotechannel=1; % lo = 2 ; re = 1
+      channel=1; % lo = 2 ; re = 1
    end
-   printf("missing remotechannel %d\n",remotechannel);
+   printf("missing channel %d\n",channel);
 else
-   remotechannel=str2num(remotechannel);
+   channel=str2num(channel);
 end 
 if (isempty(fcenter)) 
    if (OP==1)   % case remote
@@ -100,7 +100,7 @@ function k=search_df(d,k,df_threshold)
      ktmp=[ktmp(1) ; ktmp(kdiff+1)];
   end
   % (ktmp)
-  if ((length(ktmp)>0) && (length(ktmp)<100) && (isempty(ktmp)==0))
+  if ((length(ktmp)>0) && (length(ktmp)<10000) && (isempty(ktmp)==0))
      for kindex=1:length(ktmp);
         dftmp=freq(ktmp(kindex))/2
         lo=exp(-j*2*pi*dftmp*temps);
@@ -246,7 +246,7 @@ end
       end
 end
 
-dirlist=dir([datalocation,'/*_',num2str(remotechannel),'.bin']);
+dirlist=dir([datalocation,'/*_',num2str(channel),'.bin']);
 dirbit=dir([codelocation,'/n*.bin']);
 oldpossic=0;
 for dirnum=1:length(dirlist)
@@ -322,8 +322,8 @@ end
            d=d(1:2:end)+j*d(2:2:end);
 	 end
 #        else                  % vvv 0.5 Hz accuracy
-#           d2=fftshift(abs(fft(d(3-remotechannel:2:end).^2))); % adjust for local channel vs remote
-#           d=[dold ; d(3-remotechannel:2:end)];                % adjust for local channel vs remote
+#           d2=fftshift(abs(fft(d(3-channel:2:end).^2))); % adjust for local channel vs remote
+#           d=[dold ; d(3-channel:2:end)];                % adjust for local channel vs remote
 #        end
 
 if (df_found==1)

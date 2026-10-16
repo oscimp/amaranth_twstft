@@ -18,14 +18,12 @@ When updating to a new environment, make sure to
 * update the working directory ``rep`` in ``goprocess.sh`` and ``gosampling.sh``
 * update the working directory (``datalocation='./'``) and code directory
 (``codelocation='...'``) in all the Octave files
-* update the speaker (``OP=0`` for LTFB or ``OP=1`` for OP)
-* update the reference and surveillance channels (``remotechannel=2`` or ``remotechannel=2``
-with ``localchannel=3-remotechannel``)
+* update the speaker (``OP=0`` for LTFB or SP or ``OP=1`` for OP)
+* update the reference and surveillance channels (``channel=1`` or ``channel=2``)
 * update the working directory at the end of the Octave script when moving the processed files
 * update the broadcast code in ``getinterrupt.py``
 
-When changing scheduled times, make sure the ``script_raspberryPi4.py`` Python
-script running on the RPi5 and polling the 1-PPS do determine when to start
-broadcasting with respect to NTP time is consistent with the ``crontab`` data
-acquisition settings.
+When changing scheduled times, make sure the ``get_interrupt.py`` Python
+script polling the 1-PPS to determine when to start broadcasting with respect 
+to NTP time is consistent with the ``crontab`` data acquisition settings.
 
