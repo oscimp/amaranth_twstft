@@ -57,7 +57,7 @@ A similar proprietary development unrelated to this work is under way as describ
 http://www.eltvor.cz/elttt21.html as part of the ESA contract 
 https://navisp.esa.int/project/details/108/show
 
-## Note on using SSD (Solid State Drive) with GNU/Linux
+## Note on using <a href="https://www.baeldung.com/linux/solid-state-drive-optimization">SSD (Solid State Drive)</a> with GNU/Linux
 
 The adopted strategy is to store the records from the SDR receiver for post-processing
 in order to remove the burden of computational load and dependency with accelerating
